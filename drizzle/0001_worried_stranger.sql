@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `vessels_imo_number_unique` ON `vessels` (`imo_number`);
