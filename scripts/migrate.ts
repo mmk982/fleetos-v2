@@ -1,33 +1,25 @@
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import Database from "better-sqlite3";
 import path from "node:path";
-import fs from "node:fs";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { Pool } from "pg";
 import * as schema from "../src/db/schema";
 
-const defaultRelativePath = "data/fleetos.db";
+const defaultDatabaseUrl = "postgres://fleetos:fleetos@localhost:5433/fleetos";
 
-function resolveDbFilePath(): string {
-  const url = process.env.DATABASE_URL;
-  if (url?.startsWith("file:")) {
-    const raw = url.slice("file:".length);
-    return path.isAbsolute(raw)
-      ? raw
-      : path.join(/* turbopackIgnore: true */ process.cwd(), raw);
+async function main() {
+  const connectionString = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
+  const pool = new Pool({ connectionString });
+  const db = drizzle(pool, { schema });
+
+  try {
+    await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+    console.log("Migrations applied.");
+  } finally {
+    await pool.end();
   }
-  return path.join(/* turbopackIgnore: true */ process.cwd(), defaultRelativePath);
 }
 
-const filePath = resolveDbFilePath();
-fs.mkdirSync(path.dirname(filePath), { recursive: true });
-
-const sqlite = new Database(filePath);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-
-const db = drizzle(sqlite, { schema });
-
-migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-
-sqlite.close();
-console.log("Migrations applied.");
+main().catch((error) => {
+  console.error("Migration failed:", error);
+  process.exit(1);
+});

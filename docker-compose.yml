@@ -1,0 +1,23 @@
+# Local development only — Postgres for FleetOS (MASTER_PLAN.md Phase 2).
+# Production stack (app + Postgres + Caddy + GlitchTip) lives in Phase 7.
+services:
+  postgres:
+    image: postgres:17.4
+    restart: unless-stopped
+    # Host 5433 avoids clashing with a native Windows Postgres on 5432.
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: fleetos
+      POSTGRES_PASSWORD: fleetos
+      POSTGRES_DB: fleetos
+    volumes:
+      - fleetos_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetos -d fleetos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  fleetos_pg_data:

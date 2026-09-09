@@ -7,7 +7,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EditVesselPage(props: PageProps) {
   const { id } = await props.params;
-  const vessel = getVesselById(id);
+  const vessel = await getVesselById(id);
   if (!vessel) {
     notFound();
   }

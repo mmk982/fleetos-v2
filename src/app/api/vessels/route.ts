@@ -7,7 +7,7 @@ import {
 import { vesselCreateSchema } from "@/modules/vessels/validation";
 
 export async function GET() {
-  const data = listVessels();
+  const data = await listVessels();
   return NextResponse.json({ data });
 }
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = createVessel(parsed.data);
+    const data = await createVessel(parsed.data);
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     if (error instanceof VesselConflictError) {

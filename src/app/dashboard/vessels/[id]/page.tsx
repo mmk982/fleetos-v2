@@ -8,7 +8,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function VesselDetailPage(props: PageProps) {
   const { id } = await props.params;
-  const vessel = getVesselById(id);
+  const vessel = await getVesselById(id);
   if (!vessel) {
     notFound();
   }
@@ -28,8 +28,8 @@ export default async function VesselDetailPage(props: PageProps) {
       label: "Status",
       value: vessel.status.charAt(0).toUpperCase() + vessel.status.slice(1),
     },
-    { label: "Created", value: vessel.createdAt },
-    { label: "Updated", value: vessel.updatedAt },
+    { label: "Created", value: vessel.createdAt.toISOString() },
+    { label: "Updated", value: vessel.updatedAt.toISOString() },
   ];
 
   return (

@@ -1,8 +1,21 @@
+/**
+ * Server Actions for the Vessels module — the form-submission boundary
+ * between `vessel-form.tsx` and `vessel.controller.ts`. Owns: reading
+ * `FormData`, Zod validation + field-error mapping, calling the controller,
+ * and `revalidatePath`/`redirect` afterward. Reference shape for every later
+ * module's `actions.ts` (`PROJECT_PLAN.md` Conventions section).
+ */
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+/**
+ * `redirect()` in a Server Action works by throwing a special error Next.js
+ * catches upstream — every `try`/`catch` around a `redirect()` call must
+ * re-throw it (checked via this helper) rather than treating it as a real
+ * failure, or the redirect silently never happens.
+ */
 function isNextRedirect(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
@@ -20,6 +33,7 @@ import { vesselCreateSchema, vesselUpdateSchema } from "./validation";
 
 const vesselsPath = "/dashboard/vessels";
 
+/** Reads a `FormData` field as a string, or `undefined` if the key is absent (distinct from an empty string, which the field *was* present but blank). */
 function readFormString(formData: FormData, key: string): string | undefined {
   const v = formData.get(key);
   if (v === null || v === undefined) {
@@ -28,10 +42,20 @@ function readFormString(formData: FormData, key: string): string | undefined {
   return String(v);
 }
 
+/**
+ * `useActionState` result shape. `ok: true` carries no payload — callers
+ * that need the created/updated row read it via `redirect()` to the detail
+ * page instead, not via this state (see `createVesselAction`).
+ */
 export type VesselActionState =
   | { ok: true }
   | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
 
+/**
+ * Creates a vessel from a submitted `<form>`. On success, redirects to the
+ * new vessel's detail page rather than returning `{ ok: true }` — there's no
+ * "stay on the create form" success state in this UI.
+ */
 export async function createVesselAction(
   _prev: VesselActionState | undefined,
   formData: FormData,
@@ -67,7 +91,7 @@ export async function createVesselAction(
   }
 
   try {
-    const vessel = createVessel(parsed.data);
+    const vessel = await createVessel(parsed.data);
     revalidatePath(vesselsPath);
     redirect(`${vesselsPath}/${vessel.id}`);
   } catch (error) {
@@ -81,6 +105,13 @@ export async function createVesselAction(
   }
 }
 
+/**
+ * Updates a vessel from a submitted edit `<form>`. Bound with `.bind(null,
+ * id)` at the call site (see `vessel-form.tsx`) so it matches the
+ * `useActionState`-required `(prev, formData)` signature despite needing the
+ * extra `id` parameter. Only form fields actually present are validated/
+ * applied — see `vesselUpdateSchema`.
+ */
 export async function updateVesselAction(
   id: string,
   _prev: VesselActionState | undefined,
@@ -123,7 +154,7 @@ export async function updateVesselAction(
   }
 
   try {
-    updateVessel(id, parsed.data);
+    await updateVessel(id, parsed.data);
     revalidatePath(vesselsPath);
     revalidatePath(`${vesselsPath}/${id}`);
     revalidatePath(`${vesselsPath}/${id}/edit`);
@@ -139,12 +170,18 @@ export async function updateVesselAction(
   }
 }
 
+/**
+ * Deletes a vessel, called from a plain `<form action={...}>` (not
+ * `useActionState`) on the detail page — hence `Promise<void>` rather than
+ * the `VesselActionState` shape, and hence throwing on a missing id instead
+ * of returning a field error there's no form to display it against.
+ */
 export async function deleteVesselFormAction(formData: FormData): Promise<void> {
   const id = formData.get("id");
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("Missing vessel id");
   }
-  deleteVessel(id);
+  await deleteVessel(id);
   revalidatePath(vesselsPath);
   redirect(vesselsPath);
 }

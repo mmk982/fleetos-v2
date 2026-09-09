@@ -4,8 +4,8 @@ import { formatImo } from "@/modules/vessels/vessel.model";
 
 export const dynamic = "force-dynamic";
 
-export default function VesselsPage() {
-  const vessels = listVessels();
+export default async function VesselsPage() {
+  const vessels = await listVessels();
 
   return (
     <main className="flex flex-1 flex-col p-8">
