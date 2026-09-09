@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FleetOS v2
 
-## Getting Started
+Maritime fleet-compliance app (Next.js App Router, Drizzle ORM, PostgreSQL).
 
-First, run the development server:
+## Local development
+
+### 1. Postgres
 
 ```bash
+docker compose up -d
+cp .env.example .env.local   # adjust if needed
+npm install
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App: [http://localhost:3000](http://localhost:3000)  
+Postgres host port: **5433** (avoids clashing with a native Windows Postgres on 5432).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Optional GlitchTip (error tracker)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose --profile observability up -d
+```
 
-## Learn More
+Open [http://localhost:8000](http://localhost:8000), create an org/project, copy the DSN into `.env.local` as `GLITCHTIP_DSN=...`, restart `npm run dev`. Controllers report unexpected failures through `src/lib/logging.ts` (`logError`).
 
-To learn more about Next.js, take a look at the following resources:
+## CI / staging deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **CI** (`.github/workflows/ci.yml`): lint + typecheck on every push/PR.
+- **Staging deploy** (`.github/workflows/deploy-staging.yml`): manual `workflow_dispatch`, gated on the GitHub Environment named `staging` (configure required reviewers there).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Required Action secrets (document only — never commit values):
 
-## Deploy on Vercel
+| Secret | Purpose |
+| --- | --- |
+| `STAGING_HOST` | Staging VPS hostname (Phase 7 Hetzner) |
+| `STAGING_SSH_USER` | SSH user |
+| `STAGING_SSH_KEY` | Private key for that user |
+| `STAGING_APP_PATH` | Optional remote compose project path |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Until those secrets exist, the deploy workflow checks out the ref and exits with a warning (scaffold for Phase 7).

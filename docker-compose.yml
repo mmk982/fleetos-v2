@@ -1,5 +1,14 @@
-# Local development only — Postgres for FleetOS (MASTER_PLAN.md Phase 2).
-# Production stack (app + Postgres + Caddy + GlitchTip) lives in Phase 7.
+# Local development only — Postgres (+ optional GlitchTip) for FleetOS
+# (MASTER_PLAN.md Phase 2). Production stack (app + Postgres + Caddy +
+# GlitchTip) lives in Phase 7.
+#
+# Default: Postgres only.
+#   docker compose up -d
+#
+# Optional observability profile (GlitchTip UI at http://localhost:8000):
+#   docker compose --profile observability up -d
+# Then create an org/project in GlitchTip and put the project DSN in
+# `.env.local` as GLITCHTIP_DSN=...
 services:
   postgres:
     image: postgres:17.4
@@ -19,5 +28,50 @@ services:
       timeout: 5s
       retries: 10
 
+  # --- observability profile (Task 2.3) — not started by default ---
+  valkey:
+    profiles: ["observability"]
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+
+  glitchtip-db:
+    profiles: ["observability"]
+    image: postgres:17.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: glitchtip
+      POSTGRES_DB: glitchtip
+    volumes:
+      - fleetos_glitchtip_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  glitchtip:
+    profiles: ["observability"]
+    image: glitchtip/glitchtip:v5.0
+    restart: unless-stopped
+    depends_on:
+      glitchtip-db:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://glitchtip:glitchtip@glitchtip-db:5432/glitchtip
+      SECRET_KEY: local-dev-only-change-me
+      VALKEY_URL: redis://valkey:6379/0
+      EMAIL_URL: consolemail://
+      DEFAULT_FROM_EMAIL: noreply@localhost
+      GLITCHTIP_DOMAIN: http://localhost:8000
+      # Single container for local use — web + worker together.
+      GLITCHTIP_EMBED_WORKER: "true"
+      ENABLE_USER_REGISTRATION: "true"
+
 volumes:
   fleetos_pg_data:
+  fleetos_glitchtip_pg_data:

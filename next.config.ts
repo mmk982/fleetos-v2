@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg"],
+  serverExternalPackages: ["pg", "@sentry/node"],
 };
 
 export default nextConfig;

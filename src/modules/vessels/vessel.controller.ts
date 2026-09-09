@@ -17,6 +17,7 @@ import "server-only";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
+import { logError } from "@/lib/logging";
 import type { VesselCreateInput, VesselUpdateInput } from "./validation";
 
 /** Thrown by `requireVesselById`/`updateVessel`/`deleteVessel` when the id doesn't exist. */
@@ -106,6 +107,7 @@ export async function createVessel(input: VesselCreateInput): Promise<VesselRow>
     if (isPgUniqueViolation(error)) {
       throw new VesselConflictError("That IMO number is already assigned to another vessel.");
     }
+    logError("VESSEL_CREATE_FAILED", { error, imoNumber: input.imoNumber ?? null });
     throw error;
   }
 }
@@ -174,9 +176,13 @@ export async function updateVessel(id: string, input: VesselUpdateInput): Promis
     }
     return row;
   } catch (error) {
+    if (error instanceof VesselNotFoundError) {
+      throw error;
+    }
     if (isPgUniqueViolation(error)) {
       throw new VesselConflictError("That IMO number is already assigned to another vessel.");
     }
+    logError("VESSEL_UPDATE_FAILED", { error, vesselId: id });
     throw error;
   }
 }
@@ -195,8 +201,16 @@ export async function updateVessel(id: string, input: VesselUpdateInput): Promis
  */
 export async function deleteVessel(id: string): Promise<void> {
   const db = getDb();
-  const deleted = await db.delete(vessels).where(eq(vessels.id, id)).returning({ id: vessels.id });
-  if (deleted.length === 0) {
-    throw new VesselNotFoundError(id);
+  try {
+    const deleted = await db.delete(vessels).where(eq(vessels.id, id)).returning({ id: vessels.id });
+    if (deleted.length === 0) {
+      throw new VesselNotFoundError(id);
+    }
+  } catch (error) {
+    if (error instanceof VesselNotFoundError) {
+      throw error;
+    }
+    logError("VESSEL_DELETE_FAILED", { error, vesselId: id });
+    throw error;
   }
 }

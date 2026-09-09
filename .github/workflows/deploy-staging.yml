@@ -1,0 +1,52 @@
+# Staging deploy scaffold (MASTER_IMPLEMENTATION_PLAN.md Task 2.2).
+#
+# Manual approval gate: GitHub Environment `staging` with required reviewers.
+# Real SSH/host secrets land once Phase 7's Hetzner staging box exists —
+# this workflow documents the shape and fails closed when secrets are absent
+# after you flip REQUIRE_STAGING_SECRETS (default: soft-warn for now).
+
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy (branch, tag, or SHA)
+        required: false
+        default: master
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Check staging secrets
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+        run: |
+          missing=0
+          for name in STAGING_HOST STAGING_SSH_USER STAGING_SSH_KEY; do
+            eval "val=\$$name"
+            if [ -z "$val" ]; then
+              echo "::warning::Missing secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "Staging secrets are not configured yet (expected until Phase 7)."
+            echo "Documented in .env.example / README. Workflow shape is ready."
+            exit 0
+          fi
+          echo "Staging secrets present."
+          echo "TODO(Phase 7): SSH deploy — pull image / compose up on STAGING_HOST."
