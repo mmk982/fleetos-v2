@@ -274,9 +274,12 @@ library) — no new dependency, matches the original app's already-proven
 `orgDbWithRole()`-per-write pattern. **Resolved: named per-user accounts**,
 not a shared login — every fleet-office staff member gets their own
 login. This is what `activity_logs.userId`, `notifications.userId`, and
-every `uploadedBy`-becomes-a-real-FK-later column in `PROJECT_PLAN.md`
+every `uploadedBy`/`responsiblePerson`/`authorId` column in `PROJECT_PLAN.md`
 already assumed structurally; confirming it now just closes the open
-question rather than changing any schema. It's also what makes "who
+question rather than changing any schema. **(Round 3 note: these are real
+`users` FKs from their first migration, not a deferred "becomes a real FK
+later" cleanup — Auth is step 0 in the build order, ahead of every column
+listed here, so there's no "later" left to describe.)** It's also what makes "who
 closed this deficiency" a real, attributable answer once RBAC (Phase 6)
 is layered on, not just a system-level log.
 
