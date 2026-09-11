@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { Identifier } from "@/components/ui/identifier";
+import { StatusPill } from "@/components/ui/status-pill";
 import { deleteVesselFormAction } from "@/modules/vessels/actions";
 import { getVesselById } from "@/modules/vessels/vessel.controller";
-import { formatImo } from "@/modules/vessels/vessel.model";
+import { formatImo, vesselStatusTone } from "@/modules/vessels/vessel.model";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -16,8 +20,11 @@ export default async function VesselDetailPage(props: PageProps) {
     notFound();
   }
 
-  const rows: { label: string; value: string }[] = [
-    { label: "IMO", value: formatImo(vessel.imoNumber) },
+  const rows: { label: string; value: ReactNode }[] = [
+    {
+      label: "IMO",
+      value: <Identifier>{formatImo(vessel.imoNumber)}</Identifier>,
+    },
     { label: "MMSI", value: vessel.mmsi ?? "—" },
     { label: "Call sign", value: vessel.callSign ?? "—" },
     { label: "Flag state", value: vessel.flagState ?? "—" },
@@ -26,10 +33,17 @@ export default async function VesselDetailPage(props: PageProps) {
       label: "Gross tonnage",
       value: vessel.grossTonnage != null ? String(vessel.grossTonnage) : "—",
     },
-    { label: "Year built", value: vessel.yearBuilt != null ? String(vessel.yearBuilt) : "—" },
+    {
+      label: "Year built",
+      value: vessel.yearBuilt != null ? String(vessel.yearBuilt) : "—",
+    },
     {
       label: "Status",
-      value: vessel.status.charAt(0).toUpperCase() + vessel.status.slice(1),
+      value: (
+        <StatusPill tone={vesselStatusTone(vessel.status)}>
+          {vessel.status.charAt(0).toUpperCase() + vessel.status.slice(1)}
+        </StatusPill>
+      ),
     },
     { label: "Created", value: vessel.createdAt.toISOString() },
     { label: "Updated", value: vessel.updatedAt.toISOString() },
@@ -46,7 +60,7 @@ export default async function VesselDetailPage(props: PageProps) {
             ← Back to vessels
           </Link>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {vessel.name}
+            <Identifier>{vessel.name}</Identifier>
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -56,15 +70,12 @@ export default async function VesselDetailPage(props: PageProps) {
           >
             Edit
           </Link>
-          <form action={deleteVesselFormAction}>
-            <input type="hidden" name="id" value={vessel.id} />
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-white px-4 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-zinc-950 dark:text-red-300 dark:hover:bg-red-950/30"
-            >
-              Delete
-            </button>
-          </form>
+          <ConfirmDeleteButton
+            id={vessel.id}
+            title="Delete vessel?"
+            description="This permanently removes the vessel. Certificates and other linked records will block delete via RESTRICT if still present."
+            action={deleteVesselFormAction}
+          />
         </div>
       </div>
 

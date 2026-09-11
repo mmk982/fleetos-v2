@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { Identifier } from "@/components/ui/identifier";
 import {
   createVesselAction,
   updateVesselAction,
@@ -52,15 +53,17 @@ export function VesselForm(props: VesselFormProps) {
           <label htmlFor="name" className={labelClass}>
             Vessel name <span className="text-red-600">*</span>
           </label>
-          <input
-            id="name"
-            name="name"
-            required
-            maxLength={200}
-            defaultValue={d?.name ?? ""}
-            className={inputClass}
-            autoComplete="off"
-          />
+          <Identifier>
+            <input
+              id="name"
+              name="name"
+              required
+              maxLength={200}
+              defaultValue={d?.name ?? ""}
+              className={inputClass}
+              autoComplete="off"
+            />
+          </Identifier>
           {fieldErrors?.name ? (
             <p className={errorText}>{fieldErrors.name.join(" ")}</p>
           ) : null}
@@ -70,16 +73,18 @@ export function VesselForm(props: VesselFormProps) {
           <label htmlFor="imoNumber" className={labelClass}>
             IMO number
           </label>
-          <input
-            id="imoNumber"
-            name="imoNumber"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            placeholder="7 digits"
-            defaultValue={d?.imoNumber ?? ""}
-            className={inputClass}
-            autoComplete="off"
-          />
+          <Identifier>
+            <input
+              id="imoNumber"
+              name="imoNumber"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="7 digits"
+              defaultValue={d?.imoNumber ?? ""}
+              className={inputClass}
+              autoComplete="off"
+            />
+          </Identifier>
           {fieldErrors?.imoNumber ? (
             <p className={errorText}>{fieldErrors.imoNumber.join(" ")}</p>
           ) : null}

@@ -7,6 +7,7 @@
  * here rather than in the controller.
  */
 import { vesselStatusEnum } from "@/db/schema";
+import type { StatusPillTone } from "@/components/ui/status-pill";
 
 export type { VesselRow as Vessel } from "@/db/schema";
 export type { VesselStatus } from "@/db/schema";
@@ -17,6 +18,18 @@ export const VESSEL_STATUSES = vesselStatusEnum;
 /** Type guard narrowing an arbitrary string to `VesselStatus`. */
 export function isVesselStatus(value: string): value is (typeof vesselStatusEnum)[number] {
   return (vesselStatusEnum as readonly string[]).includes(value);
+}
+
+/**
+ * Maps vessel lifecycle to StatusPill tones (Task 7): active → success,
+ * inactive → warning, archived → neutral.
+ */
+export function vesselStatusTone(
+  status: (typeof vesselStatusEnum)[number],
+): StatusPillTone {
+  if (status === "active") return "success";
+  if (status === "inactive") return "warning";
+  return "neutral";
 }
 
 /**
