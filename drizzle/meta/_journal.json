@@ -15,6 +15,13 @@
       "when": 1789121114132,
       "tag": "0001_public_forge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789128322640,
+      "tag": "0002_certificates_module",
+      "breakpoints": true
     }
   ]
 }
