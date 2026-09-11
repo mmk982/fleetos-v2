@@ -1,0 +1,41 @@
+%% FleetOS — deployment architecture: one isolated Docker stack per customer
+%% (MASTER_PLAN.md Phase 7). No shared instance, no tenant_id column —
+%% physical isolation is the multi-tenancy model.
+flowchart TB
+    subgraph Internet[" "]
+        Browser["Fleet-office staff\n(browser, EN/AR, light/dark)"]
+    end
+
+    subgraph VPS["Customer's dedicated Hetzner VPS (one per customer)"]
+        Caddy["Caddy\nreverse proxy + auto TLS"]
+        subgraph App["Next.js 16 app container"]
+            Proxy["proxy.ts\nredirect-only edge layer"]
+            Actions["Server Actions / Route Handlers\nsession check on every call"]
+            DB["Drizzle + node-postgres"]
+        end
+        PG[("PostgreSQL\nRLS policies (Phase 6+)")]
+        GT["GlitchTip\nself-hosted error tracking"]
+        Redis[("Redis/Valkey\nGlitchTip sidecar")]
+        Files["/data/attachments/\nlocal file storage"]
+    end
+
+    subgraph Backup["Off-box backup"]
+        B2["Backblaze B2\npg_dump / pgBackRest + attachments"]
+    end
+
+    DNS["Customer DNS\n(subdomain or standalone domain)"]
+
+    Browser -->|HTTPS| Caddy
+    DNS -. "resolves to" .-> Caddy
+    Caddy --> Proxy
+    Proxy --> Actions
+    Actions --> DB
+    DB --> PG
+    Actions --> Files
+    App -. "errors" .-> GT
+    GT --> Redis
+    PG -->|hourly/4h dump + nightly full| B2
+    Files -->|nightly| B2
+
+    classDef external fill:#8FA3C0,stroke:#5B729B,color:#0B1526
+    class Browser,DNS,B2 external

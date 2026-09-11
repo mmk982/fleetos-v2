@@ -205,7 +205,10 @@ consistent:
   status codes 201 / 204 / 400 / 404 / 409.
 - **Pages** under `src/app/dashboard/<feature>/`: list (`export const dynamic =
   "force-dynamic"`), `[id]` detail, `new`, `[id]/edit`. A shared client form
-  component `<Feature>Form` lives in `src/components/`. Brand color `#0D2B45`.
+  component `<Feature>Form` lives in `src/components/`. Brand accent color
+  `#378ADD` (verified against `DESIGN_HANDOFF.md`'s token table — this
+  section previously referenced a stale `#0D2B45`, caught in Cursor's
+  independent review).
 - **Migrations**: author schema → `npm run db:generate` (drizzle-kit) →
   `npm run db:migrate` (`scripts/migrate.ts`). Migrations auto-run on `predev`
   and `prebuild`.
@@ -482,13 +485,35 @@ rule; any `cachedStatus` is a non-authoritative cache. Certificates are
 **archivable/revocable, never hard-deleted** in normal use (history must
 survive) — deletion is reserved for true mistakes.
 
-### Authority taxonomy (fixed enum)
+### Authority taxonomy (fixed enum) — reverted to 7 values after cross-checking both source docs
 
 ```ts
 certificateAuthorityEnum = ["flag","class","safety","radio","insurance","management","other"]
 ```
 
-Only 7 stable values (matches the archive's top-level folders), so a real enum.
+**Corrected back to the original 7** (superseding the 9-value version from
+the previous revision). Both official source documents were checked directly
+— `required in details.pdf` §6 ("Category (Flag / Class / Safety / Radio /
+Insurance / Management)") and `نظام إدارة أسطول.pdf`'s `certificate_categories`
+table (same 6 examples: Flag, Class, Safety, Radio, Insurance, Management) —
+and **neither lists Statutory, Lifeboat, or VDR/APT as categories**. Only the
+client's separate "CERTIFICATE REMINDER SYSTEM – MARINE LOGIC" note grouped
+those as their own sections, but that note is about *reminder timing*, not
+the certificate taxonomy the two authoritative specs both independently
+confirm. Resolution: **all of Statutory, Lifeboat/Rescue Boat, VDR/APT, and
+Battery/HRU items file under the existing 7 categories** —
+Statutory certificates (Load Line, IOPP, IAPP, ISPP, IBWM, IAFS, IHM,
+IMSBC/DG, Cargo Ship Safety Construction/Equipment/Radio) under **`flag`**
+(flag-administered, even when class surveys on the flag's behalf);
+Lifeboat/Rescue Boat servicing and VDR/APT under **`safety`**; radio
+equipment batteries/HRUs under **`radio`**. This doesn't lose any of the
+client's differentiated reminder timing — that's driven by `ruleKind` +
+`offsetDays` on each `certificate_types` row (see Reminder rule model
+below), which is independent of which authority bucket the type sits in.
+
+- **Dry Dock/Renewal** items remain cross-cutting, not a category — handled
+  by the existing `linkedToDryDock` / `customOffsetDays` override mechanism.
+
 Distinct from the `issuing_authorities` lookup table (e.g. "NIPPON KAIJI
 KYOKAI") described below — `authority` is the broad category, the issuer
 is the specific organization.
@@ -514,16 +539,119 @@ as `certificate_types` (see Revision note (5)):
   Settings CRUD adds more later, same as certificate types.
 - Managed from Settings (§7a), alongside `certificate_types`.
 
-### Reminder rule model (per certificate *type*, not a global tier)
+### Reminder rule model (per certificate *type*, not a global tier) — revised per client spec
 
 `reminderRuleKindEnum = ["none","expiry_offset","window"]`:
-- **`none`** — permanent (e.g. Carving & Marking); no reminder.
-- **`expiry_offset`** — reminder fires `offsetDays` before `expiryDate`. Real
-  offsets: **30d** (majority — annual safety/radio/insurance, interim/short-term
-  management) and **~180d** (renewals, dry dock, special/renewal survey).
+- **`none`** — permanent (e.g. Carving & Marking, permanent Flag certs); no
+  expiry reminder. Client spec: a yearly *review* reminder can optionally be
+  added for permanent items later — not built now (no stored field for it;
+  would be a `custom`-type Reminder, §12, not a certificate reminder rule).
+- **`expiry_offset`** — reminder fires `offsetDays` before `expiryDate`. Two
+  real offsets in use: **30d** (the client spec's default "1 month before
+  expiry," used everywhere unless stated otherwise) and **180d** ("6 months
+  before" — renewals, dry dock, special/renewal survey), applied via
+  `linkedToDryDock` or `customOffsetDays` (§ certificates schema below).
 - **`window`** — reminder fires at the editable `windowOpenDate`, for
-  class/statutory Annual/Intermediate/Periodical surveys (normally ±3 months of
-  the anniversary date; manually overridable).
+  Class/Statutory Annual/Intermediate/Periodical surveys and Management
+  Intermediate certs (normally ±3 months of the anniversary date; manually
+  overridable via `windowOpenDate`/`windowCloseDate`).
+
+**Full category breakdown (client-supplied "CERTIFICATE REMINDER SYSTEM –
+MARINE LOGIC" spec)** — each row becomes seed data for `certificate_types`
+(no schema change; the 3-kind model above already covers every case):
+
+| Category (`authority`) | Certificate / item | Rule |
+| --- | --- | --- |
+| Flag | Permanent | `none` |
+| Flag | Annual / Short Term / Interim / Custom Expiry | `expiry_offset` 30d |
+| Flag | 5 Years | `expiry_offset` 30d (renewal survey timing handled like Class/Statutory Renewal if the flag issues a 5-year cert with intermediate surveys — confirm if Flag 5-Year items need `window` sub-surveys too) |
+| Radio | Annual certificate | `expiry_offset` 30d |
+| Radio | EPIRB Battery / EPIRB HRU / SART Battery / VHF Portable Battery / AIS-SART Battery / GMDSS equipment certs | `expiry_offset` 30d, each its own seeded row (see Sub-item tracking below) |
+| Safety | Annual (Fire Extinguishers, CO2 System, SCBA/EEBD, Medical Oxygen, Immersion Suits, Fireman Outfit, Water Mist, Foam Applicator, OWS/15PPM, Gas Detector Calibration) | `expiry_offset` 30d, each its own seeded row |
+| Safety | Lifeboat / Rescue Boat Annual Service | `expiry_offset` 30d |
+| Safety | Lifeboat / Rescue Boat Load Test | `expiry_offset` 30d normally; **180d** if `linkedToDryDock` is set on the instance (same override the Class module already uses) |
+| Safety | Davit / Winch / Hook Service | `expiry_offset` 30d (grouped with Lifeboat in the client spec; not explicitly given its own interval — confirm if different from 30d) |
+| Management | SMC / MLC / ISSC / DOC — Interim or Short Term | `expiry_offset` 30d |
+| Management | SMC / MLC / ISSC / DOC — Annual | `expiry_offset` 30d |
+| Management | SMC / MLC / ISSC / DOC — Intermediate | `window` |
+| Management | SMC / MLC / ISSC / DOC — Renewal / Full Term | `expiry_offset` 180d |
+| Insurance | H&M / P&I / CLC / WRC / Bunker Convention / MLC Financial Security / BBC / Wreck Removal | `expiry_offset` 30d — **already the module's existing fixed rule** (§4 Insurance); no change needed, confirms compatibility |
+| Class | Annual Survey | `window` |
+| Class | Intermediate Survey | `window` |
+| Class | Renewal / Special Survey | `expiry_offset` 180d |
+| Class | Dry Dock / Bottom Survey | `expiry_offset` 180d via `linkedToDryDock` |
+| Flag | Annual / Periodical / Intermediate Survey (Cargo Ship Safety Construction/Equipment/Radio, Load Line, IOPP, IAPP, ISPP, IBWM, IAFS, IHM, IMSBC/DG) | `window` — **filed under `flag`, not a separate "statutory" authority** (see Authority taxonomy correction above; confirmed against both source docs) |
+| Flag | Renewal Survey (same statutory items above) | `expiry_offset` 180d |
+| Safety | VDR / APT Annual + VDR Battery + VDR Certificate/COC/APT Report | `expiry_offset` 30d, each its own seeded row |
+| Radio / Safety | Liferaft HRU, EEBD Battery (if applicable) | `expiry_offset` 30d, own seeded rows — same "Battery/HRU" 30d rule as the Radio sub-items above |
+| Class (mainly) | Class Renewal, Special Survey, Dry Dock, Bottom Survey, Tailshaft (if planned with dock), Major Load Test (if planned with dock) | `expiry_offset` 180d via `linkedToDryDock` / `customOffsetDays` — this is the client spec's "Dry Dock / Renewal Items" section, which is cross-cutting behavior, not a distinct certificate list |
+
+### "Certificate Type" (validity-type variants) — modeled as distinct seeded `certificate_types` rows, not a new field
+
+The client spec's per-category "Type Options" (e.g. Flag:
+Permanent/Annual/Short Term/Interim/5 Years/Custom Expiry; Management:
+Interim/Short Term/Annual/Intermediate/Renewal-Full Term) are **not** a new
+field on `certificates` — they change the *reminder rule itself* (e.g.
+Management "Intermediate" is `window`-based while "Renewal" is a 180-day
+offset, for the same underlying certificate name like SMC). Since
+`certificate_types` already ties exactly one `ruleKind` to one row, each
+validity variant becomes its **own seeded row**, disambiguated in `name` —
+e.g. `"SMC — Interim"`, `"SMC — Intermediate"`, `"SMC — Renewal/Full Term"`,
+all under `authority = "management"`, each with the correct rule. The
+Add/Edit Certificate form's "Certificate Type" dropdown (already grouped by
+authority) is where the user picks the right variant. **No schema change —
+richer seed data only.**
+
+### Sub-item tracking (EPIRB Battery, SART Battery, HRUs, etc.)
+
+Client spec asks to "track separately" a number of equipment sub-items
+(EPIRB Battery, EPIRB HRU, SART Battery, VHF Portable Battery, AIS-SART
+Battery, GMDSS equipment certificates, Liferaft HRU, EEBD Battery, VDR
+Battery). **Decision:** modeled as ordinary `certificate_types` rows (under
+`radio` or `safety` as appropriate) rather than a new sub-item table — each
+is already "a thing with an issue date, an expiry date, and a 30-day
+reminder," which is exactly what a certificate row is. No schema change;
+only seed data grows. Keeps one mental model (a vessel's compliance items
+are all rows in `certificates`) instead of a parallel "equipment items"
+concept.
+
+### Certificate status vocabulary — corrected to 3-state after cross-checking both source docs
+
+**Superseding the previous 5-state proposal (Valid/Due/Expired/Missing/
+Pending).** Both official source documents were checked directly for the
+Certificates module specifically: `required in details.pdf` §6 states
+"Status (Valid / Due Soon / Expired)" verbatim, and `نظام إدارة أسطول.pdf`'s
+Certificates Table section states the same 3-color rule explicitly
+("Status بالألوان: أخضر / أصفر / أحمر" — "Status by color: Green / Yellow /
+Red"). **Certificates use exactly 3 client-facing states, not 5** — this
+matches the engine's existing "Status → color mapping" (valid→Green,
+expiring/critical→Yellow, expired→Red, unknown/revoked→Gray as a considered
+addition) that was already correct before this revision round.
+
+"Missing" and "Pending" are real client-spec status words, but **they belong
+to the Monthly Executed Forms module, not Certificates** — confirmed in both
+documents: `required in details.pdf` §10 lists "Status (Submitted / Pending
+/ Overdue)" for Monthly Executed Forms, and the dashboard/notifications
+sections in both docs use "Missing monthly forms" / "Missing Monthly Form"
+exclusively in that context, never for certificates. §10 (Monthly Executed
+Forms) and §6 (Dashboard) already model this correctly — no change needed
+there. The client's separate "MARINE LOGIC" reminder-timing note appears to
+have carried those two words over when describing certificates generally;
+resolved in favor of the two authoritative, mutually-consistent source
+documents over the supplementary note where they conflict.
+
+**Final, confirmed mapping:** Valid ← `valid`; Due Soon ← `expiring` /
+`critical` (critical still visually distinguished within Due Soon, per the
+engine's existing Yellow-with-emphasis treatment); Expired ← `expired`;
+Revoked ← `revoked` (kept as its own gray label, not one of the 3 client
+colors, same reasoning as before — hiding a revoked certificate would be
+worse than a 4th color). `unknown` (blank expiry date) also renders Gray,
+labeled "Unknown," not "Missing."
+
+All other client-required fields (Vessel Name, Certificate Name, Authority,
+Issue Date, Expiry Date, Certificate Type, Window Open/Close Date, Reminder
+Rule, Remarks, Attachment) already exist on `certificates` /
+`certificate_types` / `certificate_attachments` below — confirmed, no gaps.
 
 ### Drizzle schema — `certificate_types` (seeded reference table)
 
@@ -598,6 +726,7 @@ as `certificate_types` (see Revision note (5)):
 | `certificateId` | `uuid` notNull | FK → `certificates.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | original filename |
 | `filePath` | `text` notNull | path under `data/attachments/` (§0.12) |
+| `uploadedBy` | `uuid` nullable | **added (Round 3, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth precedes Phase 5. This column was missing from `certificate_attachments` specifically while every other `*_attachments` table had it — an asymmetry, not an intentional exception |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 - Multiple PDFs per certificate allowed (original + service report, etc).
@@ -678,13 +807,18 @@ as `certificate_types` (see Revision note (5)):
 ### Seeding
 
 - Seed `certificate_types` from **CERTIFICATES_SPEC.md §4 (representative list
-  only)**, `isCustom = false`, via a seed step in the migration workflow
-  (§0.11 — full-archive transcription deferred; Settings CRUD adds more later).
+  only) plus the client's "CERTIFICATE REMINDER SYSTEM – MARINE LOGIC" spec
+  (new — see Reminder rule model above)**, `isCustom = false`, via a seed step
+  in the migration workflow (§0.11 — full-archive transcription deferred;
+  Settings CRUD adds more later). The client spec is now the primary source
+  for reminder-rule seed data (offsets, window vs. expiry_offset, validity
+  variants, sub-items); CERTIFICATES_SPEC.md remains the source for real
+  certificate *names* observed in the GLIMLIT archive where the two overlap.
 - Seed `issuing_authorities` (new) from the distinct issuer names in the
   GLIMLIT archive, `isCustom = false`, same seed step and same
   representative-not-exhaustive scope as `certificate_types`.
 
-### Decisions (all resolved — no open items)
+### Decisions — 10 resolved (Revision note — client MARINE LOGIC spec; items 8–10 verified directly against both official source PDFs)
 
 1. **Date format** — native Postgres `date` type for all validity dates
    (fleet-wide, §0.4); the shared `isoDateField` Zod helper still validates
@@ -699,6 +833,36 @@ as `certificate_types` (see Revision note (5)):
 7. **Issuing authority storage** *(new, Revision note (5))* — `issuing_authorities`
    lookup table, not free text; makes the docx's required "Issuing Authority"
    filter (§6) an exact-match filter instead of a fragile text search.
+
+**Items 8–10, resolved by directly checking both official source PDFs**
+(`required in details.pdf` and `نظام إدارة أسطول.pdf`) — supersedes the
+earlier MVP-default guesses, which turned out to be unnecessary once the
+primary sources were re-checked:
+
+8. **VDR/APT and Battery/HRU items file under `safety`/`radio`, and
+   Statutory items file under `flag`** — no new authority values at all
+   (reverted the earlier 9-value enum back to the original 7). Both source
+   docs independently list only Flag/Class/Safety/Radio/Insurance/Management
+   (+ `other`) as certificate categories; neither mentions Statutory,
+   Lifeboat, or VDR as distinct categories. See Authority taxonomy above.
+9. **"Missing" does not apply to Certificates at all.** Confirmed in both
+   docs: it's a Monthly Executed Forms / Dashboard concept ("Missing monthly
+   forms"), never used for certificate status in either source. No
+   `required_certificates` checklist table needed — that whole open question
+   was based on a status word that was never meant for this module.
+10. **"Pending" does not apply to Certificates either** — same finding:
+    `required in details.pdf` §10 defines "Status (Submitted / Pending /
+    Overdue)" for Monthly Executed Forms specifically, not Certificates.
+    Certificates keep the pre-existing `unknown` state, displayed as
+    "Unknown," not "Pending."
+
+Certificates end up back at the **3-state client status** (Valid / Due Soon
+/ Expired) that was already correctly implemented before this whole revision
+round started — see "Certificate status vocabulary" above for the full,
+now-final mapping. The category-level reminder-timing detail from the
+client's MARINE LOGIC note (30d/180d/window per type) is still fully
+incorporated; only the status-label and authority-taxonomy portions of that
+note were superseded by the two authoritative specs.
 
 ---
 
@@ -717,14 +881,15 @@ original 2-state design.
 | `title` | `text` notNull | short summary |
 | `description` | `text` nullable | detail |
 | `category` | `text` nullable | **new** — free text (the requirements doc lists "Category" as a column without a fixed value set; not turned into an enum since no closed list was given) |
-| `source` | `text` enum notNull | `deficiencySourceEnum` |
+| `sourceId` | `uuid` nullable | **revised, client decision (System Lists Management)** — FK → new `deficiency_sources` table, replacing the fixed `deficiencySourceEnum` below. Seeded with the same 5 starting values, but now editable from Settings without a migration, matching the `certificate_types`/`issuing_authorities` pattern already used elsewhere. |
+| `severityId` | `uuid` nullable | **new, client decision (System Lists Management)** — FK → new `deficiency_severity_levels` table. No source doc asked for a severity field on Deficiencies; added at your request, modeled the same way as the other seeded/extensible lists. |
 | `status` | `text` enum notNull default `open` | `deficiencyStatusEnum` — **now 4 states** |
 | `reference` | `text` nullable | report/inspection ref |
 | `identifiedDate` | `date` nullable | |
 | `dueDate` | `date` nullable | target closure date (feeds the alerts engine) |
 | `closedDate` | `date` nullable | set when closed |
 | `correctiveAction` | `text` nullable | **new** |
-| `responsiblePerson` | `text` nullable | **new** — free text for now; revisit as a FK to `crew_members` or the future `users` table once Phase 3 auth exists, rather than inventing that link now |
+| `responsiblePerson` | `uuid` nullable | **new, revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`. Originally planned as free text pending Phase 3 auth, but since Auth now precedes Phase 5 entirely (see Suggested build order below), this is a real FK from its first migration, not a deferred cleanup |
 | `notes` | `text` nullable | |
 | `createdAt` / `updatedAt` | `timestamptz` notNull | |
 
@@ -740,11 +905,20 @@ every other module, per the file-attachments decision above.
 | `deficiencyId` | `uuid` notNull | FK → `deficiencies.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | |
 | `filePath` | `text` notNull | |
-| `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 - `deficiencySourceEnum = ["psc", "class", "flag", "internal", "other"] as const`
-  (PSC inspection, class audit, flag audit, internal, other).
+  (PSC inspection, class audit, flag audit, internal, other) — **this fixed
+  enum is now the seed data for the `deficiency_sources` table above, not
+  the live constraint.** Kept documented here as the starting values;
+  `sourceId` is the actual column.
+- `deficiency_severity_levels` (new table): `id`, `name`, `sortOrder` int
+  (severity needs an inherent ranking, unlike the other name-only lists —
+  `sortOrder` drives worst-first display, similar in spirit to
+  `compareBySeverity` for certificates), `isCustom` bool, seeded with 4
+  representative levels (exact labels TBD at Settings-build time, not
+  specified by either source doc).
 - `deficiencyStatusEnum = ["open", "in_progress", "closed", "monitoring"] as const`
   — **changed from the original 2-state (`open`/`closed`) model.** `open` and
   `in_progress` both count as "not yet resolved" for alerts purposes (see
@@ -761,8 +935,10 @@ every other module, per the file-attachments decision above.
 
 ### Zod — `validation.ts`
 
-- Create: `vesselId` uuid, `title` 1–200, `source` enum, `status` enum default
-  `open`, `deficiencyNumber`/`category`/`correctiveAction`/`responsiblePerson`
+- Create: `vesselId` uuid, `title` 1–200, `sourceId` optional uuid|null
+  (**revised from `source` enum**), `severityId` optional uuid|null
+  (**new**), `status` enum default `open`,
+  `deficiencyNumber`/`category`/`correctiveAction`/`responsiblePerson`
   optional-trimmed, dates optional ISO,
   `reference`/`description`/`notes` optional-trimmed.
 - Rule: `status === "closed"` ⇒ `closedDate` defaults to today if omitted.
@@ -818,7 +994,7 @@ expiry engine).
 | `id` | `uuid` PK | `.defaultRandom()` |
 | `firstName` | `text` notNull | |
 | `lastName` | `text` notNull | |
-| `rank` | `text` nullable | e.g. Master, Chief Engineer |
+| `categoryId` | `uuid` nullable | **revised from free-text `rank`, client decision (System Lists Management)** — FK → new `crew_categories` table (e.g. Master, Chief Engineer, Second Officer), seeded/user-extensible from Settings like `certificate_types`, rather than a free-text field. |
 | `nationality` | `text` nullable | |
 | `dateOfBirth` | `date` nullable | |
 | `vesselId` | `uuid` nullable | FK → `vessels.id`, `ON DELETE RESTRICT` (current assignment; unassign before deleting a vessel) |
@@ -835,6 +1011,7 @@ expiry engine).
 | `name` | `text` notNull | e.g. STCW II/2, ENG1 Medical, Passport |
 | `documentNumber` | `text` nullable | |
 | `issuingAuthority` | `text` nullable | |
+| `endorsementTypeId` | `uuid` nullable | **new, client decision (System Lists Management)** — FK → new `endorsement_types` table (e.g. STCW endorsement categories). No source doc asked for this; added at your request, same seeded/extensible pattern as the other managed lists. Nullable since not every crew certificate is an endorsement-bearing document (e.g. a passport has none). |
 | `issueDate` | `date` nullable | |
 | `expiryDate` | `date` nullable | |
 | `cachedStatus` | `text` nullable | non-authoritative engine cache |
@@ -846,9 +1023,40 @@ expiry engine).
   fixed default rule `{ kind: "expiry_offset", offsetDays: 30 }` (per-type
   refinement possible later). `cachedStatus` caches a `ComplianceStatus`.
 
+### Drizzle schema — `crew_certificate_attachments` (new — closes a gap, see SECURITY_PLAN.md §6)
+
+| column | type | notes |
+| --- | --- | --- |
+| `id` | `uuid` PK | `.defaultRandom()` |
+| `crewCertificateId` | `uuid` notNull | FK → `crew_certificates.id`, `ON DELETE CASCADE` (owned child, §0.9) |
+| `fileName` | `text` notNull | original filename |
+| `filePath` | `text` notNull | path under `data/attachments/` (§0.12) |
+| `uploadedBy` | `uuid` nullable | FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth precedes Phase 5 — same pattern as every other `*_attachments` table |
+| `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
+
+- **Added this session** — every other document-bearing module (Certificates,
+  Deficiencies, Insurance, ISM Templates, Monthly Executed Forms, Drawings,
+  Vessel Particulars) already has a dedicated attachments table; crew
+  certificates (which include passports, visas, and other especially
+  sensitive personal documents) did not, and their scanned-document upload
+  had no storage model at all. Same pattern as `certificate_attachments`:
+  multiple files per certificate allowed (e.g. a passport's photo page plus
+  a visa page), stored locally under `data/attachments/`, DB stores the
+  relative path. Covered by `SECURITY_PLAN.md` §6's file-upload security
+  procedure (magic-byte content validation, UUID-generated storage
+  filenames — never the user-supplied original — and served only through
+  an authenticated route, not a static mount) exactly like the other
+  `*_attachments` tables; §6's wording already said "every module's
+  attachment table" so no change was needed there, only the missing table.
+  In scope for the GDPR `scrubCrewMemberPii` operation (`MASTER_PLAN.md`
+  Phase 4) the same way `crew_certificates`' text fields already are —
+  scrubbing a crew member's PII should also remove/void their stored
+  passport scan, not just the row's text fields.
+
 ### Zod — `validation.ts`
 
-- `crewMemberCreate/Update`: names required, `rank`/`nationality`/`notes`
+- `crewMemberCreate/Update`: names required, `categoryId` optional
+  uuid|null (**revised from free-text `rank`**), `nationality`/`notes`
   optional-trimmed, `dateOfBirth`/`vesselId` optional (vesselId uuid|null),
   `status` enum.
 - `crewCertificateCreate/Update`: `crewMemberId` uuid, `name` required, dates
@@ -862,6 +1070,12 @@ expiry engine).
 - Actions for member CRUD + crew-certificate CRUD (nested under a member).
 - API: `/api/crew` + `/api/crew/[id]`; crew certs **nested** (decided) as
   `/api/crew/[id]/certificates` + `.../certificates/[certId]`.
+- **Attachments** (new, this session): `uploadCrewCertificateAttachmentAction`
+  (multipart) and `deleteCrewCertificateAttachmentAction`, same nested
+  multi-file sub-resource shape as every other module (10MB,
+  `application/pdf`/`image/jpeg`/`image/png` allow-list, against the
+  `crew_certificate_attachments` table above), `ON DELETE CASCADE` — not a
+  single-file replace.
 
 ### Pages / UI
 
@@ -869,6 +1083,10 @@ expiry engine).
   their certificates with live status) / `new` / `[id]/edit`.
 - Crew certificate add/edit is **inline** on the member detail page (modal or
   sub-form), not separate top-level routes (decided).
+- Each crew certificate row (Passport, STCW, ENG1 Medical, etc.) gets an
+  **Attachments** sub-section, same visual pattern as Certificates'
+  detail-page attachments list (new, this session — was previously
+  undocumented for Crew).
 - `src/components/crew-form.tsx`, `src/components/crew-certificate-form.tsx`.
 
 ### Decisions
@@ -924,7 +1142,7 @@ the file-attachments decision above (policy documents, endorsements, etc.).
 | `insurancePolicyId` | `uuid` notNull | FK → `insurance_policies.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | |
 | `filePath` | `text` notNull | |
-| `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 ### Zod — `validation.ts`
@@ -1087,7 +1305,7 @@ specifies the summary cards precisely — this supersedes the earlier generic
   | column | type | notes |
   | --- | --- | --- |
   | `id` | `uuid` PK | `.defaultRandom()` |
-  | `userId` | `uuid` nullable | **no FK constraint initially** (a FK requires its target table to exist at migration time, and `users` doesn't exist until Phase 3 — a nullable column doesn't change that); early modules log activity under a null/system user. Phase 3 adds `.references(() => users.id, { onDelete: "set null" })` via a follow-up migration once `users` exists, per §0.9's revised log-userId category. |
+  | `userId` | `uuid` nullable | **revised (Round 3, after Cursor's independent review)** — real `.references(() => users.id, { onDelete: "set null" })` FK from this table's first migration, per §0.9's log-userId category. The earlier version of this row assumed `activity_logs` would be created before `users` existed (Auth last) and deferred the FK to a follow-up migration; since Auth is now step 0 — built before every Phase 5 module, including this table — `users` already exists whenever `activity_logs` is created, so there's no deferred-FK step needed. Nullable so activity can still be logged under a null/system user where relevant. |
   | `actionType` | `text` notNull | e.g. `"created"`, `"updated"`, `"uploaded"`, `"closed"` |
   | `moduleName` | `text` notNull | which module (`"certificate"`, `"deficiency"`, etc.) |
   | `recordId` | `uuid` notNull | the affected row's id |
@@ -1095,12 +1313,46 @@ specifies the summary cards precisely — this supersedes the earlier generic
   | `createdAt` | `timestamptz` notNull | `.defaultNow()` |
 
   Written to by each module's controller on write. Kept separate from the
-  GDPR access log in `MASTER_PLAN.md` Phase 4 — that log is about *who
-  accessed what personal data* (a compliance requirement), this one is
-  about *what changed* (a product feature); they serve different purposes
-  even though both are append-only logs, and conflating them would make the
-  GDPR log noisier than it needs to be.
+  GDPR access log below — that log is about *who accessed what personal
+  data* (a compliance requirement), this one is about *what changed* (a
+  product feature); they serve different purposes even though both are
+  append-only logs, and conflating them would make the GDPR log noisier
+  than it needs to be.
 - `export const dynamic = "force-dynamic"` (live data).
+
+### Drizzle schema — `access_logs` (GDPR access log — new, this session)
+
+**Gap closed:** `MASTER_PLAN.md` Phase 4 and `SECURITY_PLAN.md` §10 both
+already asserted this log as "planned," including citing it in the
+incident-response procedure (§9's "using the activity/access logs to scope
+it") — but no document actually defined a schema, an owning build task, or
+which reads write to it. It existed only as a name. This closes that gap.
+
+| column | type | notes |
+| --- | --- | --- |
+| `id` | `uuid` PK | `.defaultRandom()` |
+| `userId` | `uuid` nullable | FK → `users.id`, `ON DELETE SET NULL` — same log-userId pattern as `activity_logs`, real FK from first migration (Auth is step 0) |
+| `moduleName` | `text` notNull | scoped to personal-data-bearing modules only — v1 means `"crew"` (see scope note below) |
+| `recordId` | `uuid` notNull | the `crew_members.id` or `crew_certificates.id` accessed |
+| `accessType` | `text` notNull | `"view"` (crew member/certificate detail page), `"download_attachment"` (a `crew_certificate_attachments` file, e.g. a passport scan), or `"export"` (Crew data leaving the app via §15's export utility) |
+| `accessedAt` | `timestamptz` notNull | `.defaultNow()` |
+
+- **Scope, deliberately narrow (data minimization, same principle already
+  applied to `scrubCrewMemberPii`'s table scope):** this log only fires for
+  reads of `crew_members`/`crew_certificates`/`crew_certificate_attachments`
+  — the only tables holding personal data as defined by the GDPR scope in
+  `MASTER_PLAN.md` Phase 4. It is **not** a general page-view log for every
+  module; `activity_logs` already covers writes everywhere, and logging
+  every read of non-personal data (a certificate, a drawing) would just add
+  noise without a compliance purpose.
+- **Not written on the Crew list page** — the list view shows only names
+  and status, not the personal-data fields (DOB, nationality, document
+  numbers, passport scans) this log exists to track; only the member/
+  certificate **detail** page, an attachment **download**, and an
+  **export** count as an access worth logging.
+- **Build ownership:** part of the Crew module's task (`MASTER_IMPLEMENTATION_PLAN.md`
+  Task 5.3/Phase 4), same as `scrubCrewMemberPii` — not a separate later
+  task, since it needs the same Crew read paths.
 
 ### Decisions
 
@@ -1154,6 +1406,79 @@ specifies the summary cards precisely — this supersedes the earlier generic
   with just `criticalDays`, grows without schema changes) + the
   certificate-types and issuing-authorities tables now; user/role
   management lands once Phase 3/6 exist.
+- **Settings sub-page structure — confirmed against both source docs**
+  (§O "Users / Settings Page" in نظام إدارة أسطول.pdf; §16/§3 in required
+  in details.pdf). Settings is broader than the single-page key-value form
+  above suggests; it's a nav group with five sub-pages:
+  - **General** — the `criticalDays`/reminder-offset key-value form (30d
+    standard / 180d dry-dock-linked, per §1's reminder rule model) plus a
+    read-only **Status Colors** reference panel (the fixed 3-color
+    Valid/Due Soon/Expired legend, not user-editable — colors are a design
+    constant, not a setting).
+  - **Users & Roles** — the Users table (name, username, role, status,
+    last login, actions) and the 5-role reference legend, per the
+    `users`/`roles` schema in §7a above. Full CRUD and the role→permission
+    mapping remain deferred to Phase 6 as already noted. The "Add User"
+    action (client decision, not in either source doc — neither doc
+    specifies an add/invite mechanism, only the table's `Actions` column)
+    is restricted to the **Admin** role; the other four roles get no
+    access to this page.
+  - The per-user row actions behind the `Actions` column's kebab menu are
+    also a client decision, not specified by either source doc (both only
+    say "Actions" with no enumerated list): **Edit User**, **Change
+    Password** (admin sets a new password directly, effective
+    immediately — the only password action; no separate email-link reset
+    flow), **View Activity Log** (reads the `activity_logs` table), and
+    **Deactivate/Activate User**. Of these, **Deactivate/Activate is
+    explicitly Admin-only** — even if a future role gets view access to
+    this page, that action stays locked to Admin. Password complexity
+    rules for Change Password are not yet defined by either source doc.
+  - **Company Profile** — company name, registration no., address,
+    contact email/phone, timezone, date format, and the company logo
+    (shown on the login page and top bar per both docs' layout sections).
+    Not previously modeled as its own settings row; add a
+    `company_profile` key (or dedicated single-row table) alongside the
+    existing key-value settings.
+  - **Form Requirements** — per-module toggles for which fields are
+    mandatory (require attachment / remarks / expiry date / approver)
+    before a record saves. Illustrative only in the mockup; real toggles
+    land once each module's schema (Phase 4+) exists to attach them to.
+  - **Reports** — the existing Monthly Report page (already under
+    Settings per an earlier revision this session).
+  - **System Lists** (new, 6th sub-page — client decision, ported from
+    FleetOS v1.0's "System Lists Management" screen, not in either source
+    doc) — a single consolidated hub for every seeded/user-extensible
+    reference list in the app, replacing what would otherwise be
+    scattered one-off CRUD pages. One card per list, each showing a count
+    and opening the same tabbed "Manage System Lists" modal (left rail of
+    list names, right pane with an "Add new item" input + Edit/Remove per
+    row, "Reset to Default"). Consolidates:
+    - `certificate_types` (§1) and `issuing_authorities` (§1) — already
+      planned as Settings-managed.
+    - `ism_template_categories` (§9) and `drawing_categories` (§11) —
+      already planned as Settings-managed.
+    - `vessel_types` and `flag_states` (**new tables**, client decision)
+      — the real, already-shipped `vessels` table currently has
+      free-text `vesselType`/`flagState` columns (confirmed via
+      `src/db/schema.ts`); converting these to `vesselTypeId`/
+      `flagStateId` FKs is a schema migration on existing shipped data,
+      not a fresh table, so existing rows need a backfill/mapping step
+      when this lands.
+    - `deficiency_sources` (**converted from the fixed `deficiencySourceEnum`**,
+      §2) and `deficiency_severity_levels` (**new table**, §2 — no source
+      doc has a severity field on Deficiencies; added at your request).
+    - `crew_categories` (**converted from free-text `rank`**, §3) and
+      `endorsement_types` (**new table**, §3 — no source doc has this
+      field either; added at your request, nullable on `crew_certificates`
+      since not every crew document is an endorsement-bearing one).
+    - **PSC Authorities / PSC Inspection Types from v1 are deliberately
+      excluded** — PSC Inspections (§7b) remains a stub, since neither
+      source doc mentions it; these two lists have nothing to attach to
+      until PSC is promoted out of stub status.
+  None of this changes the underlying key-value storage model for
+  General's settings — it's a UI grouping decision, and Company Profile
+  plus the 6 new/converted list tables above are the only pieces needing
+  new storage.
 - **Note:** because the engine depends on `criticalDays`, the engine ships with a
   constant first and reads through a `getCriticalDays()` seam from day one, so the
   Settings-backed override lands later with no rework — this seam is
@@ -1162,10 +1487,21 @@ specifies the summary cards precisely — this supersedes the earlier generic
 
 ### 7b. PSC inspections (still a stub — not in "required in details.docx")
 
+- **Nav placement (decided this session, after Cursor's independent review
+  found no group actually had a PSC slot):** PSC's sidebar entry sits
+  **inside the COMPLIANCE group**, alongside Certificates and Deficiencies —
+  not a 6th top-level group. `DESIGN_HANDOFF.md`'s "exactly 5 groups, always
+  rendered in full" constraint stays intact; PSC is an item within
+  COMPLIANCE, matching the fact that PSC deficiencies already flow through
+  the same `deficiencies` table (§7 above, item 7) rather than being a
+  structurally separate concern.
 - Stub only: sidebar entry + placeholder page. Future `psc_inspections` table
   (vessel, port, date, authority, result, detained bool) with deficiencies
   linkable via a `pscInspectionId` FK on `deficiencies`. Not built now; noted so
-  the deficiency `source = "psc"` can later link to a real inspection record.
+  a deficiency whose `sourceId` points at the seeded "psc" row in
+  `deficiency_sources` (**terminology updated** — was the fixed
+  `source = "psc"` enum value before the System Lists Management
+  conversion above) can later link to a real inspection record.
   Unlike Manuals/ISM Templates/Monthly Executed Forms/Drawings (below), this
   one wasn't in the new requirements doc either, so it stays a stub rather
   than getting promoted to a full module.
@@ -1275,7 +1611,7 @@ redeploy.
 | `ismTemplateId` | `uuid` notNull | FK → `ism_templates.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | |
 | `filePath` | `text` notNull | |
-| `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 ### Zod / Server actions / API
@@ -1344,7 +1680,7 @@ month's execution record.
 | `year` | `integer` notNull | |
 | `required` | `boolean` notNull default `true` | copied from `monthly_form_requirements.activeStatus` at generation time (a historical snapshot — later toggling the requirement off shouldn't rewrite past months) |
 | `uploadedAt` | `timestamptz` nullable | |
-| `uploadedBy` | `text` nullable | free text for now — becomes a FK to the `users` table once Phase 3 auth exists |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely |
 | `status` | `text` enum notNull default `pending` | `["submitted","pending"]` — **`"overdue"` removed as a stored value** (see below); it's a derived display state, not a real status |
 | `remarks` | `text` nullable | |
 | `createdAt` / `updatedAt` | `timestamptz` notNull | |
@@ -1362,7 +1698,7 @@ month's execution record.
 | `executedFormId` | `uuid` notNull | FK → `monthly_executed_forms.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | |
 | `filePath` | `text` notNull | |
-| `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 ### "Generate Monthly Checklist automatically" — resolved mechanism
@@ -1475,7 +1811,7 @@ models this as a reference table, not a code enum — promoted to match.
 | `drawingId` | `uuid` notNull | FK → `drawings.id`, `ON DELETE CASCADE` (owned child, §0.9) |
 | `fileName` | `text` notNull | |
 | `filePath` | `text` notNull | |
-| `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+| `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
 | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 ### Zod / Server actions / API
@@ -1588,11 +1924,16 @@ history rather than everything being recomputed live on every page load.
   on-load alerts sweep does, for newly-crossed thresholds) — exact
   generation triggers are an implementation detail to work out when this
   phase is built, not a schema question.
-- **Explicit dependency:** unlike every other module in this plan,
-  Notifications cannot be built before `MASTER_PLAN.md` Phase 3
-  (authentication) exists, since `userId` is a real FK, not a placeholder
-  text field like the `uploadedBy` columns elsewhere. Build order (below)
-  places it accordingly.
+- **Explicit dependency (revised, Round 3 — after Cursor's independent
+  review):** `userId` is a real FK to `users.id`, not a placeholder. This
+  used to be called out as unique to Notifications, back when Auth was
+  scheduled last (old step 14) and every `uploadedBy`-style column was
+  deferred free text. Now that Auth is step 0 — built before every module,
+  not just this one — every module in this plan depends on it the same
+  way; Notifications isn't a special case anymore, just a module like any
+  other that happens to reference `users.id` directly rather than through
+  an attachments-style table. Build order (below) reflects Auth preceding
+  it, same as everything else.
 
 ### Zod / Server actions / API
 
@@ -1605,6 +1946,107 @@ history rather than everything being recomputed live on every page load.
 - Bell icon + dropdown in the top bar (per both source docs), not a
   full-page list — though a `/dashboard/notifications` page for full
   history is reasonable to add alongside it.
+
+---
+
+## 12b. Email digest — outbound compliance alerts (new, this session, after Cursor's independent review)
+
+Neither source doc mentions email at all — this is a new feature request
+(Eng.MHD, this session), scoped after weighing it against Gmail-SMTP (ruled
+out: automated SMTP is capped at 100 recipients/day regardless of account
+type, and Google throttles/suspends accounts that look like bulk/automated
+senders — unworkable for an unattended VPS app with no one available to
+clear a "verify it's you" challenge) and against building a second alerting
+engine (ruled out: this is a delivery channel on top of the existing
+signal, not a new source of truth).
+
+**Sequencing decision (Eng.MHD, this session):** ships as a real v1 task —
+`MASTER_IMPLEMENTATION_PLAN.md` Task 5.5 — sequenced *after* Alerts (build
+order step 11) and Notifications both exist, not parallel Phase 5 scope.
+Cursor's review reasoning: until the in-app Alerts feed and Notifications
+bell are real and trusted, email just amplifies unfinished signal quality
+(noise, wrong thresholds) rather than adding new value.
+
+- **No second severity engine.** Email reuses `getAlerts()` (§5) as its only
+  signal source — same `AlertItem` shape, same `criticalDays` resolution,
+  same worst-first sort. There is no independent "should this email fire"
+  logic to keep in sync with the in-app Alerts page.
+- **Digest only, v1** — one scheduled email per day (company/server
+  timezone, or UTC if no company timezone exists yet — document whichever
+  is chosen), not instant-per-alert. A handful of Admins receiving an
+  instant email every time one item ticks into Critical trains people to
+  ignore the inbox; a daily digest is one scannable brief. Instant delivery
+  for `expired` certificates / overdue-and-open deficiencies specifically
+  is a plausible v2 addition if a digest proves too slow in practice — not
+  built now.
+- **Recipients: derived from role, not free text.** All users with
+  `users.role = 'Admin'` receive the digest — no separate "email recipient
+  list" field to fall out of sync with real staffing.
+  > **Clarified (Round 5, after Cursor's independent review flagged this
+  > as a possible blocker):** this does **not** depend on Phase 6's blocked
+  > 5-role × 3-tier permission mapping. `users.role` is a real column
+  > populated from Phase 3 onward — every user gets a role assigned when
+  > their account is created via Settings > Users & Roles (§7a, which only
+  > needs Auth, not the full RBAC enforcement layer). Phase 6 decides what
+  > each role is *permitted to do*; it has nothing to do with whether the
+  > role *label* exists on the row, which it does from day one. A simple
+  > `WHERE role = 'Admin'` query works before Phase 6 is built.
+  Expanding to other roles (e.g. Management User) is a Phase 6-adjacent
+  decision, not v1 scope.
+- **Settings surface, v1: on/off only.** A single toggle in Settings >
+  General (or a new small card), backed by the `settings` key-value table's
+  `emailDigestEnabled` key (`"true"`/`"false"`, read via a typed accessor
+  matching the existing `getCriticalDays()` pattern), enables/disables the
+  digest company-wide. Frequency, send time, per-alert-kind toggles, and
+  custom recipient lists are explicitly **not** v1 Settings fields —
+  hardcoded (daily, all kinds, Admin role) to keep the feature small and
+  reviewable.
+- **Empty digest: skip the send, don't email "all clear."** If
+  `getAlerts()` returns nothing actionable for a recipient that day, no
+  email goes out — the point is compliance risk, not a daily check-in.
+  This also simplifies the idempotency table: an `email_deliveries` row
+  only ever means "a real digest was sent," never "we checked and there
+  was nothing."
+- **Idempotency:** one digest per (recipient, calendar date). A lightweight
+  `email_deliveries` table exists specifically so a cron re-run or
+  redeploy doesn't double-send:
+
+  | column | type | notes |
+  | --- | --- | --- |
+  | `id` | `uuid` PK | `.defaultRandom()` |
+  | `recipientUserId` | `uuid` nullable | FK → `users.id`, `ON DELETE SET NULL` (log-userId category, §0.9) |
+  | `digestDate` | `date` notNull | the calendar date this digest covers |
+  | `sentAt` | `timestamptz` notNull | `.defaultNow()` |
+
+  Unique constraint on `(recipientUserId, digestDate)` — the send job
+  checks for an existing row before sending, not just before scheduling.
+- **Provider:** a transactional email service (Resend or Postmark — either
+  is a reasonable pick for this deployment model; Amazon SES's cost
+  advantage doesn't matter at this volume and its sandbox/IAM setup is
+  extra ops weight per customer VPS). Left as an Eng.MHD choice at Phase 7
+  provisioning time, same category as VPS/DNS decisions — not decided in
+  this document. **Never** a personal Gmail account (see above).
+- **Content, kept deliberately light:** item name, vessel name, current
+  status, and a link back into the app. The link requires an existing
+  session login — **no long-lived magic tokens embedded in the email URL**
+  for v1. No attachments, ever. No crew personal-identifier fields in the
+  email body where the alert can be framed at the vessel/certificate level
+  instead. Template variables (vessel name, certificate name, etc.) are
+  escaped — plain-text/multipart email, not raw HTML interpolation, to
+  avoid template-injection-style bugs in something a compliance officer
+  might paste into another tool.
+- **GDPR/security notes (Phase 4-adjacent, feeds into that phase's
+  artifacts):** the email provider is a data processor/subprocessor —
+  needs a DPA and a line in the record-of-processing-activities document
+  (Phase 4). Sending a digest that names a vessel/certificate is closer to
+  a GDPR "disclosure" event than a routine `activity_logs` "row updated"
+  entry — log "digest sent to user X, date Y" server-side (reuses the
+  `email_deliveries` table above; no separate log needed). Scrub-PII /
+  user erasure can't retract mail already delivered to an inbox — this is
+  a real, permanent limit, documented rather than solved.
+- **Explicit non-goals for v1:** instant delivery, arbitrary/free-text
+  recipient lists, rich HTML templates, per-alert-kind toggles, SMS or any
+  other channel.
 
 ---
 
@@ -1669,7 +2111,7 @@ now live in a new child table, not as columns on `vessels` directly.
   | `particularsId` | `uuid` notNull | FK → `vessel_particulars.id`, `ON DELETE CASCADE` (owned child, §0.9) |
   | `fileName` | `text` notNull | |
   | `filePath` | `text` notNull | |
-  | `uploadedBy` | `text` nullable | free text for now, FK to `users` later |
+  | `uploadedBy` | `uuid` nullable | **revised (Round 2, after Cursor's independent review)** — FK → `users.id`, `ON DELETE SET NULL`, real from the first migration since Auth (Phase 3) precedes Phase 5 entirely; not free text pending a later cleanup |
   | `uploadedAt` | `timestamptz` notNull | `.defaultNow()` |
 
 ### Zod / Server actions / API
@@ -1701,55 +2143,290 @@ now live in a new child table, not as columns on `vessels` directly.
   current particulars record — not a separate CRUD module, just a
   different presentation (e.g. a wide table for comparing vessels).
 
+### Vessel Profile "Notes" tab — new, previously unmodeled gap found on design audit
+
+Both source docs list **10 tabs** on the Vessel Profile page (§5 in
+"required in details.docx"; §E in "نظام إدارة أسطول.pdf", which enumerates
+them explicitly: General Info, Certificates, Manuals, ISM Forms, Executed
+Forms, Drawings, Particulars, Insurance, Deficiencies, **Notes**). Every
+tab except Notes already has a home elsewhere in this plan (Certificates
+§1, Insurance §4, Manuals §8, ISM Templates/Forms §9, Monthly Executed
+Forms §10, Drawings §11, Particulars §13, Deficiencies §2) — Notes was
+never modeled, in the schema or anywhere else in this document, until
+this pass.
+
+- **Neither source doc elaborates on Notes beyond the tab name** — no
+  fields, no structure. Proposed (not sourced from either doc, needs
+  confirmation like other open items): a simple `vessel_notes` table
+  (`id`, `vesselId` FK, `authorId` **uuid FK → `users.id`, `ON DELETE
+  SET NULL` (log-type userId column, same category as `uploadedBy`/
+  `activity_logs.userId` per §0.9), real from the first migration** since
+  Auth (Phase 3) precedes
+  Phase 5 entirely (revised Round 2, after Cursor's independent review —
+  previously specified as free text pending auth per the old
+  `uploadedBy`-style convention), `body` text, `createdAt`) — a running log
+  of dated free-text entries per vessel, not a single freeform field, so
+  history isn't lost when someone adds a new note.
+  This mirrors the `activity_logs` append-only pattern already used
+  elsewhere rather than inventing a new shape.
+- **Pages/UI**: the Notes tab on Vessel Profile lists entries newest-first
+  (author, timestamp, body) with an "Add Note" action; no separate
+  sidebar entry — same treatment as the other in-tab-only sections
+  (General Info, Insurance, Deficiencies) that don't get their own
+  top-level nav item.
+
+---
+
+## 14. Internationalization (English/Arabic) & Theming (light/dark) — new, client requirement, not in either source doc
+
+Neither source doc specifies this (both are single-language documents used
+as *content* sources, not as a bilingual-UI spec) — this is a fresh
+requirement from you, applying across the whole app.
+
+### 14a. Language (English / Arabic)
+
+- **Scope**: every screen, not just a subset — nav labels, page headers,
+  table columns, form labels, buttons, status pill text, empty states,
+  toasts/errors. Certificate/vessel/company *data* (names typed in by
+  users) is not auto-translated — only the app's own UI strings are.
+  **Vessel names specifically stay in English/Latin script in both
+  locales** (client correction this session) — they're user-entered data
+  that matches the vessel's actual registration/IMO documents, not UI
+  copy, so the Arabic UI must not transliterate or translate them. Same
+  principle extends to other identifier-like user data (policy numbers,
+  certificate numbers, crew names as entered) — rendered left-to-right
+  inline even inside an RTL layout (`direction: ltr` on that cell/field,
+  isolated with `unicode-bidi: isolate` so it doesn't reorder against
+  surrounding Arabic text), not reformatted or translated.
+- **Library / routing model (revised — see note below)**: message catalogs
+  as `messages/en.json` / `messages/ar.json`. Routing is **cookie-based,
+  single path** — no `/en/...` / `/ar/...` URL prefix. A cookie set by the
+  toggle (§14a "Persistence" below) is read server-side on each request so
+  server components/server actions still render the right language without
+  a hydration mismatch; this is not a client-side-only swap, it's just not
+  reflected in the URL path.
+  > **Revision note (this session, after Cursor's independent review):**
+  > this section originally specified `next-intl`'s path-based routing
+  > (`/en/...`/`/ar/...`), but `DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 3
+  > was actually built cookie-based and single-path. Asked Eng.MHD which is
+  > the source of truth; decision: **keep the cookie-based model as built**,
+  > revise this section to match rather than rebuild Task 3. This also means
+  > Task 8's intercepting routes and the 12-module rollout in Task 10 don't
+  > need a locale path segment.
+- **RTL**: Arabic renders right-to-left. `<html dir="rtl" lang="ar">` set
+  at the root layout based on active locale. Tailwind's logical-property
+  utilities (`ps-*`/`pe-*`/`ms-*`/`me-*` instead of `pl-*`/`pr-*`/`ml-*`/
+  `mr-*`) are used throughout so spacing/alignment flips automatically
+  with `dir`, rather than hand-authoring a separate RTL stylesheet. The
+  sidebar nav mirrors to the right edge of the viewport in RTL (see the
+  Dashboard RTL mockup); icons that imply direction (chevrons,
+  back-arrows) flip, icons that don't (status/module icons) stay as-is.
+- **Font**: Arabic needs a font with real Arabic glyph support — Inter
+  (current UI font) doesn't cover Arabic. Add a paired Arabic web font
+  (e.g. IBM Plex Sans Arabic or Noto Sans Arabic) selected per-locale
+  alongside Inter for Latin text.
+- **Toggle placement & default (your decision this session)**: a top-bar
+  icon toggle, always visible (not buried in Settings, though Settings >
+  General can also surface the same control as a secondary path — see
+  §14c). **Default locale is English** for a new/first-time user; Arabic
+  is opt-in via the toggle.
+- **Persistence**: signed-in users get their locale saved on their `users`
+  row (a `preferredLocale` column) so it follows them across devices;
+  before login (or if not yet persisted), a cookie set by the toggle
+  (read server-side per request, no URL path involvement) drives the
+  active locale, matching the "English default" rule above rather than
+  auto-detecting the browser's `Accept-Language`.
+- **Numbers & dates**: IMO numbers, policy numbers, etc. stay in Western
+  Arabic numerals in both locales (they're identifiers, not quantities) —
+  only the UI chrome (labels, month names, relative-time strings like "3
+  days ago") is translated. This avoids the ambiguity of Eastern Arabic
+  numerals inside identifiers that also appear on certificates/documents.
+
+### 14b. Theme (light / dark)
+
+- **Library**: `next-themes`, paired with Tailwind's `class`-based dark
+  mode strategy (`darkMode: "class"` in the Tailwind config) — toggling
+  adds/removes a `dark` class on `<html>`, and every color in the design
+  system gets a `dark:` variant rather than a second parallel stylesheet.
+- **Toggle placement & default**: same top-bar location as the language
+  toggle (icon side-by-side, see §14c mockup). Default is **light**,
+  matching every mockup built so far; dark is opt-in.
+- **Persistence**: same pattern as locale — `preferredTheme` alongside
+  `preferredLocale` on the signed-in user's row, cookie-driven fallback
+  before login.
+- **Independent of language**: theme and locale are two separate toggles
+  that combine freely (light+English, dark+English, light+Arabic,
+  dark+Arabic) — not coupled to each other.
+
+### 14c. Rollout note
+
+This changes every screen's *implementation* (locale-aware strings,
+logical CSS properties, dark-mode color tokens) but not the *information
+architecture* already designed across this session's mockups — same
+sidebar groups, same table columns, same drawer/detail patterns.
+
+**Mockup coverage — complete.** Every screen in this plan now has all
+three variants built (light EN top bar, dark mode, Arabic RTL): Dashboard,
+Login Page, Notifications dropdown, the fleet-wide Particulars page, the
+Add/Edit Particulars drawer, the Vessel Notes tab, the canonical
+Certificates list, the System Lists card, the System Lists manager modal,
+and — completed in this revision — Vessels (list, detail, add/edit
+drawers), Certificates (detail, add/edit drawers), Deficiencies (list,
+detail, log/edit drawers), Crew (list, detail, add/edit drawers),
+Insurance (list, detail, add/edit drawers), Alerts, Manuals (list, detail,
+add drawer), ISM Templates (list, detail, add drawer), Monthly Executed
+Forms (list, submit drawer), Drawings (list, detail, add drawer),
+Reminders (list, add drawer), and Settings (General, Company Profile, Form
+Requirements, Users & Roles, the kebab menu, Edit User drawer, Change
+Password modal, Deactivate confirmation modal, Activity Log drawer). This
+closes the mockup-coverage gap noted in the previous revision — every
+screen this plan specifies now has a real visual reference in all three
+treatments, not just written rules for Cursor (or any implementer) to
+interpret on its own.
+
+**Consistency fix pass — complete.** A self-audit of the batch above found
+two regressions introduced while rebuilding screens quickly: (1) several
+screens had been rebuilt with a trimmed sidebar showing only the active
+nav group instead of the real app's full 5-group sidebar (OVERVIEW, FLEET,
+COMPLIANCE, DOCUMENTS, SETTINGS — always shown in full regardless of the
+active page), and (2) the canonical list-screen pattern (search input +
+filter dropdown(s) + Export button, established for the Certificates list)
+had been dropped from most other rebuilt list screens, leaving bare tables
+with only an "Add" button. Every screen listed above — including drawers
+and modals, shown with the full page dimmed behind an overlay — has since
+been corrected to show the full sidebar, and every list screen (Deficiencies,
+Crew, Insurance, Manuals, ISM Templates, Monthly Forms, Drawings,
+Reminders) has had its search/filter/export row restored; Alerts has its
+filter-dropdown row restored. Settings' config-form tabs (General, Company
+Profile, Form Requirements) and the Users & Roles admin list intentionally
+have sidebar-only fixes applied, since they are not list screens the
+canonical search/filter/export pattern was designed for.
+
+### 14d. Mobile support
+
+Every mockup built through the previous revision assumed a fixed desktop
+layout (always-visible 220px sidebar, multi-column table grids, fixed-width
+side drawers and centered modals) with no breakpoints. This was never an
+explicit requirement in earlier revisions of this plan — it was simply the
+only viewport designed against. This revision makes mobile support an
+explicit requirement and documents the responsive architecture.
+
+**Breakpoint**: `< 768px` = mobile layout. `768px–1279px` (tablet) inherits
+the desktop layout unchanged for now — the sidebar and tables have enough
+room at that width; only `<768px` gets the patterns below. If real tablet
+issues surface later this can be split into its own breakpoint.
+
+**Navigation**: the 220px always-visible sidebar is replaced by a compact
+top bar (app name + hamburger icon on the leading edge, notification bell +
+avatar on the trailing edge — mirrored in RTL). Tapping the hamburger opens
+the same 5-group nav (OVERVIEW, FLEET, COMPLIANCE, DOCUMENTS, SETTINGS) as a
+full-screen overlay menu, not a docked sidebar. This is a mechanical
+transform of the existing nav structure, not a new information architecture.
+
+**List screens**: table grids (`grid-template-columns` with 4-5 fixed
+columns) do not adapt to narrow widths, so on mobile each row becomes a
+stacked card instead — primary field (e.g. vessel name, policy number) as
+the card title, remaining columns as labeled key/value lines beneath it,
+status pill top-right. The search input goes full-width; filter dropdowns
+and the Export button collapse behind a single "Filters" button that opens
+a full-screen or bottom-sheet filter panel, to avoid a horizontally
+scrolling toolbar.
+
+**Drawers**: the 360-380px side drawer (slides in from the trailing edge
+over a dimmed backdrop) becomes a full-screen sheet on mobile — no dimmed
+backdrop needed since it occupies the entire viewport, with a close (×) or
+back arrow in a small top bar of its own.
+
+**Modals**: centered modals (confirmation dialogs, Change Password) become
+bottom sheets on mobile — anchored to the bottom edge, rounded top corners,
+full width — rather than a centered floating card, which reads awkwardly
+on a narrow screen.
+
+**Touch targets**: interactive elements (buttons, nav rows, kebab menus)
+need a minimum 44px tap target on mobile even where the visual element is
+smaller, per standard touch-accessibility guidance.
+
+**Mockup coverage — complete.** The pattern above was first validated on a
+representative set (nav hamburger + full-screen menu, Dashboard, the
+canonical Certificates list as stacked cards, and the Add Certificate
+drawer as a full-screen sheet), then rolled out to every remaining module:
+Vessels (list, detail, add/edit sheets), Certificates (detail, edit sheet),
+Deficiencies (list, detail, log/edit sheets), Crew (list, detail, add/edit
+sheets), Insurance (list, detail, add sheet), Alerts (list), Manuals (list,
+detail, add sheet), ISM Templates (list, detail, add sheet), Monthly Forms
+(list, submit sheet), Drawings (list, detail, add sheet), Reminders (list,
+add sheet), Settings' config tabs (General, Company Profile, Form
+Requirements), and Settings Users & Roles (list, action bottom sheet, edit
+sheet, change-password and deactivate bottom sheets, activity log sheet) —
+all dark + Arabic. Every screen this plan specifies now has a real mobile
+visual reference, matching the desktop dark/Arabic coverage from §14c.
+
 ---
 
 ## Suggested build order (dependency-aware, revised for Fleet OS 2 scope)
 
-0. **Ship Particulars** (§13, revised — a new `vessel_particulars` table
+> **Revision note (this session, found on a final skim after Round 2 —
+> not one of Cursor's specific findings, but the same class of gap):**
+> step 14 below previously read "Auth — not part of this feature build
+> order... called out here because two items explicitly depend on it,"
+> implying steps 0–13 could ship before Auth existed. That's stale.
+> `MASTER_IMPLEMENTATION_PLAN.md` Phase 3 and `module-build-order.mermaid`
+> both now build Auth **first**, ahead of every module below — it's the
+> reason `uploadedBy`/`responsiblePerson`/`authorId` are real `users` FKs
+> from their first migration rather than a deferred cleanup (Round 2,
+> above). This list is renumbered to match: Auth is step 0, everything
+> else shifts down one, and the old "steps 0–13 don't need it" framing is
+> removed.
+
+0. **Auth** (`MASTER_PLAN.md` Phase 3 — users/sessions/login) — built
+   first, before any module below. Every Server Action from step 1 onward
+   gets a real session check and a real `users.id` FK to point at from its
+   first commit, instead of a 13-module retrofit pass later. **Notifications**
+   (§12a — `userId` is a real FK, not a placeholder) and full **user/role
+   management** under Settings (§7a, step 14 below) are the two items that
+   most directly depend on this step existing first, but every module from
+   here on gets a real session check too, not just these two.
+1. **Ship Particulars** (§13, revised — a new `vessel_particulars` table
    with history, incl. `vessel_particulars_attachments`) — independent of
    every other module, do it early so later vessel-profile tab work has
    the fields available. Slightly more than the original "just add
    columns" scope now that it's its own table with the `isCurrent`
    enforcement, but still has no dependencies on anything else.
-1. **Expiry/reminder engine** (`src/lib/expiry/`) + `getCriticalDays()` seam.
-2. **Certificates** — the largest module: `certificate_types` (+ seed),
+2. **Expiry/reminder engine** (`src/lib/expiry/`) + `getCriticalDays()` seam.
+3. **Certificates** — the largest module: `certificate_types` (+ seed),
    `certificates` (incl. `customOffsetDays`), `certificate_events`,
    `certificate_attachments`, plus the type-select and events/attachments UI.
    First real consumer of the engine.
-3. **Deficiencies** (4-state model; own CRUD is engine-independent, but
-   unresolved + dated rows become the fourth alerts source in step 8 — so it
-   must precede Alerts).
-4. **Crew** + crew certificates (second engine consumer).
-5. **Insurance** (third engine consumer).
-6. **ISM Templates** (§9, incl. `ism_template_attachments`) — no
+4. **Deficiencies** (4-state model; own CRUD is engine-independent, but
+   unresolved + dated rows become the fourth alerts source in step 11 — so
+   it must precede Alerts).
+5. **Crew** + crew certificates (second engine consumer).
+6. **Insurance** (third engine consumer).
+7. **ISM Templates** (§9, incl. `ism_template_attachments`) — no
    dependencies, needed before `monthly_form_requirements`/Monthly Executed
    Forms since both reference templates.
-7. **Manuals** (§8) and **Drawings** (§11, incl. `drawing_attachments`) —
+8. **Manuals** (§8) and **Drawings** (§11, incl. `drawing_attachments`) —
    independent of each other and of everything except Vessels; can build in
    parallel.
-8. **Monthly Executed Forms** (§10) — `monthly_form_requirements` first
-   (depends on ISM Templates, step 6), then `monthly_executed_forms` +
+9. **Monthly Executed Forms** (§10) — `monthly_form_requirements` first
+   (depends on ISM Templates, step 7), then `monthly_executed_forms` +
    `monthly_executed_form_attachments`.
-9. **Vessel-detail integration pass** — after Crew and Insurance both ship,
-   one consolidated pass adding per-vessel Certificates / Crew / Insurance /
-   Manuals / Drawings / Particulars sections to the vessel detail page,
-   rather than separate passes per module.
-10. **Alerts aggregator** (certificates + crew docs + insurance + unresolved
+10. **Vessel-detail integration pass** — after Crew and Insurance both ship,
+    one consolidated pass adding per-vessel Certificates / Crew / Insurance /
+    Manuals / Drawings / Particulars sections to the vessel detail page,
+    rather than separate passes per module.
+11. **Alerts aggregator** (certificates + crew docs + insurance + unresolved
     dated deficiencies) + `/alerts` page + shared `alerts-list`.
-11. **Reminders** (§12) — independent of Alerts (confirmed separate
+12. **Reminders** (§12) — independent of Alerts (confirmed separate
     feature), but sits naturally next to it in the sidebar/UI.
-12. **Dashboard** (§6, revised) — consumes the Alerts aggregator + Monthly
+13. **Dashboard** (§6, revised) — consumes the Alerts aggregator + Monthly
     Executed Forms + Deficiencies + Manuals counts; the `activity_logs`
     table (resolved, no longer an open item) can be written to by every
     controller from the start, but the Dashboard's "Recent activity" panel
     itself is built here once there's meaningful activity to show.
-13. **Settings** (`criticalDays`, certificate-type management) → then stub
-    PSC inspections.
-14. **Auth (`MASTER_PLAN.md` Phase 3)** — not part of this feature build
-    order, but called out here because two items in this plan explicitly
-    depend on it and can't ship before it: **Notifications** (§12a — `userId`
-    is a real FK, not a placeholder) and full **user/role management** under
-    Settings (§7a).
+14. **Settings** (`criticalDays`, certificate-type management, full
+    user/role management now that Auth/step 0 exists) → then stub PSC
+    inspections (nested under COMPLIANCE in the sidebar, see §7b).
 
 **15. Export to Excel/PDF** *(upgraded from an open-ended deferral to a
 tracked build step, Revision note (5))* — the requirements doc emphasizes
@@ -1759,15 +2436,62 @@ optional polish, even though building it *after* the list-view modules
 exist is still the right order. A shared `exportToExcel(rows, columns)` /
 `exportToPdf(rows, columns)` utility, applied first to Certificates and
 Deficiencies (the two most report-driven lists), then rolled out to the
-rest. Timing still sits after step 13 since it needs real list views to
+rest. Timing still sits after step 14 since it needs real list views to
 attach to, but it's now an explicit, committed line item rather than an
 unassigned "worth doing eventually" note.
+
+**Security note, added this session (previously unaddressed anywhere):**
+once this utility reaches Crew, an export is a personal-data access —
+`exportToExcel`/`exportToPdf` must write an `access_logs` row (`accessType:
+"export"`, per §6 above) whenever the source rows include `crew_members`/
+`crew_certificates` data, the same as a detail-page view or an attachment
+download. For every other module, an export still writes a plain
+`activity_logs` entry (`actionType: "exported"`) so there's *some* audit
+trail of bulk data leaving the app, even though it's not GDPR-scoped. Role
+gating on who may export which module is deferred to Phase 6 (RBAC) —
+today, "logged in" is the only export gate, same limitation already noted
+for viewing the data in the first place; see `SECURITY_PLAN.md` §6a for
+the fuller security treatment.
+
+**16. Email digest — outbound compliance alerts** (§12b, new this session)
+— appended after step 15 rather than inserted into the existing sequence,
+specifically to avoid renumbering everything above again (three earlier
+rounds of this document's own review process found real bugs from partial
+renumbering — see `PLAN_REVIEW.md`'s Round 3/4 sections). **Hard
+dependencies:** Alerts (step 11 — the only signal source it reads) and
+Settings (step 14 — for the on/off toggle) must exist first. **Not a hard
+dependency:** Notifications — the digest job never reads or writes the
+`notifications` table; the two just cover the same underlying alert
+signal through different channels (in-app vs. email). Listed alongside
+Notifications in the dependency graph for that thematic reason (Cursor's
+round-5 review caught that this read as a build-blocking dependency when
+it isn't one — corrected here), not because one requires the other to be
+built. A daily Admin-only digest built as a thin delivery layer on
+`getAlerts()` — no new severity logic, see §12b for the full design.
+
+**Notifications (§12a) has no number of its own** in the 0–15 list above
+(flagged as an "orphan" in Cursor's round-3 review) — by design, not an
+oversight: it's not a standalone module with its own build session, it's
+a `notifications` table plus generation hooks added by each module's
+controller as that module is built (see §12a's "Notifications are
+generated by each module's controller" note). It naturally lands right
+after step 0 (Auth), alongside Settings' Users & Roles sub-page, since
+both are the two things that need `users` to exist and nothing else.
 
 Sidebar (`dashboard-sidebar.tsx`) updated as modules land: **Manuals, ISM
 Templates, Monthly Executed Forms, Drawings, Particulars, Reminders,
 Insurance, Alerts** all need entries (Certificates/Deficiencies/Crew/
-Settings already exist). **Notifications** (§12a) is a top-bar bell/dropdown,
+Settings already exist). **PSC** also needs its entry nested under
+COMPLIANCE (§7b) — a stub link/placeholder page, not tied to any module's
+build step, so it doesn't fit cleanly into the "as modules land" list above
+but shouldn't be forgotten alongside it. **Notifications** (§12a) is a top-bar bell/dropdown,
 not a sidebar entry, per both source docs.
+
+The **Settings** sidebar group itself expands from a single entry into
+five, per §7a above: **General, Users & Roles, Company Profile, Form
+Requirements, Reports** — all nested under the same nav group, mirroring
+the mockup pattern already used across the other module groups
+(OVERVIEW/FLEET/COMPLIANCE/DOCUMENTS/SETTINGS).
 
 ---
 
@@ -1799,13 +2523,24 @@ not a sidebar entry, per both source docs.
     source of truth, Notifications is a point-in-time "you were told"
     record, and Reminders is for anything the system wouldn't otherwise
     know to flag.
+  - **Email digest (§12b) is a fourth *channel*, not a fourth store** —
+    added Round 5, after Cursor's review noted this three-way split never
+    mentioned it. It reads the same Alerts signal as everything else above
+    and has no persistence of its own beyond `email_deliveries`'
+    send-tracking row; it doesn't sit alongside Alerts/Reminders/
+    Notifications as a fourth source of truth, it's just Alerts delivered
+    somewhere other than the app.
 - **Foreign keys**: Postgres enforces FK constraints natively (no pragma
   needed, unlike SQLite); the split RESTRICT / CASCADE / SET NULL behavior
   per §0.9 (revised, Revision note (4)) is declared directly on each
   `.references()` call — cross-entity refs stay RESTRICT, owned-child
   tables (`*_attachments`, `certificate_events`, `manual_revisions`) use
-  CASCADE, and the two log-userId columns (`activity_logs.userId`,
-  `notifications.userId`) use SET NULL.
+  CASCADE, and the log-userId category (`activity_logs.userId`,
+  `notifications.userId`, `email_deliveries.recipientUserId`, and every
+  `uploadedBy`/`responsiblePerson`/`authorId` column across the
+  `*_attachments` tables — **not just "two" columns**, corrected Round 5
+  after Cursor's independent review found this list going stale each time
+  a new one was added) uses SET NULL.
 - **Shared Zod helpers**: `optionalTrimmedString`, `optionalPositiveInt`, and a
   new `isoDateField` will be factored into a small shared validation util reused
   across modules (Vessels currently inlines its own; new modules will share).
@@ -1822,6 +2557,34 @@ not a sidebar entry, per both source docs.
   customer VPS for production, per `MASTER_PLAN.md` Phase 7. `DATABASE_URL`
   replaces the old SQLite `file:./data/...` default with a Postgres
   connection string pointing at the Compose service.
+- **Domain model (new, client decision, not in either source doc)**: two
+  options are offered per customer, chosen at onboarding time — both sit on
+  top of the same one-VPS-per-customer isolation model above (no shared app
+  instance, no `tenant_id`, either way):
+  1. **Subdomain of the customer's own existing domain** (e.g.
+     `fleetos.almarinasm.com`) — the default/preferred option. Needs one DNS
+     record (A or CNAME) added on the customer's existing DNS zone, pointing
+     at their dedicated VPS's IP. Requires the customer to have someone with
+     DNS-zone access for their domain (their registrar or hosting provider's
+     DNS panel — narrow access, not their main site or full hosting
+     account).
+  2. **A newly purchased standalone domain** (e.g. `almarinasm-fleetos.com`)
+     — the fallback, used when the customer either has no one with access to
+     their existing domain's DNS settings, or doesn't want to touch it.
+     Purchased and pointed fresh at the same dedicated VPS; no dependency on
+     the customer's existing web presence at all.
+  Either way, Caddy auto-issues a real TLS cert once DNS resolves to the
+  VPS.
+- **Considered and declined: FleetOS v1's slug-based subdomain routing**
+  (`slug.companydomain.com` resolving to a shared multi-tenant instance).
+  Reviewed against the current architecture and declined — the app already
+  gives every customer a fully isolated VPS (own Docker stack, own Postgres,
+  no `tenant_id`, no shared instance), which is a stronger isolation
+  guarantee than slug-based routing would add on top of. Adopting it would
+  mean introducing shared-instance/tenant-scoping machinery this plan has
+  deliberately avoided (see Revision note (6)), for a routing convenience
+  the two-option domain model above already covers. Not reopened unless the
+  deployment model itself changes to a shared instance.
 - **Testing**: the expiry engine is pure and the prime candidate for unit tests.
   No test runner is configured yet — a lightweight **Vitest** setup will be added
   scoped to `src/lib/expiry` (decided). Module-level tests that touch the DB
@@ -1842,9 +2605,15 @@ testing with the ship management company should feed back into first:
 - **PSC inspections** (§7b) — sidebar stub only; not in either source doc.
   Real `psc_inspections` table with deficiency linkage is a natural v2 if
   real usage wants it.
-- **Notifications (§12a) and full user/role management** (§7a) — both
-  structurally blocked on `MASTER_PLAN.md` Phase 3 (auth), not a schema
-  gap — they're fully specified, just sequenced after auth exists.
+- ~~Notifications (§12a) and full user/role management (§7a) — both
+  structurally blocked on Phase 3 (auth)~~ — **moot as a "v2 backlog"
+  item, removed (Round 3, after Cursor's independent review).** This was
+  written when Auth (Phase 3) was scheduled last in the build order (old
+  step 14), so anything depending on it read as deferred, post-launch
+  work. Auth is now step 0 — built first, before every other module — so
+  Notifications and full user/role management are ordinary v1/MVP build
+  order items sequenced right after step 0, not a v2 cut. Nothing about
+  either is actually deferred.
 - **Full 5-role × 3-tier permission mapping** (§7a, open item #3) — needs
   a real decision when Phase 6 (RBAC) is built; the docx names the roles
   and tiers but not the mapping.
@@ -1871,14 +2640,15 @@ testing with the ship management company should feed back into first:
 - **Certificate/issuing-authority seed data stays representative-only**
   (§0.11, confirmed standing per the MVP philosophy) — Settings CRUD
   covers gaps found during real rollout by design, not as a fallback.
-- **The broad "free text now, FK to `users` later" cleanup** (added, review
-  round 2 — the most substantive miss from the first backlog draft) — every
-  `uploadedBy` column across all `*_attachments` tables plus
-  `monthly_executed_forms.uploadedBy`, and `deficiencies.responsiblePerson`
-  (§2), are deliberately free text pending Phase 3 auth. This is deferred
-  rework spread across roughly 9 tables, not a single item — worth tracking
-  as one cleanup pass once `users` exists, rather than rediscovering each
-  column separately.
+- ~~The broad "free text now, FK to `users` later" cleanup~~ — **moot, removed
+  (Round 2, after Cursor's independent review).** This item assumed Auth
+  (Phase 3) would land after most of Phase 5, so every `uploadedBy` column
+  across the `*_attachments` tables, plus `monthly_executed_forms.uploadedBy`,
+  `deficiencies.responsiblePerson`, and `vessel_notes.authorId`, would need a
+  deferred free-text-to-FK migration later. Since `MASTER_IMPLEMENTATION_PLAN.md`
+  sequences Auth ahead of every Phase 5 module, all of these are real `uuid`
+  FKs → `users.id` from their first migration instead (see §2, §8–§13's
+  per-column notes above) — there's no cleanup pass left to track.
 - **P&I noon-GMT renewal precision** (§4, added review round 2) — real P&I
   policies renew at 20 Feb noon GMT specifically; v1 stores `expiryDate` as
   a plain date with no time-of-day precision. Deliberate simplification,
@@ -1934,6 +2704,20 @@ and left a small remaining set that weren't invented answers for:
    from both docs' examples, not an exact quote from either.
 7. `monthly_form_requirements` due-month logic for quarterly/yearly
    frequencies (see ⑤).
+8. **Seed values for `deficiency_severity_levels`, `endorsement_types`,
+   `crew_categories`, `vessel_types`, and `flag_states`** (new, System
+   Lists Management, this session) — none of these five lists are
+   specified by either source doc (the first two are entirely new fields
+   you requested; the latter three replace free-text/fixed-enum fields).
+   The counts shown in the System Lists mockup (4, 6, 8, 9, 10
+   respectively) are illustrative placeholders, not confirmed seed data.
+9. **`vessel_notes` table and its fields** (§13) — added this session to
+   model the Notes tab; neither source doc elaborates on Notes beyond the
+   tab name, so the table shape (`id`, `vesselId`, `authorId`, `body`,
+   `createdAt`) is proposed, not sourced from either doc. Flagged here per
+   Cursor's independent review, which caught that this table was missing
+   from this tracked list despite being marked "proposed, not confirmed"
+   where it's defined.
 
 Everything else — all schemas, the engine, Certificates (kept richer than
 either source doc, per your explicit call), the multi-file attachment

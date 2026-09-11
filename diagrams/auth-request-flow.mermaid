@@ -1,0 +1,31 @@
+%% FleetOS — 3-layer auth defense (MASTER_PLAN.md Phase 3).
+%% The point of this diagram: the proxy is UX-only. Every layer below it
+%% independently re-checks the session, on the assumption the layer above
+%% could have been bypassed (this is the direct fix for CVE-2025-29927 —
+%% a real middleware-authorization-bypass vulnerability).
+sequenceDiagram
+    participant U as Browser
+    participant Px as proxy.ts (edge)
+    participant SA as Server Action / Route Handler
+    participant Sess as session.ts
+    participant DB as Postgres (RLS, Phase 6+)
+
+    U->>Px: Request /dashboard/vessels
+    Note over Px: Redirect-only.<br/>NOT the real security boundary.
+    alt no session cookie
+        Px-->>U: 302 redirect to /login
+    else session cookie present
+        Px->>SA: forward request
+        Note over SA: Independently verifies the session -<br/>never trusts that the proxy already checked.
+        SA->>Sess: validateSession(cookie)
+        alt session invalid/expired
+            Sess-->>SA: null
+            SA-->>U: redirect /login (defense-in-depth,<br/>not relying on the proxy alone)
+        else session valid
+            Sess-->>SA: { userId, role }
+            Note over SA: Phase 6: role check against WRITE_ROLES<br/>before any write
+            SA->>DB: query/mutate (RLS policy re-enforces<br/>the same scoping at the DB layer)
+            DB-->>SA: result
+            SA-->>U: response
+        end
+    end

@@ -1,0 +1,33 @@
+%% FleetOS — MASTER_PLAN.md Phase order, with status as of this session.
+%% Status legend: done, in progress, planned, BLOCKED (needs a decision first).
+flowchart TD
+    P05["Phase 0.5 — Version control foundation\nDONE: GitHub remote + CI lint/typecheck\nREMAINING: commit pending docs, fix CRLF (see DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md Task 0)"]
+    P1["Phase 1 — Design system\nPLANNED IN FULL: DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md\nTokens, 5-group shell, Drawer/Modal/StatusPill, Login, Vessels retrofit"]
+    P2["Phase 2 — CI/CD & environments\nSQLite to PostgreSQL migration\nStaging env + deploy gate\nObservability: logError() seam + GlitchTip"]
+    P3["Phase 3 — Authentication\nusers/sessions tables, proxy.ts (Next 16 rename)\n3-layer defense: edge redirect, Server Action check, DB layer\nBUILT EARLY, ahead of Feature Build — resolves a source-doc ordering conflict, see PLAN_REVIEW.md #1"]
+    P4A["Phase 4a — GDPR: scrub-PII, breach/records docs\nCan start once Crew module exists"]
+    P4B["Phase 4b — Row-level security policies\nBLOCKED: needs Phase 6 role data"]
+    P5["Phase 5 — Feature build (steps 0-16, incl. Email digest added later)\nEngine to Certificates to Deficiencies to Crew to Insurance to ...\nsee module-build-order.mermaid for the full dependency graph"]
+    P6["Phase 6 — RBAC layer\nBLOCKED: 5-role x 3-tier permission mapping\nnot yet supplied by any source document"]
+    P7["Phase 7 — VPS deployment\nHetzner + Backblaze B2, Docker Compose prod stack\nNeeds Eng.MHD's cloud accounts — not automatable"]
+    P8["Phase 8 — Security review\nOWASP Top 10 (2025) pass\nHuman + legal sign-off required before go-live"]
+
+    P05 --> P1
+    P1 --> P2
+    P2 --> P3
+    P3 --> P5
+    P5 --> P4A
+    P5 -.-> P6
+    P6 -. unblocks .-> P4B
+    P4A --> P8
+    P4B --> P8
+    P5 --> P7
+    P6 --> P7
+    P7 --> P8
+
+    classDef done fill:#5DCAA5,stroke:#27500A,color:#0B1526
+    classDef planned fill:#378ADD,stroke:#0D2B45,color:#fff
+    classDef blocked fill:#F09595,stroke:#791F1F,color:#0B1526
+    class P05 done
+    class P1,P2,P3,P5,P4A,P7,P8 planned
+    class P6,P4B blocked

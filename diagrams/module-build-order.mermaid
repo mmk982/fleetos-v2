@@ -1,0 +1,89 @@
+%% FleetOS — Phase 5 feature-build dependency graph, per PROJECT_PLAN.md
+%% "Suggested build order" + MASTER_IMPLEMENTATION_PLAN.md Phase 5 table.
+%% Updated after Cursor's independent review (round 2): Auth is built in
+%% Phase 3, ahead of every module below — so uploadedBy/responsiblePerson/
+%% authorId/notifications.userId become real FKs to users from their first
+%% migration, not free text with a deferred cleanup. Notifications is no
+%% longer "blocked," just built in its normal build-order position. Only
+%% Settings' Users & Roles sub-page needs Auth — System Lists/General/
+%% Company Profile/Form Requirements don't, so AUTH no longer gates all
+%% of Settings the way it did in the previous version of this diagram.
+%% Renumbered (round 3, after Cursor's review): PROJECT_PLAN.md's build
+%% order moved Auth to step 0 and shifted every step below it down by one.
+%% This diagram's node labels previously still showed the OLD numbers
+%% (0=Ship Particulars ... 12=Dashboard) even though the comment above
+%% already described Auth as built first — that mismatch is fixed below,
+%% Auth is now labeled step 0 and every other label matches PROJECT_PLAN.md.
+%% Added (this session): step 16, Email digest (PROJECT_PLAN.md §12b) —
+%% appended after Export rather than inserted into the existing sequence,
+%% to avoid triggering another renumbering pass across all three build-order
+%% sources (see PLAN_REVIEW.md Round 3/4 for what happened last time).
+flowchart LR
+    V["Vessels\n(shipped)"]
+    AUTH["0. Auth\n(= Phase 3, built FIRST\nusers/sessions exist before\nany Phase 5 table)"]
+    SP["1. Ship Particulars"]
+    ENG["2. Expiry/Reminder Engine\n(pure, no DB)"]
+    CERT["3. Certificates\nlargest module, 5 tables"]
+    DEF["4. Deficiencies\n4-state status"]
+    CREW["5. Crew + crew certs\n(+ scrub-PII, Phase 4)"]
+    INS["6. Insurance"]
+    ISM["7. ISM Templates"]
+    MAN["8a. Manuals"]
+    DRW["8b. Drawings"]
+    MEF["9. Monthly Executed Forms"]
+    INTEG["10. Vessel-detail\nintegration pass"]
+    ALERTS["11. Alerts aggregator"]
+    REM["12. Reminders"]
+    DASH["13. Dashboard"]
+    SET["14. Settings\n(System Lists, General, etc.\n- no auth needed)"]
+    USERROLES["14a. Users & Roles\n(Settings sub-page)"]
+    NOTIF["Notifications\n(real userId FK from day one)"]
+    EXPORT["15. Export to Excel/PDF"]
+    EMAIL["16. Email digest\n(Admin daily digest, new)"]
+
+    AUTH --> V
+    V --> SP
+    V --> CERT
+    V --> DEF
+    V --> CREW
+    V --> INS
+    V --> ISM
+    V --> MAN
+    V --> DRW
+    AUTH --> NOTIF
+    V --> NOTIF
+    AUTH --> USERROLES
+
+    ENG --> CERT
+    ENG --> CREW
+    ENG --> INS
+    ENG -. "deficiencies use a fixed rule, not a type table" .-> DEF
+
+    CERT --> INTEG
+    CREW --> INTEG
+    INS --> INTEG
+
+    DEF --> ALERTS
+    CERT --> ALERTS
+    CREW --> ALERTS
+    INS --> ALERTS
+
+    ISM --> MEF
+    ISM --> SET
+
+    ALERTS --> DASH
+    MEF --> DASH
+    DEF --> DASH
+    MAN --> DASH
+
+    CERT --> EXPORT
+    DEF --> EXPORT
+
+    ALERTS --> EMAIL
+    SET --> EMAIL
+    NOTIF -. "same alert signal, different channel - not a build dependency" .-> EMAIL
+
+    classDef done fill:#5DCAA5,stroke:#27500A,color:#0B1526
+    classDef foundation fill:#378ADD,stroke:#0D2B45,color:#fff
+    class V done
+    class AUTH foundation

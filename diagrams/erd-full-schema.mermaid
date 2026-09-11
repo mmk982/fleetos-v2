@@ -1,0 +1,355 @@
+%% FleetOS — full database schema (all modules, per PROJECT_PLAN.md + MASTER_PLAN.md Phase 3)
+%% Not every column is shown — PK/FK + the columns that matter for relationships and
+%% business logic. Full column lists live in PROJECT_PLAN.md's per-module sections.
+%% Delete-policy legend (PROJECT_PLAN.md §0.9):
+%%   ||--o{  = RESTRICT  (cross-entity reference; can't delete parent while children exist)
+%%   |o--o{  = CASCADE   (owned child; deleting parent deletes these too)
+%%   }o..o{  = SET NULL  (log/notification userId, plus every uploadedBy/
+%%           responsiblePerson/authorId column across *_attachments and
+%%           similar tables — an open-ended category, not just two columns,
+%%           per PROJECT_PLAN.md §0.9)
+erDiagram
+    VESSELS ||--o{ VESSEL_PARTICULARS : "RESTRICT"
+    VESSELS ||--o{ VESSEL_NOTES : "RESTRICT"
+    VESSELS ||--o{ CERTIFICATES : "RESTRICT"
+    VESSELS ||--o{ DEFICIENCIES : "RESTRICT"
+    VESSELS ||--o{ CREW_MEMBERS : "RESTRICT (nullable)"
+    VESSELS ||--o{ INSURANCE_POLICIES : "RESTRICT"
+    VESSELS ||--o{ MANUALS : "RESTRICT"
+    VESSELS ||--o{ DRAWINGS : "RESTRICT"
+    VESSELS ||--o{ MONTHLY_FORM_REQUIREMENTS : "RESTRICT"
+    VESSELS ||--o{ MONTHLY_EXECUTED_FORMS : "RESTRICT"
+    VESSELS ||--o{ REMINDERS : "RESTRICT (nullable)"
+    VESSELS ||--o{ NOTIFICATIONS : "RESTRICT (nullable)"
+
+    VESSELS {
+        uuid id PK
+        text name
+        int imoNumber UK "unique, 7-digit"
+        text vesselTypeId FK "planned: replaces free-text vesselType"
+        text flagStateId FK "planned: replaces free-text flagState"
+        text status "active | inactive | archived"
+    }
+
+    VESSEL_PARTICULARS ||--o{ VESSEL_PARTICULARS_ATTACHMENTS : "CASCADE"
+    VESSEL_PARTICULARS {
+        uuid id PK
+        uuid vesselId FK
+        boolean isCurrent "exactly one true per vessel"
+        date effectiveDate
+        numeric lengthOverall "LOA, meters"
+        numeric deadweightTonnage
+    }
+    VESSEL_PARTICULARS_ATTACHMENTS {
+        uuid id PK
+        uuid particularsId FK
+        text fileName
+        text filePath
+    }
+
+    VESSEL_NOTES {
+        uuid id PK
+        uuid vesselId FK
+        uuid authorId FK "SET NULL - proposed table, PROJECT_PLAN.md S13 + Status open-item #9, real FK from day one (Auth precedes Phase 5)"
+        text body
+        timestamptz createdAt
+    }
+
+    %% ===================== CERTIFICATES =====================
+    ISSUING_AUTHORITIES ||--o{ CERTIFICATES : "RESTRICT"
+    CERTIFICATE_TYPES ||--o{ CERTIFICATES : "RESTRICT"
+    CERTIFICATES ||--o{ CERTIFICATE_EVENTS : "CASCADE"
+    CERTIFICATES ||--o{ CERTIFICATE_ATTACHMENTS : "CASCADE"
+
+    ISSUING_AUTHORITIES {
+        uuid id PK
+        text name UK
+        boolean isCustom
+    }
+    CERTIFICATE_TYPES {
+        uuid id PK
+        text authority "flag|class|safety|radio|insurance|management|other"
+        text name
+        text ruleKind "none|expiry_offset|window"
+        int offsetDays "30 or 180, nullable"
+        boolean isCustom
+    }
+    CERTIFICATES {
+        uuid id PK
+        uuid vesselId FK
+        uuid certificateTypeId FK
+        uuid issuingAuthorityId FK "nullable"
+        text certificateNumber
+        date issueDate
+        date expiryDate "null = permanent"
+        date windowOpenDate
+        date windowCloseDate
+        boolean linkedToDryDock "offsetDays override -> 180"
+        int customOffsetDays "highest precedence override"
+        text lifecycleStatus "active|revoked|superseded"
+        text cachedStatus "non-authoritative cache"
+    }
+    CERTIFICATE_EVENTS {
+        uuid id PK
+        uuid certificateId FK
+        text eventType "issued|extended|renewed|revoked"
+        date eventDate
+        date newExpiryDate
+    }
+    CERTIFICATE_ATTACHMENTS {
+        uuid id PK
+        uuid certificateId FK
+        text fileName
+        text filePath
+        uuid uploadedBy FK "SET NULL - added Round 3, was missing while every other *_attachments table had it"
+    }
+
+    %% ===================== DEFICIENCIES =====================
+    DEFICIENCY_SOURCES ||--o{ DEFICIENCIES : "RESTRICT"
+    DEFICIENCY_SEVERITY_LEVELS ||--o{ DEFICIENCIES : "RESTRICT"
+    DEFICIENCIES ||--o{ DEFICIENCY_ATTACHMENTS : "CASCADE"
+
+    DEFICIENCY_SOURCES {
+        uuid id PK
+        text name "psc|class|flag|internal|other (seed)"
+        boolean isCustom
+    }
+    DEFICIENCY_SEVERITY_LEVELS {
+        uuid id PK
+        text name
+        int sortOrder "worst-first display"
+    }
+    DEFICIENCIES {
+        uuid id PK
+        uuid vesselId FK
+        uuid sourceId FK "nullable"
+        uuid severityId FK "nullable"
+        text status "open|in_progress|closed|monitoring"
+        date dueDate "feeds Alerts if not closed"
+        date closedDate
+        uuid responsiblePerson FK "real FK to users from day one (Auth precedes Phase 5)"
+    }
+    DEFICIENCY_ATTACHMENTS {
+        uuid id PK
+        uuid deficiencyId FK
+        text fileName
+        text filePath
+        uuid uploadedBy FK "real FK to users from day one (Auth precedes Phase 5 - see MASTER_IMPLEMENTATION_PLAN.md Phase 3)"
+    }
+
+    %% ===================== CREW =====================
+    CREW_CATEGORIES ||--o{ CREW_MEMBERS : "RESTRICT"
+    ENDORSEMENT_TYPES ||--o{ CREW_CERTIFICATES : "RESTRICT (nullable)"
+    CREW_MEMBERS ||--o{ CREW_CERTIFICATES : "RESTRICT"
+    CREW_CERTIFICATES ||--o{ CREW_CERTIFICATE_ATTACHMENTS : "CASCADE"
+
+    CREW_CATEGORIES {
+        uuid id PK
+        text name "Master, Chief Engineer, ... (seed)"
+        boolean isCustom
+    }
+    ENDORSEMENT_TYPES {
+        uuid id PK
+        text name
+        boolean isCustom
+    }
+    CREW_MEMBERS {
+        uuid id PK
+        text firstName
+        text lastName
+        uuid categoryId FK "nullable"
+        uuid vesselId FK "nullable, current assignment"
+        text status "active|inactive"
+    }
+    CREW_CERTIFICATES {
+        uuid id PK
+        uuid crewMemberId FK
+        uuid endorsementTypeId FK "nullable"
+        text name "e.g. STCW II/2, ENG1 Medical, Passport"
+        date expiryDate
+        text cachedStatus
+    }
+    CREW_CERTIFICATE_ATTACHMENTS {
+        uuid id PK
+        uuid crewCertificateId FK
+        text fileName
+        text filePath
+        uuid uploadedBy FK "SET NULL - added this session, closes a gap: passport/visa scans had no storage table while every other module had one (see SECURITY_PLAN.md S6)"
+    }
+
+    %% ===================== INSURANCE =====================
+    INSURANCE_POLICIES ||--o{ INSURANCE_ATTACHMENTS : "CASCADE"
+    INSURANCE_POLICIES {
+        uuid id PK
+        uuid vesselId FK
+        text policyType "pi|hm|war_risk|fdd|other"
+        text provider
+        int coverageAmount "REVIEW: consider numeric(14,2)"
+        date expiryDate "fixed 30d rule, no noon-GMT precision"
+        text cachedStatus
+    }
+    INSURANCE_ATTACHMENTS {
+        uuid id PK
+        uuid insurancePolicyId FK
+        text fileName
+        text filePath
+    }
+
+    %% ===================== MANUALS =====================
+    MANUALS ||--o{ MANUAL_REVISIONS : "CASCADE"
+    MANUALS {
+        uuid id PK
+        uuid vesselId FK
+        text title
+        text manualType "free text"
+        text department
+    }
+    MANUAL_REVISIONS {
+        uuid id PK
+        uuid manualId FK
+        text revisionNumber
+        boolean isCurrentVersion "exactly one true per manual"
+        text filePath
+    }
+
+    %% ===================== ISM TEMPLATES / MONTHLY FORMS =====================
+    ISM_TEMPLATE_CATEGORIES ||--o{ ISM_TEMPLATES : "RESTRICT"
+    ISM_TEMPLATES ||--o{ ISM_TEMPLATE_ATTACHMENTS : "CASCADE"
+    ISM_TEMPLATES ||--o{ MONTHLY_FORM_REQUIREMENTS : "RESTRICT"
+    ISM_TEMPLATES ||--o{ MONTHLY_EXECUTED_FORMS : "RESTRICT (nullable)"
+    MONTHLY_EXECUTED_FORMS ||--o{ MONTHLY_EXECUTED_FORM_ATTACHMENTS : "CASCADE"
+
+    ISM_TEMPLATE_CATEGORIES {
+        uuid id PK
+        text name "Drill|Maintenance|Safety|Risk Assessment|Inspection|Reporting (seed)"
+        boolean isCustom
+    }
+    ISM_TEMPLATES {
+        uuid id PK
+        text formCode UK
+        text formName
+        uuid categoryId FK
+        text status "active|superseded|draft (proposed)"
+    }
+    ISM_TEMPLATE_ATTACHMENTS {
+        uuid id PK
+        uuid ismTemplateId FK
+        text fileName
+        uuid uploadedBy FK "SET NULL - added Round 4, ERD was abbreviated vs PROJECT_PLAN.md"
+    }
+    MONTHLY_FORM_REQUIREMENTS {
+        uuid id PK
+        uuid vesselId FK
+        uuid ismTemplateId FK
+        text frequency "monthly|quarterly|yearly|on_demand"
+        boolean activeStatus
+    }
+    MONTHLY_EXECUTED_FORMS {
+        uuid id PK
+        uuid vesselId FK
+        uuid ismTemplateId FK "nullable, ad-hoc forms"
+        int month
+        int year
+        text status "submitted|pending (overdue is derived)"
+        uuid uploadedBy FK "real FK to users from day one (Auth precedes Phase 5 - see MASTER_IMPLEMENTATION_PLAN.md Phase 3)"
+    }
+    MONTHLY_EXECUTED_FORM_ATTACHMENTS {
+        uuid id PK
+        uuid executedFormId FK
+        text fileName
+        uuid uploadedBy FK "SET NULL - added Round 4, ERD was abbreviated vs PROJECT_PLAN.md"
+    }
+
+    %% ===================== DRAWINGS =====================
+    DRAWING_CATEGORIES ||--o{ DRAWINGS : "RESTRICT"
+    DRAWINGS ||--o{ DRAWING_ATTACHMENTS : "CASCADE"
+    DRAWING_CATEGORIES {
+        uuid id PK
+        text name "General Arrangement|Fire Control Plan|... (seed)"
+        boolean isCustom
+    }
+    DRAWINGS {
+        uuid id PK
+        uuid vesselId FK
+        uuid categoryId FK
+        text drawingName
+        text revision "current label; history in attachments"
+    }
+    DRAWING_ATTACHMENTS {
+        uuid id PK
+        uuid drawingId FK
+        text fileName
+        uuid uploadedBy FK "SET NULL - added Round 4, ERD was abbreviated vs PROJECT_PLAN.md"
+    }
+
+    %% ===================== REMINDERS / NOTIFICATIONS / ACTIVITY =====================
+    REMINDERS {
+        uuid id PK
+        uuid vesselId FK "nullable, fleet-wide reminders allowed"
+        text type "certificate|insurance|manual|deficiency|custom"
+        text relatedItemKind "polymorphic, NOT a real FK"
+        uuid relatedItemId "polymorphic, NOT a real FK"
+        text status "pending|done|dismissed"
+    }
+
+    USERS ||--o{ NOTIFICATIONS : "SET NULL"
+    USERS ||--o{ SESSIONS : "CASCADE (Phase 3)"
+    USERS ||--o{ ACTIVITY_LOGS : "SET NULL"
+    USERS ||--o{ EMAIL_DELIVERIES : "SET NULL"
+    USERS ||--o{ ACCESS_LOGS : "SET NULL"
+    VESSELS ||--o{ NOTIFICATIONS : "RESTRICT (nullable)"
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid userId FK "nullable, SET NULL on user delete"
+        uuid vesselId FK "nullable"
+        text notificationType
+        boolean isRead
+    }
+
+    %% ===================== EMAIL DIGEST (§12b, new this session) =====================
+    EMAIL_DELIVERIES {
+        uuid id PK
+        uuid recipientUserId FK "nullable, SET NULL on user delete"
+        date digestDate "unique with recipientUserId - one digest per day"
+        timestamptz sentAt
+    }
+
+    %% ===================== AUTH (Phase 3, not yet built) =====================
+    USERS {
+        uuid id PK
+        text name
+        text email UK
+        text passwordHash
+        text role "5-role RBAC, Phase 6"
+        text preferredLocale "en|ar"
+        text preferredTheme "light|dark"
+    }
+    SESSIONS {
+        uuid id PK
+        uuid userId FK
+        timestamptz expiresAt
+    }
+    ACTIVITY_LOGS {
+        uuid id PK
+        uuid userId FK "SET NULL - real FK from first migration, Auth is step 0"
+        text actionType
+        text moduleName
+        uuid recordId
+        text description
+    }
+    ACCESS_LOGS {
+        uuid id PK
+        uuid userId FK "SET NULL"
+        text moduleName "scoped to crew only (data minimization) - not general page views"
+        uuid recordId "crew_members.id or crew_certificates.id"
+        text accessType "view|download_attachment|export"
+        timestamptz accessedAt
+    }
+
+    %% ===================== SETTINGS (generic key-value, not a normal table) =====================
+    SETTINGS {
+        text key PK "e.g. criticalDays"
+        text value "cast by typed accessor, e.g. getCriticalDays()"
+        timestamptz updatedAt
+    }
