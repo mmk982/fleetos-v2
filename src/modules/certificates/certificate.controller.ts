@@ -40,12 +40,34 @@ import {
   type ComplianceStatus,
 } from "@/lib/expiry";
 import { logError } from "@/lib/logging";
-import { effectiveOffsetDays } from "./certificate.model";
+import {
+  effectiveOffsetDays,
+  type CertificateListItem,
+} from "./certificate.model";
 import type {
   CertificateCreateInput,
   CertificateEventCreateInput,
   CertificateUpdateInput,
 } from "./validation";
+
+export type { CertificateListItem } from "./certificate.model";
+
+/** Detail shape including events and attachments. */
+export type CertificateDetail = CertificateListItem & {
+  events: CertificateEventRow[];
+  attachments: CertificateAttachmentRow[];
+  certificateType: CertificateTypeRow;
+  issuingAuthority: IssuingAuthorityRow | null;
+  vessel: VesselRow;
+};
+
+export type CertificateListFilters = {
+  vesselId?: string;
+  authority?: string;
+  issuingAuthorityId?: string;
+  /** Live engine status filter (applied after derive). */
+  status?: ComplianceStatus;
+};
 
 const ATTACHMENTS_DIR = path.join(process.cwd(), "data", "attachments");
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -112,34 +134,6 @@ function isPgForeignKeyViolation(error: unknown): boolean {
     (error as { code: string }).code === "23503"
   );
 }
-
-/** List-row shape with joins + live compliance. */
-export type CertificateListItem = CertificateRow & {
-  vesselName: string;
-  typeName: string;
-  authority: CertificateTypeRow["authority"];
-  ruleKind: CertificateTypeRow["ruleKind"];
-  typeOffsetDays: number | null;
-  issuingAuthorityName: string | null;
-  compliance: ComplianceResult;
-};
-
-/** Detail shape including events and attachments. */
-export type CertificateDetail = CertificateListItem & {
-  events: CertificateEventRow[];
-  attachments: CertificateAttachmentRow[];
-  certificateType: CertificateTypeRow;
-  issuingAuthority: IssuingAuthorityRow | null;
-  vessel: VesselRow;
-};
-
-export type CertificateListFilters = {
-  vesselId?: string;
-  authority?: string;
-  issuingAuthorityId?: string;
-  /** Live engine status filter (applied after derive). */
-  status?: ComplianceStatus;
-};
 
 function deriveForCertificate(
   cert: CertificateRow,

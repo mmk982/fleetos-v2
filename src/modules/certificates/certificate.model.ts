@@ -12,10 +12,13 @@ import {
   certificateEventTypeEnum,
   certificateLifecycleEnum,
   reminderRuleKindEnum,
+  type CertificateRow,
+  type CertificateTypeRow,
 } from "@/db/schema";
 import {
   STATUS_LABELS,
   STATUS_STYLES,
+  type ComplianceResult,
   type ComplianceStatus,
 } from "@/lib/expiry";
 
@@ -31,6 +34,17 @@ export type {
   CertificateLifecycle,
   ReminderRuleKind,
 } from "@/db/schema";
+
+/** List-row shape with joins + live compliance (safe for client props). */
+export type CertificateListItem = CertificateRow & {
+  vesselName: string;
+  typeName: string;
+  authority: CertificateTypeRow["authority"];
+  ruleKind: CertificateTypeRow["ruleKind"];
+  typeOffsetDays: number | null;
+  issuingAuthorityName: string | null;
+  compliance: ComplianceResult;
+};
 
 /** Authority options for `<select>` / filters. */
 export const CERTIFICATE_AUTHORITIES = certificateAuthorityEnum;

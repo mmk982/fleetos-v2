@@ -7,6 +7,7 @@ import {
   type CertificateActionState,
 } from "@/modules/certificates/actions";
 import type { CertificateAttachmentRow } from "@/db/schema";
+import { Identifier } from "@/components/ui/identifier";
 
 const inputClass =
   "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
@@ -39,7 +40,7 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
                 target="_blank"
                 rel="noreferrer"
               >
-                {a.fileName}
+                <Identifier>{a.fileName}</Identifier>
               </a>
               <form action={deleteCertificateAttachmentAction}>
                 <input type="hidden" name="id" value={a.id} />

@@ -3,13 +3,12 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { CertificateAttachments } from "@/components/certificate-attachments";
 import { CertificateEventForm } from "@/components/certificate-event-form";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { Identifier } from "@/components/ui/identifier";
+import { StatusPill } from "@/components/ui/status-pill";
 import { deleteCertificateFormAction } from "@/modules/certificates/actions";
 import { getCertificateById } from "@/modules/certificates/certificate.controller";
-import {
-  complianceLabel,
-  complianceStyle,
-  formatAuthority,
-} from "@/modules/certificates/certificate.model";
+import { formatAuthority } from "@/modules/certificates/certificate.model";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -24,13 +23,18 @@ export default async function CertificateDetailPage(props: PageProps) {
   }
 
   const rows: { label: string; value: ReactNode }[] = [
-    { label: "Vessel", value: cert.vesselName },
+    {
+      label: "Vessel",
+      value: <Identifier>{cert.vesselName}</Identifier>,
+    },
     { label: "Type", value: cert.typeName },
     { label: "Authority", value: formatAuthority(cert.authority) },
     {
       label: "Certificate number",
       value: (
-        <span className="font-mono text-sm">{cert.certificateNumber ?? "—"}</span>
+        <span className="font-mono text-sm">
+          <Identifier>{cert.certificateNumber ?? "—"}</Identifier>
+        </span>
       ),
     },
     { label: "Issuing authority", value: cert.issuingAuthorityName ?? "—" },
@@ -52,18 +56,19 @@ export default async function CertificateDetailPage(props: PageProps) {
     },
     {
       label: "Lifecycle",
-      value: cert.lifecycleStatus.charAt(0).toUpperCase() + cert.lifecycleStatus.slice(1),
+      value:
+        cert.lifecycleStatus.charAt(0).toUpperCase() + cert.lifecycleStatus.slice(1),
     },
     {
       label: "Status",
       value: (
-        <span
-          className={`inline-flex rounded-md px-2 py-0.5 text-xs ${complianceStyle(cert.compliance.status)}`}
-        >
-          {complianceLabel(cert.compliance.status)}
-          {cert.compliance.daysRemaining != null
-            ? ` · ${cert.compliance.daysRemaining}d`
-            : ""}
+        <span className="inline-flex items-center gap-2">
+          <StatusPill status={cert.compliance.status} />
+          {cert.compliance.daysRemaining != null ? (
+            <span className="text-xs text-zinc-500">
+              {cert.compliance.daysRemaining}d
+            </span>
+          ) : null}
         </span>
       ),
     },
@@ -83,7 +88,7 @@ export default async function CertificateDetailPage(props: PageProps) {
             {cert.typeName}
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {cert.vesselName}
+            <Identifier>{cert.vesselName}</Identifier>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -93,15 +98,12 @@ export default async function CertificateDetailPage(props: PageProps) {
           >
             Edit
           </Link>
-          <form action={deleteCertificateFormAction}>
-            <input type="hidden" name="id" value={cert.id} />
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-white px-4 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-zinc-950 dark:text-red-300 dark:hover:bg-red-950/30"
-            >
-              Delete
-            </button>
-          </form>
+          <ConfirmDeleteButton
+            id={cert.id}
+            title="Delete certificate?"
+            description="This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation."
+            action={deleteCertificateFormAction}
+          />
         </div>
       </div>
 

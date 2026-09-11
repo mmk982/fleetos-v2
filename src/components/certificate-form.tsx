@@ -17,6 +17,7 @@ import type {
   IssuingAuthorityRow,
 } from "@/db/schema";
 import type { VesselRow } from "@/db/schema";
+import { Identifier } from "@/components/ui/identifier";
 
 const labelClass = "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 const inputClass =
@@ -133,13 +134,15 @@ export function CertificateForm(props: CertificateFormProps) {
           <label htmlFor="certificateNumber" className={labelClass}>
             Certificate number
           </label>
-          <input
-            id="certificateNumber"
-            name="certificateNumber"
-            defaultValue={d?.certificateNumber ?? ""}
-            className={`${inputClass} font-mono`}
-            autoComplete="off"
-          />
+          <Identifier>
+            <input
+              id="certificateNumber"
+              name="certificateNumber"
+              defaultValue={d?.certificateNumber ?? ""}
+              className={`${inputClass} font-mono`}
+              autoComplete="off"
+            />
+          </Identifier>
         </div>
 
         <div>
