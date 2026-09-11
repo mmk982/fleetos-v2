@@ -82,7 +82,9 @@ export async function createCertificateAction(
     expiryDate: readFormString(formData, "expiryDate"),
     windowOpenDate: readFormString(formData, "windowOpenDate"),
     windowCloseDate: readFormString(formData, "windowCloseDate"),
-    linkedToDryDock: readFormString(formData, "linkedToDryDock") ?? "false",
+    linkedToDryDock: formData.getAll("linkedToDryDock").includes("true")
+      ? "true"
+      : "false",
     customOffsetDays: readFormString(formData, "customOffsetDays"),
     lifecycleStatus: readFormString(formData, "lifecycleStatus"),
     remarks: readFormString(formData, "remarks"),
@@ -136,6 +138,12 @@ export async function updateCertificateAction(
 
   const raw: Record<string, string | undefined> = {};
   for (const key of keys) {
+    if (key === "linkedToDryDock") {
+      // Checkbox omitted when unchecked — always send an explicit boolean on edit.
+      raw.linkedToDryDock =
+        formData.getAll("linkedToDryDock").includes("true") ? "true" : "false";
+      continue;
+    }
     const v = readFormString(formData, key);
     if (v !== undefined) {
       raw[key] = v;
