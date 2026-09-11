@@ -4,11 +4,23 @@
  * `FormData`, Zod validation + field-error mapping, calling the controller,
  * and `revalidatePath`/`redirect` afterward. Reference shape for every later
  * module's `actions.ts` (`PROJECT_PLAN.md` Conventions section).
+ *
+ * Every action begins with {@link requireSession} — the Phase 3 pattern every
+ * future module copies (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3). The edge
+ * `proxy.ts` redirect is UX only; this check is the real gate.
  */
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireSession } from "@/lib/auth/session";
+import {
+  createVessel,
+  deleteVessel,
+  updateVessel,
+  VesselConflictError,
+} from "./vessel.controller";
+import { vesselCreateSchema, vesselUpdateSchema } from "./validation";
 
 /**
  * `redirect()` in a Server Action works by throwing a special error Next.js
@@ -23,13 +35,6 @@ function isNextRedirect(error: unknown): boolean {
   const digest = (error as { digest?: unknown }).digest;
   return typeof digest === "string" && digest.includes("NEXT_REDIRECT");
 }
-import {
-  createVessel,
-  deleteVessel,
-  updateVessel,
-  VesselConflictError,
-} from "./vessel.controller";
-import { vesselCreateSchema, vesselUpdateSchema } from "./validation";
 
 const vesselsPath = "/dashboard/vessels";
 
@@ -60,6 +65,8 @@ export async function createVesselAction(
   _prev: VesselActionState | undefined,
   formData: FormData,
 ): Promise<VesselActionState> {
+  await requireSession();
+
   const raw = {
     name: readFormString(formData, "name") ?? "",
     imoNumber: readFormString(formData, "imoNumber"),
@@ -117,6 +124,8 @@ export async function updateVesselAction(
   _prev: VesselActionState | undefined,
   formData: FormData,
 ): Promise<VesselActionState> {
+  await requireSession();
+
   const raw: Record<string, string | undefined> = {};
   for (const key of [
     "name",
@@ -177,6 +186,8 @@ export async function updateVesselAction(
  * of returning a field error there's no form to display it against.
  */
 export async function deleteVesselFormAction(formData: FormData): Promise<void> {
+  await requireSession();
+
   const id = formData.get("id");
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("Missing vessel id");

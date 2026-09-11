@@ -16,6 +16,68 @@ export const vesselStatusEnum = ["active", "inactive", "archived"] as const;
 export type VesselStatus = (typeof vesselStatusEnum)[number];
 
 /**
+ * UI locale preference stored on the user row (`PROJECT_PLAN.md` §14a).
+ * Cookie-driven fallback applies before login; this column wins once signed in.
+ */
+export const userLocaleEnum = ["en", "ar"] as const;
+/** Union of {@link userLocaleEnum} literals. */
+export type UserLocale = (typeof userLocaleEnum)[number];
+
+/**
+ * UI theme preference stored on the user row (`PROJECT_PLAN.md` §14b).
+ * Independent of locale — any locale×theme combination is valid.
+ */
+export const userThemeEnum = ["light", "dark"] as const;
+/** Union of {@link userThemeEnum} literals. */
+export type UserTheme = (typeof userThemeEnum)[number];
+
+/**
+ * Signed-in accounts. Built in Phase 3 ahead of every feature module so
+ * `uploadedBy` / `authorId` / `notifications.userId` FKs are real `users.id`
+ * references from their first migration (`MASTER_IMPLEMENTATION_PLAN.md`
+ * Phase 3). `role` is a nullable placeholder until Phase 6 RBAC enforces it.
+ */
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  // Phase 6 fills this in and enforces it; until then it is stored but unused.
+  role: text("role"),
+  preferredLocale: text("preferred_locale", { enum: userLocaleEnum }),
+  preferredTheme: text("preferred_theme", { enum: userThemeEnum }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A user row as read from the database. */
+export type UserRow = typeof users.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link users}. */
+export type UserInsert = typeof users.$inferInsert;
+
+/**
+ * Server-side session rows backing the httpOnly signed session cookie
+ * (`SECURITY_PLAN.md` §3 / `src/lib/auth/session.ts`).
+ *
+ * `userId` uses `ON DELETE CASCADE` deliberately — deleting a user must
+ * invalidate every session for that account. That is *not* the
+ * log-userId `SET NULL` pattern used on activity/access logs.
+ */
+export const sessions = pgTable("sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A session row as read from the database. */
+export type SessionRow = typeof sessions.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link sessions}. */
+export type SessionInsert = typeof sessions.$inferInsert;
+
+/**
  * Fleet units. The reference schema/module for every later module — see
  * `PROJECT_PLAN.md`'s "Conventions" section, which was extracted from this
  * exact table and its surrounding files.
