@@ -5,14 +5,16 @@
  * and `revalidatePath`/`redirect` afterward. Reference shape for every later
  * module's `actions.ts` (`PROJECT_PLAN.md` Conventions section).
  *
- * Every action begins with {@link requireSession} — the Phase 3 pattern every
- * future module copies (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3). The edge
- * `proxy.ts` redirect is UX only; this check is the real gate.
+ * Every action begins with {@link assertSameOriginMutation} then
+ * {@link requireSession}, and passes {@link toAccessContext} into the
+ * controller — layers two and three of the Phase 3 defense stack.
  */
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { toAccessContext } from "@/lib/auth/access";
+import { assertSameOriginMutation } from "@/lib/auth/request-guard";
 import { requireSession } from "@/lib/auth/session";
 import {
   createVessel,
@@ -65,7 +67,9 @@ export async function createVesselAction(
   _prev: VesselActionState | undefined,
   formData: FormData,
 ): Promise<VesselActionState> {
-  await requireSession();
+  await assertSameOriginMutation();
+  const session = await requireSession();
+  const access = toAccessContext(session);
 
   const raw = {
     name: readFormString(formData, "name") ?? "",
@@ -98,7 +102,7 @@ export async function createVesselAction(
   }
 
   try {
-    const vessel = await createVessel(parsed.data);
+    const vessel = await createVessel(access, parsed.data);
     revalidatePath(vesselsPath);
     redirect(`${vesselsPath}/${vessel.id}`);
   } catch (error) {
@@ -124,7 +128,9 @@ export async function updateVesselAction(
   _prev: VesselActionState | undefined,
   formData: FormData,
 ): Promise<VesselActionState> {
-  await requireSession();
+  await assertSameOriginMutation();
+  const session = await requireSession();
+  const access = toAccessContext(session);
 
   const raw: Record<string, string | undefined> = {};
   for (const key of [
@@ -163,7 +169,7 @@ export async function updateVesselAction(
   }
 
   try {
-    await updateVessel(id, parsed.data);
+    await updateVessel(access, id, parsed.data);
     revalidatePath(vesselsPath);
     revalidatePath(`${vesselsPath}/${id}`);
     revalidatePath(`${vesselsPath}/${id}/edit`);
@@ -186,13 +192,15 @@ export async function updateVesselAction(
  * of returning a field error there's no form to display it against.
  */
 export async function deleteVesselFormAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await assertSameOriginMutation();
+  const session = await requireSession();
+  const access = toAccessContext(session);
 
   const id = formData.get("id");
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("Missing vessel id");
   }
-  await deleteVessel(id);
+  await deleteVessel(access, id);
   revalidatePath(vesselsPath);
   redirect(vesselsPath);
 }

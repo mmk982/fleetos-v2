@@ -13,6 +13,7 @@ import { argon2id, hash } from "argon2";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../src/db/schema";
+import { assertPasswordAllowed } from "../src/lib/auth/pwned-password";
 
 const defaultDatabaseUrl = "postgres://fleetos:fleetos@localhost:5433/fleetos";
 
@@ -39,11 +40,9 @@ async function main() {
     process.exit(1);
   }
 
-  if (plainPassword.length < 12) {
-    // Matches SECURITY_PLAN.md §2.2 — 12-char minimum, not enforced by DB.
-    console.error("Password must be at least 12 characters (SECURITY_PLAN.md §2.2).");
-    process.exit(1);
-  }
+  // Length + HIBP k-anonymity check (SECURITY_PLAN.md §2.2). There is no
+  // in-app password-set UI yet beyond this script and reset-password.ts.
+  await assertPasswordAllowed(plainPassword);
 
   const connectionString = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
   const pool = new Pool({ connectionString });

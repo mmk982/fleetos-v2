@@ -1,9 +1,6 @@
 /**
  * Server Actions for Auth — login boundary between the login form and
  * `password.ts` / `session.ts` (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3).
- *
- * Out of scope here (next slice): rate limiting, breached-password checks,
- * logout UI polish beyond destroy+redirect if added later.
  */
 "use server";
 
@@ -11,7 +8,16 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
+import {
+  clearLoginFailuresForAccount,
+  isLoginRateLimited,
+  recordLoginFailure,
+} from "@/lib/auth/login-rate-limit";
 import { verifyPassword } from "@/lib/auth/password";
+import {
+  assertSameOriginMutation,
+  getRequestIp,
+} from "@/lib/auth/request-guard";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { loginSchema } from "./validation";
 
@@ -27,7 +33,10 @@ function isNextRedirect(error: unknown): boolean {
   return typeof digest === "string" && digest.includes("NEXT_REDIRECT");
 }
 
-/** Generic failure copy — never reveal whether email or password was wrong. */
+/**
+ * Generic failure copy — never reveal whether email/password was wrong or
+ * whether rate limiting / backoff applied (`SECURITY_PLAN.md` §2.4).
+ */
 const INVALID_CREDENTIALS = "Invalid email or password.";
 
 /**
@@ -49,13 +58,15 @@ function readFormString(formData: FormData, key: string): string | undefined {
 
 /**
  * Authenticates with email/password, creates a session cookie, and redirects
- * to `/dashboard`. On any credential failure returns
- * {@link INVALID_CREDENTIALS} without indicating which field failed.
+ * to `/dashboard`. Credential, rate-limit, and backoff failures all return
+ * {@link INVALID_CREDENTIALS}.
  */
 export async function loginAction(
   _prev: LoginActionState | undefined,
   formData: FormData,
 ): Promise<LoginActionState> {
+  await assertSameOriginMutation();
+
   const parsed = loginSchema.safeParse({
     email: readFormString(formData, "email") ?? "",
     password: readFormString(formData, "password") ?? "",
@@ -78,6 +89,12 @@ export async function loginAction(
   }
 
   const { email, password } = parsed.data;
+  const ip = await getRequestIp();
+
+  if (isLoginRateLimited(email, ip)) {
+    return { ok: false, message: INVALID_CREDENTIALS };
+  }
+
   const db = getDb();
   const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
   const user = rows[0];
@@ -85,8 +102,11 @@ export async function loginAction(
   // Same generic error whether the email is unknown or the password is wrong
   // (SECURITY_PLAN.md §2.4 — no account enumeration).
   if (!user || !(await verifyPassword(user.passwordHash, password))) {
+    recordLoginFailure(email, ip);
     return { ok: false, message: INVALID_CREDENTIALS };
   }
+
+  clearLoginFailuresForAccount(email);
 
   try {
     // Drop any prior session for this browser before issuing a fresh one

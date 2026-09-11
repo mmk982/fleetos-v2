@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { listVessels } from "@/modules/vessels/vessel.controller";
 import { formatImo } from "@/modules/vessels/vessel.model";
+import { toAccessContext } from "@/lib/auth/access";
+import { requireSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function VesselsPage() {
-  const vessels = await listVessels();
+  const session = await requireSession();
+  const vessels = await listVessels(toAccessContext(session));
 
   return (
     <main className="flex flex-1 flex-col p-8">

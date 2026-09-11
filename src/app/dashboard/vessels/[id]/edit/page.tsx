@@ -2,12 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { VesselForm } from "@/components/vessel-form";
 import { getVesselById } from "@/modules/vessels/vessel.controller";
+import { toAccessContext } from "@/lib/auth/access";
+import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EditVesselPage(props: PageProps) {
+  const session = await requireSession();
   const { id } = await props.params;
-  const vessel = await getVesselById(id);
+  const vessel = await getVesselById(toAccessContext(session), id);
   if (!vessel) {
     notFound();
   }

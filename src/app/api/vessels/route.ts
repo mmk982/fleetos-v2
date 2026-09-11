@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { validateSession } from "@/lib/auth/session";
 import {
   createVessel,
   listVessels,
@@ -6,12 +8,30 @@ import {
 } from "@/modules/vessels/vessel.controller";
 import { vesselCreateSchema } from "@/modules/vessels/validation";
 
+async function requireApiSession() {
+  const session = await validateSession();
+  if (!session) {
+    return null;
+  }
+  return session;
+}
+
 export async function GET() {
-  const data = await listVessels();
+  const session = await requireApiSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const data = await listVessels(toAccessContext(session));
   return NextResponse.json({ data });
 }
 
 export async function POST(request: Request) {
+  const session = await requireApiSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const access = toAccessContext(session);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -28,9 +48,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = await createVessel(parsed.data);
+    const data = await createVessel(access, parsed.data);
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof VesselConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

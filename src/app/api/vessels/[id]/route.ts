@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { validateSession } from "@/lib/auth/session";
 import {
   deleteVessel,
   getVesselById,
@@ -10,9 +12,21 @@ import { vesselUpdateSchema } from "@/modules/vessels/validation";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+async function requireApiSession() {
+  const session = await validateSession();
+  if (!session) {
+    return null;
+  }
+  return session;
+}
+
 export async function GET(_request: Request, context: RouteContext) {
+  const session = await requireApiSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id } = await context.params;
-  const row = await getVesselById(id);
+  const row = await getVesselById(toAccessContext(session), id);
   if (!row) {
     return NextResponse.json({ error: "Vessel not found" }, { status: 404 });
   }
@@ -20,6 +34,11 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const session = await requireApiSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const access = toAccessContext(session);
   const { id } = await context.params;
 
   let body: unknown;
@@ -38,9 +57,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const data = await updateVessel(id, parsed.data);
+    const data = await updateVessel(access, id, parsed.data);
     return NextResponse.json({ data });
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof VesselNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
@@ -52,11 +74,18 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await requireApiSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id } = await context.params;
   try {
-    await deleteVessel(id);
+    await deleteVessel(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof VesselNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }

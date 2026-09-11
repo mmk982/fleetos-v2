@@ -11,12 +11,20 @@
  *
  * All exports are `async` since `drizzle-orm/node-postgres` is promise-based
  * (Phase 2 SQLite → Postgres migration — previously sync via better-sqlite3).
+ *
+ * Every public method takes {@link AccessContext} and calls
+ * {@link assertAuthenticatedAccess} first — the interim third defense layer
+ * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3). Phase 6 RBAC attaches here.
  */
 import "server-only";
 
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
+import {
+  assertAuthenticatedAccess,
+  type AccessContext,
+} from "@/lib/auth/access";
 import { logError } from "@/lib/logging";
 import type { VesselCreateInput, VesselUpdateInput } from "./validation";
 
@@ -48,13 +56,28 @@ function isPgUniqueViolation(error: unknown): boolean {
   );
 }
 
-/** All vessels, alphabetical by name. */
-export async function listVessels(): Promise<VesselRow[]> {
+/**
+ * All vessels, alphabetical by name.
+ *
+ * @param ctx - Authenticated caller (third defense layer).
+ */
+export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
+  assertAuthenticatedAccess(ctx);
   return getDb().select().from(vessels).orderBy(asc(vessels.name));
 }
 
-/** A single vessel by id, or `undefined` if it doesn't exist — use this when "not found" is a valid outcome (e.g. `notFound()` in a page). */
-export async function getVesselById(id: string): Promise<VesselRow | undefined> {
+/**
+ * A single vessel by id, or `undefined` if it doesn't exist — use this when
+ * "not found" is a valid outcome (e.g. `notFound()` in a page).
+ *
+ * @param ctx - Authenticated caller.
+ * @param id - Vessel primary key.
+ */
+export async function getVesselById(
+  ctx: AccessContext,
+  id: string,
+): Promise<VesselRow | undefined> {
+  assertAuthenticatedAccess(ctx, id);
   const rows = await getDb().select().from(vessels).where(eq(vessels.id, id)).limit(1);
   return rows[0];
 }
@@ -66,8 +89,8 @@ export async function getVesselById(id: string): Promise<VesselRow | undefined> 
  *
  * @throws {VesselNotFoundError}
  */
-export async function requireVesselById(id: string): Promise<VesselRow> {
-  const row = await getVesselById(id);
+export async function requireVesselById(ctx: AccessContext, id: string): Promise<VesselRow> {
+  const row = await getVesselById(ctx, id);
   if (!row) {
     throw new VesselNotFoundError(id);
   }
@@ -77,10 +100,15 @@ export async function requireVesselById(id: string): Promise<VesselRow> {
 /**
  * Creates a vessel, normalizing optional fields to `null` for storage.
  *
+ * @param ctx - Authenticated caller.
  * @throws {VesselConflictError} if `imoNumber` collides with an existing
  * vessel — IMO numbers are unique fleet-wide, not just per some scope.
  */
-export async function createVessel(input: VesselCreateInput): Promise<VesselRow> {
+export async function createVessel(
+  ctx: AccessContext,
+  input: VesselCreateInput,
+): Promise<VesselRow> {
+  assertAuthenticatedAccess(ctx);
   const db = getDb();
   try {
     const inserted = await db
@@ -122,9 +150,14 @@ export async function createVessel(input: VesselCreateInput): Promise<VesselRow>
  * @throws {VesselConflictError} if the update's `imoNumber` collides with a
  * different vessel.
  */
-export async function updateVessel(id: string, input: VesselUpdateInput): Promise<VesselRow> {
+export async function updateVessel(
+  ctx: AccessContext,
+  id: string,
+  input: VesselUpdateInput,
+): Promise<VesselRow> {
+  assertAuthenticatedAccess(ctx, id);
   const db = getDb();
-  const existing = await getVesselById(id);
+  const existing = await getVesselById(ctx, id);
   if (!existing) {
     throw new VesselNotFoundError(id);
   }
@@ -199,7 +232,8 @@ export async function updateVessel(id: string, input: VesselUpdateInput): Promis
  *
  * @throws {VesselNotFoundError} if `id` doesn't exist.
  */
-export async function deleteVessel(id: string): Promise<void> {
+export async function deleteVessel(ctx: AccessContext, id: string): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
   const db = getDb();
   try {
     const deleted = await db.delete(vessels).where(eq(vessels.id, id)).returning({ id: vessels.id });

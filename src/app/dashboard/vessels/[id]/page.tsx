@@ -3,12 +3,15 @@ import { notFound } from "next/navigation";
 import { deleteVesselFormAction } from "@/modules/vessels/actions";
 import { getVesselById } from "@/modules/vessels/vessel.controller";
 import { formatImo } from "@/modules/vessels/vessel.model";
+import { toAccessContext } from "@/lib/auth/access";
+import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function VesselDetailPage(props: PageProps) {
+  const session = await requireSession();
   const { id } = await props.params;
-  const vessel = await getVesselById(id);
+  const vessel = await getVesselById(toAccessContext(session), id);
   if (!vessel) {
     notFound();
   }
