@@ -46,18 +46,41 @@ export const userThemeEnum = ["light", "dark"] as const;
 export type UserTheme = (typeof userThemeEnum)[number];
 
 /**
+ * Phase 6 RBAC roles (`MASTER_IMPLEMENTATION_PLAN.md` Phase 6).
+ * Binary allow/deny per module — no “limited” tier.
+ */
+export const userRoleEnum = [
+  "admin",
+  "management_user",
+  "superintendent",
+  "vessel_user",
+  "read_only",
+] as const;
+/** Union of {@link userRoleEnum} literals. */
+export type UserRole = (typeof userRoleEnum)[number];
+
+/**
  * Signed-in accounts. Built in Phase 3 ahead of every feature module so
  * `uploadedBy` / `authorId` / `notifications.userId` FKs are real `users.id`
  * references from their first migration (`MASTER_IMPLEMENTATION_PLAN.md`
- * Phase 3). `role` is a nullable placeholder until Phase 6 RBAC enforces it.
+ * Phase 3). Role enum + vessel scoping columns land with Phase 6 groundwork
+ * (`PROJECT_PLAN.md` §7a); module-wide permission enforcement remains deferred.
  */
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  // Phase 6 fills this in and enforces it; until then it is stored but unused.
-  role: text("role"),
+  role: text("role", { enum: userRoleEnum }).notNull().default("admin"),
+  /**
+   * Set only for `management_user` / `vessel_user` — office roles stay null.
+   * App-layer enforcement deferred; FK only in this pass.
+   */
+  vesselId: uuid("vessel_id").references(() => vessels.id, {
+    onDelete: "restrict",
+  }),
+  /** Deactivated users cannot log in; live sessions fail `validateSession`. */
+  isActive: boolean("is_active").notNull().default(true),
   preferredLocale: text("preferred_locale", { enum: userLocaleEnum }),
   preferredTheme: text("preferred_theme", { enum: userThemeEnum }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

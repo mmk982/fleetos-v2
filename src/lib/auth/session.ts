@@ -219,7 +219,13 @@ export async function validateSession(
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
-    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, now)))
+    .where(
+      and(
+        eq(sessions.id, sessionId),
+        gt(sessions.expiresAt, now),
+        eq(users.isActive, true),
+      ),
+    )
     .limit(1);
 
   const hit = rows[0];

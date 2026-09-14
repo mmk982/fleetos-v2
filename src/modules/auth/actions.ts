@@ -99,9 +99,13 @@ export async function loginAction(
   const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
   const user = rows[0];
 
-  // Same generic error whether the email is unknown or the password is wrong
-  // (SECURITY_PLAN.md §2.4 — no account enumeration).
-  if (!user || !(await verifyPassword(user.passwordHash, password))) {
+  // Same generic error whether the email is unknown, the password is wrong,
+  // or the account is deactivated (SECURITY_PLAN.md §2.4 — no enumeration).
+  if (
+    !user ||
+    !user.isActive ||
+    !(await verifyPassword(user.passwordHash, password))
+  ) {
     recordLoginFailure(email, ip);
     return { ok: false, message: INVALID_CREDENTIALS };
   }
