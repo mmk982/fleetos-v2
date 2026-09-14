@@ -5,13 +5,13 @@
  * parallel per-module download URLs. Try each `*_attachments` table in turn
  * (certificates → deficiencies → crew certificates → insurance →
  * ISM templates → manual revisions → drawing attachments → monthly
- * executed form attachments). UUIDs are unique across tables; path
- * always comes from the DB row.
+ * executed form attachments → vessel particulars attachments). UUIDs
+ * are unique across tables; path always comes from the DB row.
  *
  * Crew attachment hits also write a GDPR `access_logs` row
  * (`download_attachment`) — see PROJECT_PLAN.md §6. Insurance, ISM
- * templates, manual revisions, drawings, and monthly forms do **not**
- * (SECURITY_PLAN.md §6b is Crew-only).
+ * templates, manual revisions, drawings, monthly forms, and particulars
+ * do **not** (SECURITY_PLAN.md §6b is Crew-only).
  */
 import "server-only";
 
@@ -26,6 +26,7 @@ import { getIsmTemplateAttachmentById } from "@/modules/ism-templates/ismTemplat
 import { getManualRevisionAttachmentById } from "@/modules/manuals/manual.controller";
 import { getDrawingAttachmentById } from "@/modules/drawings/drawing.controller";
 import { getMonthlyFormAttachmentById } from "@/modules/monthly-forms/monthlyForm.controller";
+import { getParticularsAttachmentById } from "@/modules/ship-particulars/particulars.controller";
 
 export type ResolvedAttachment = {
   fileName: string;
@@ -115,6 +116,16 @@ export async function resolveAttachmentStream(
     return {
       fileName: monthly.fileName,
       filePath: monthly.filePath,
+      stream,
+    };
+  }
+
+  const particulars = await getParticularsAttachmentById(ctx, attachmentId);
+  if (particulars) {
+    const { stream } = openStoredAttachmentStream(particulars.filePath);
+    return {
+      fileName: particulars.fileName,
+      filePath: particulars.filePath,
       stream,
     };
   }

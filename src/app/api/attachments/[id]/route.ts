@@ -5,9 +5,10 @@
  * `deficiency_attachments`, then `crew_certificate_attachments`, then
  * `insurance_attachments`, then `ism_template_attachments`, then
  * `manual_revisions`, then `drawing_attachments`, then
- * `monthly_executed_form_attachments` (see
- * `src/lib/attachments/resolve.ts`). Path is taken only from the DB row —
- * never from the request. Crew downloads also write `access_logs`.
+ * `monthly_executed_form_attachments`, then
+ * `vessel_particulars_attachments` (see `src/lib/attachments/resolve.ts`).
+ * Path is taken only from the DB row — never from the request. Crew
+ * downloads also write `access_logs`.
  */
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
