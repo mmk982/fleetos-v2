@@ -58,6 +58,14 @@ export class IsmTemplateConflictError extends Error {
   }
 }
 
+export class IsmTemplateCategoryNotFoundError extends Error {
+  readonly code = "ISM_TEMPLATE_CATEGORY_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`ISM template category not found: ${id}`);
+    this.name = "IsmTemplateCategoryNotFoundError";
+  }
+}
+
 export class AttachmentValidationError extends Error {
   readonly code = "ATTACHMENT_VALIDATION" as const;
   constructor(message: string) {
@@ -97,7 +105,7 @@ export type IsmTemplateListFilters = {
   status?: IsmTemplateStatus;
 };
 
-/** Read-only category list — create/update deferred to Settings (§7a). */
+/** Category list for forms and Settings system lists. */
 export async function listIsmTemplateCategories(
   ctx: AccessContext,
 ): Promise<IsmTemplateCategoryRow[]> {
@@ -106,6 +114,104 @@ export async function listIsmTemplateCategories(
     .select()
     .from(ismTemplateCategories)
     .orderBy(asc(ismTemplateCategories.name));
+}
+
+export async function createIsmTemplateCategory(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<IsmTemplateCategoryRow> {
+  assertAuthenticatedAccess(ctx);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new IsmTemplateConflictError("Name is required.");
+  }
+  const db = getDb();
+  try {
+    const inserted = await db
+      .insert(ismTemplateCategories)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("ISM template category insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new IsmTemplateConflictError(
+        "An ISM template category with that name already exists.",
+      );
+    }
+    logError("ISM_TEMPLATE_CATEGORY_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateIsmTemplateCategory(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<IsmTemplateCategoryRow> {
+  assertAuthenticatedAccess(ctx, id);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new IsmTemplateConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: ismTemplateCategories.id })
+    .from(ismTemplateCategories)
+    .where(eq(ismTemplateCategories.id, id))
+    .limit(1);
+  if (!existing[0]) throw new IsmTemplateCategoryNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(ismTemplateCategories)
+      .set({ name })
+      .where(eq(ismTemplateCategories.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new IsmTemplateCategoryNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof IsmTemplateCategoryNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new IsmTemplateConflictError(
+        "An ISM template category with that name already exists.",
+      );
+    }
+    logError("ISM_TEMPLATE_CATEGORY_UPDATE_FAILED", {
+      error,
+      ismTemplateCategoryId: id,
+    });
+    throw error;
+  }
+}
+
+export async function deleteIsmTemplateCategory(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  const db = getDb();
+  try {
+    const deleted = await db
+      .delete(ismTemplateCategories)
+      .where(eq(ismTemplateCategories.id, id))
+      .returning({ id: ismTemplateCategories.id });
+    if (deleted.length === 0) throw new IsmTemplateCategoryNotFoundError(id);
+  } catch (error) {
+    if (error instanceof IsmTemplateCategoryNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new IsmTemplateConflictError(
+        "Cannot delete: this ISM template category is still referenced by ISM templates.",
+      );
+    }
+    logError("ISM_TEMPLATE_CATEGORY_DELETE_FAILED", {
+      error,
+      ismTemplateCategoryId: id,
+    });
+    throw error;
+  }
 }
 
 export async function listIsmTemplates(

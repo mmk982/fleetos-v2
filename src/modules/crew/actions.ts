@@ -11,6 +11,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { toAccessContext } from "@/lib/auth/access";
 import { assertSameOriginMutation } from "@/lib/auth/request-guard";
 import { requireSession } from "@/lib/auth/session";
@@ -27,11 +28,19 @@ import {
 } from "./crew-certificate.controller";
 import {
   createCrewMember,
+  createCrewCategory,
+  createEndorsementType,
+  CrewCategoryNotFoundError,
   CrewConflictError,
   CrewMemberNotFoundError,
+  deleteCrewCategory,
   deleteCrewMember,
+  deleteEndorsementType,
+  EndorsementTypeNotFoundError,
   scrubCrewMemberPii,
+  updateCrewCategory,
   updateCrewMember,
+  updateEndorsementType,
 } from "./crew.controller";
 import {
   crewCertificateCreateSchema,
@@ -353,5 +362,160 @@ export async function deleteCrewCertificateAttachmentAction(
   }
   if (typeof crewMemberId === "string" && crewMemberId.length > 0) {
     revalidatePath(`${crewPath}/${crewMemberId}`);
+  }
+}
+
+const systemListsPath = "/dashboard/settings/system-lists";
+const nameOnlySchema = z.object({ name: z.string().trim().min(1).max(200) });
+
+export type SystemListActionState =
+  | { ok: true; message?: string }
+  | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+
+export async function createCrewCategoryAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "Name is required." };
+  }
+  try {
+    await createCrewCategory(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof CrewConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateCrewCategoryAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateCrewCategory(access, id, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof CrewConflictError ||
+      error instanceof CrewCategoryNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteCrewCategoryFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteCrewCategory(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof CrewConflictError ||
+      error instanceof CrewCategoryNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function createEndorsementTypeAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "Name is required." };
+  }
+  try {
+    await createEndorsementType(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof CrewConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateEndorsementTypeAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateEndorsementType(access, id, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof CrewConflictError ||
+      error instanceof EndorsementTypeNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteEndorsementTypeFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteEndorsementType(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof CrewConflictError ||
+      error instanceof EndorsementTypeNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
   }
 }

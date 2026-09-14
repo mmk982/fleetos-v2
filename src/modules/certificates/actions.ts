@@ -19,16 +19,28 @@ import {
   AttachmentValidationError,
   CertificateConflictError,
   CertificateNotFoundError,
+  CertificateTypeNotFoundError,
   createCertificate,
+  createCertificateType,
+  createIssuingAuthority,
   deleteCertificate,
   deleteCertificateAttachment,
+  deleteCertificateType,
+  deleteIssuingAuthority,
+  IssuingAuthorityNotFoundError,
   updateCertificate,
+  updateCertificateType,
+  updateIssuingAuthority,
   uploadCertificateAttachment,
 } from "./certificate.controller";
 import {
   certificateCreateSchema,
   certificateEventCreateSchema,
+  certificateTypeCreateSchema,
+  certificateTypeUpdateSchema,
   certificateUpdateSchema,
+  issuingAuthorityCreateSchema,
+  issuingAuthorityUpdateSchema,
 } from "./validation";
 
 function isNextRedirect(error: unknown): boolean {
@@ -291,5 +303,175 @@ export async function deleteCertificateAttachmentAction(
   }
   if (typeof certificateId === "string" && certificateId.length > 0) {
     revalidatePath(`${certificatesPath}/${certificateId}`);
+  }
+}
+
+const systemListsPath = "/dashboard/settings/system-lists";
+
+export type SystemListActionState =
+  | { ok: true; message?: string }
+  | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+
+export async function createIssuingAuthorityAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const parsed = issuingAuthorityCreateSchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
+  try {
+    await createIssuingAuthority(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof CertificateConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateIssuingAuthorityAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const parsed = issuingAuthorityUpdateSchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateIssuingAuthority(access, id, { name: parsed.data.name! });
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof CertificateConflictError ||
+      error instanceof IssuingAuthorityNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteIssuingAuthorityFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteIssuingAuthority(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof CertificateConflictError ||
+      error instanceof IssuingAuthorityNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function createCertificateTypeAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const offsetRaw = readFormString(formData, "offsetDays");
+  const parsed = certificateTypeCreateSchema.safeParse({
+    authority: readFormString(formData, "authority") ?? "",
+    name: readFormString(formData, "name") ?? "",
+    ruleKind: readFormString(formData, "ruleKind") ?? "expiry_offset",
+    offsetDays: offsetRaw === "" || offsetRaw === undefined ? undefined : offsetRaw,
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
+  try {
+    await createCertificateType(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof CertificateConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateCertificateTypeAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const offsetRaw = readFormString(formData, "offsetDays");
+  const parsed = certificateTypeUpdateSchema.safeParse({
+    authority: readFormString(formData, "authority"),
+    name: readFormString(formData, "name"),
+    ruleKind: readFormString(formData, "ruleKind"),
+    offsetDays: offsetRaw === "" || offsetRaw === undefined ? undefined : offsetRaw,
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateCertificateType(access, id, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof CertificateConflictError ||
+      error instanceof CertificateTypeNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteCertificateTypeFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteCertificateType(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof CertificateConflictError ||
+      error instanceof CertificateTypeNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
   }
 }

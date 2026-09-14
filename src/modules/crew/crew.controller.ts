@@ -43,12 +43,37 @@ export class CrewConflictError extends Error {
   }
 }
 
+export class CrewCategoryNotFoundError extends Error {
+  readonly code = "CREW_CATEGORY_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`Crew category not found: ${id}`);
+    this.name = "CrewCategoryNotFoundError";
+  }
+}
+
+export class EndorsementTypeNotFoundError extends Error {
+  readonly code = "ENDORSEMENT_TYPE_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`Endorsement type not found: ${id}`);
+    this.name = "EndorsementTypeNotFoundError";
+  }
+}
+
 function isPgForeignKeyViolation(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
     (error as { code: string }).code === "23503"
+  );
+}
+
+function isPgUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "23505"
   );
 }
 
@@ -77,6 +102,196 @@ export async function listEndorsementTypes(
     .select()
     .from(endorsementTypes)
     .orderBy(asc(endorsementTypes.name));
+}
+
+export async function createCrewCategory(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<CrewCategoryRow> {
+  assertAuthenticatedAccess(ctx);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new CrewConflictError("Name is required.");
+  }
+  const db = getDb();
+  try {
+    const inserted = await db
+      .insert(crewCategories)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("Crew category insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new CrewConflictError(
+        "A crew category with that name already exists.",
+      );
+    }
+    logError("CREW_CATEGORY_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateCrewCategory(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<CrewCategoryRow> {
+  assertAuthenticatedAccess(ctx, id);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new CrewConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: crewCategories.id })
+    .from(crewCategories)
+    .where(eq(crewCategories.id, id))
+    .limit(1);
+  if (!existing[0]) throw new CrewCategoryNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(crewCategories)
+      .set({ name })
+      .where(eq(crewCategories.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new CrewCategoryNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof CrewCategoryNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new CrewConflictError(
+        "A crew category with that name already exists.",
+      );
+    }
+    logError("CREW_CATEGORY_UPDATE_FAILED", { error, crewCategoryId: id });
+    throw error;
+  }
+}
+
+export async function deleteCrewCategory(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  const db = getDb();
+  try {
+    const deleted = await db
+      .delete(crewCategories)
+      .where(eq(crewCategories.id, id))
+      .returning({ id: crewCategories.id });
+    if (deleted.length === 0) throw new CrewCategoryNotFoundError(id);
+  } catch (error) {
+    if (error instanceof CrewCategoryNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new CrewConflictError(
+        "Cannot delete: this crew category is still referenced by crew members.",
+      );
+    }
+    logError("CREW_CATEGORY_DELETE_FAILED", { error, crewCategoryId: id });
+    throw error;
+  }
+}
+
+export async function createEndorsementType(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<EndorsementTypeRow> {
+  assertAuthenticatedAccess(ctx);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new CrewConflictError("Name is required.");
+  }
+  const db = getDb();
+  try {
+    const inserted = await db
+      .insert(endorsementTypes)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("Endorsement type insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new CrewConflictError(
+        "An endorsement type with that name already exists.",
+      );
+    }
+    logError("ENDORSEMENT_TYPE_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateEndorsementType(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<EndorsementTypeRow> {
+  assertAuthenticatedAccess(ctx, id);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new CrewConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: endorsementTypes.id })
+    .from(endorsementTypes)
+    .where(eq(endorsementTypes.id, id))
+    .limit(1);
+  if (!existing[0]) throw new EndorsementTypeNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(endorsementTypes)
+      .set({ name })
+      .where(eq(endorsementTypes.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new EndorsementTypeNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof EndorsementTypeNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new CrewConflictError(
+        "An endorsement type with that name already exists.",
+      );
+    }
+    logError("ENDORSEMENT_TYPE_UPDATE_FAILED", {
+      error,
+      endorsementTypeId: id,
+    });
+    throw error;
+  }
+}
+
+export async function deleteEndorsementType(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  const db = getDb();
+  try {
+    const deleted = await db
+      .delete(endorsementTypes)
+      .where(eq(endorsementTypes.id, id))
+      .returning({ id: endorsementTypes.id });
+    if (deleted.length === 0) throw new EndorsementTypeNotFoundError(id);
+  } catch (error) {
+    if (error instanceof EndorsementTypeNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new CrewConflictError(
+        "Cannot delete: this endorsement type is still referenced by crew certificates.",
+      );
+    }
+    logError("ENDORSEMENT_TYPE_DELETE_FAILED", {
+      error,
+      endorsementTypeId: id,
+    });
+    throw error;
+  }
 }
 
 /**

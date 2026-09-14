@@ -56,6 +56,14 @@ export class DrawingConflictError extends Error {
   }
 }
 
+export class DrawingCategoryNotFoundError extends Error {
+  readonly code = "DRAWING_CATEGORY_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`Drawing category not found: ${id}`);
+    this.name = "DrawingCategoryNotFoundError";
+  }
+}
+
 export class AttachmentValidationError extends Error {
   readonly code = "ATTACHMENT_VALIDATION" as const;
   constructor(message: string) {
@@ -81,6 +89,15 @@ function isPgForeignKeyViolation(error: unknown): boolean {
   );
 }
 
+function isPgUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "23505"
+  );
+}
+
 function extensionForMime(mime: string): string {
   if (mime === "application/pdf") return ".pdf";
   if (mime === "image/jpeg") return ".jpg";
@@ -96,7 +113,7 @@ function toListItem(
   return { ...drawing, vesselName, categoryName };
 }
 
-/** Read-only category list — create/update deferred to Settings. */
+/** Category list for forms and Settings system lists. */
 export async function listDrawingCategories(
   ctx: AccessContext,
 ): Promise<DrawingCategoryRow[]> {
@@ -105,6 +122,104 @@ export async function listDrawingCategories(
     .select()
     .from(drawingCategories)
     .orderBy(asc(drawingCategories.name));
+}
+
+export async function createDrawingCategory(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<DrawingCategoryRow> {
+  assertAuthenticatedAccess(ctx);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DrawingConflictError("Name is required.");
+  }
+  const db = getDb();
+  try {
+    const inserted = await db
+      .insert(drawingCategories)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("Drawing category insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new DrawingConflictError(
+        "A drawing category with that name already exists.",
+      );
+    }
+    logError("DRAWING_CATEGORY_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateDrawingCategory(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<DrawingCategoryRow> {
+  assertAuthenticatedAccess(ctx, id);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DrawingConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: drawingCategories.id })
+    .from(drawingCategories)
+    .where(eq(drawingCategories.id, id))
+    .limit(1);
+  if (!existing[0]) throw new DrawingCategoryNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(drawingCategories)
+      .set({ name })
+      .where(eq(drawingCategories.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new DrawingCategoryNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof DrawingCategoryNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new DrawingConflictError(
+        "A drawing category with that name already exists.",
+      );
+    }
+    logError("DRAWING_CATEGORY_UPDATE_FAILED", {
+      error,
+      drawingCategoryId: id,
+    });
+    throw error;
+  }
+}
+
+export async function deleteDrawingCategory(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  const db = getDb();
+  try {
+    const deleted = await db
+      .delete(drawingCategories)
+      .where(eq(drawingCategories.id, id))
+      .returning({ id: drawingCategories.id });
+    if (deleted.length === 0) throw new DrawingCategoryNotFoundError(id);
+  } catch (error) {
+    if (error instanceof DrawingCategoryNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new DrawingConflictError(
+        "Cannot delete: this drawing category is still referenced by drawings.",
+      );
+    }
+    logError("DRAWING_CATEGORY_DELETE_FAILED", {
+      error,
+      drawingCategoryId: id,
+    });
+    throw error;
+  }
 }
 
 export type DrawingListFilters = {
