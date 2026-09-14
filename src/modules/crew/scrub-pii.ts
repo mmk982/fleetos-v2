@@ -6,6 +6,11 @@
  * {@link removeStoredAttachmentFile}. The parent row is kept (RESTRICT
  * FK / operational history) — erasure without deleting the identity row.
  *
+ * DB writes (attachment row delete, certificate PII update, member PII
+ * update) run in one transaction so a mid-scrub failure rolls back rather
+ * than leaving a half-erased member. On-disk deletes run only after that
+ * commit succeeds.
+ *
  * NOT NULL name columns become the sentinel `"[erased]"` because Postgres
  * cannot store null there; all other PII columns are set to null.
  */
@@ -61,20 +66,20 @@ export async function scrubCrewMemberPii(
       .where(eq(crewCertificates.crewMemberId, id));
     const certIds = certs.map((c) => c.id);
 
-    let attachmentsRemoved = 0;
-    if (certIds.length > 0) {
-      const atts = await db
-        .select()
-        .from(crewCertificateAttachments)
-        .where(inArray(crewCertificateAttachments.crewCertificateId, certIds));
+    const atts =
+      certIds.length > 0
+        ? await db
+            .select()
+            .from(crewCertificateAttachments)
+            .where(
+              inArray(crewCertificateAttachments.crewCertificateId, certIds),
+            )
+        : [];
+    const filePaths = atts.map((a) => a.filePath);
 
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-        attachmentsRemoved += 1;
-      }
-
+    await db.transaction(async (tx) => {
       if (atts.length > 0) {
-        await db
+        await tx
           .delete(crewCertificateAttachments)
           .where(
             inArray(
@@ -84,31 +89,47 @@ export async function scrubCrewMemberPii(
           );
       }
 
-      await db
-        .update(crewCertificates)
+      if (certIds.length > 0) {
+        await tx
+          .update(crewCertificates)
+          .set({
+            documentNumber: null,
+            issuingAuthority: null,
+            issueDate: null,
+            expiryDate: null,
+            cachedStatus: null,
+            notes: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(crewCertificates.crewMemberId, id));
+      }
+
+      await tx
+        .update(crewMembers)
         .set({
-          documentNumber: null,
-          issuingAuthority: null,
-          issueDate: null,
-          expiryDate: null,
-          cachedStatus: null,
+          firstName: ERASED_NAME,
+          lastName: ERASED_NAME,
+          nationality: null,
+          dateOfBirth: null,
           notes: null,
           updatedAt: new Date(),
         })
-        .where(eq(crewCertificates.crewMemberId, id));
-    }
+        .where(eq(crewMembers.id, id));
+    });
 
-    await db
-      .update(crewMembers)
-      .set({
-        firstName: ERASED_NAME,
-        lastName: ERASED_NAME,
-        nationality: null,
-        dateOfBirth: null,
-        notes: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(crewMembers.id, id));
+    let attachmentsRemoved = 0;
+    for (const filePath of filePaths) {
+      try {
+        await removeStoredAttachmentFile(filePath);
+        attachmentsRemoved += 1;
+      } catch (error) {
+        logError("CREW_SCRUB_PII_FILE_DELETE_FAILED", {
+          error,
+          filePath,
+          crewMemberId: id,
+        });
+      }
+    }
 
     return { attachmentsRemoved };
   } catch (error) {
