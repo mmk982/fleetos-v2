@@ -89,6 +89,24 @@ export type SessionRow = typeof sessions.$inferSelect;
 export type SessionInsert = typeof sessions.$inferInsert;
 
 /**
+ * Generic key-value app settings (`PROJECT_PLAN.md` §7a).
+ * Typed accessors (e.g. `getCriticalDays`) cast/validate `value` — the
+ * column stays text so new settings do not need schema migrations.
+ */
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A settings row as read from the database. */
+export type SettingRow = typeof settings.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link settings}. */
+export type SettingInsert = typeof settings.$inferInsert;
+
+/**
  * Fleet units. The reference schema/module for every later module — see
  * `PROJECT_PLAN.md`'s "Conventions" section, which was extracted from this
  * exact table and its surrounding files.
