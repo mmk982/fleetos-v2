@@ -28,6 +28,18 @@ export const optionalPositiveInt = z.preprocess((val) => {
 }, z.union([z.null(), z.number().int().positive()]).optional());
 
 /**
+ * Coerces a form string to a positive number or `null` (keeps decimals —
+ * for LOA / capacity fields stored as Postgres `numeric`).
+ */
+export const optionalPositiveNumber = z.preprocess((val) => {
+  if (val === null || val === undefined || val === "") {
+    return null;
+  }
+  const n = typeof val === "number" ? val : Number(val);
+  return Number.isFinite(n) ? n : undefined;
+}, z.union([z.null(), z.number().positive()]).optional());
+
+/**
  * Optional calendar date as `YYYY-MM-DD` (or empty → `null`). Matches the
  * Postgres `date` columns and the fleet-wide storage convention (§0.4).
  */

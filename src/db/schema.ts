@@ -13,6 +13,7 @@ import {
   date,
   index,
   integer,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -1093,3 +1094,110 @@ export type MonthlyExecutedFormAttachmentRow =
 /** Shape accepted by Drizzle's `.insert()` for {@link monthlyExecutedFormAttachments}. */
 export type MonthlyExecutedFormAttachmentInsert =
   typeof monthlyExecutedFormAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Ship Particulars + vessel notes (PROJECT_PLAN.md §13)
+// ---------------------------------------------------------------------------
+
+/**
+ * Historical vessel particulars — exactly one `isCurrent = true` row per
+ * vessel at a time (enforced in the controller via transactions).
+ */
+export const vesselParticulars = pgTable(
+  "vessel_particulars",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    classSociety: text("class_society"),
+    portOfRegistry: text("port_of_registry"),
+    owner: text("owner"),
+    manager: text("manager"),
+    deadweightTonnage: integer("deadweight_tonnage"),
+    netRegisteredTonnage: integer("net_registered_tonnage"),
+    lengthOverall: numeric("length_overall"),
+    breadth: numeric("breadth"),
+    depth: numeric("depth"),
+    draft: numeric("draft"),
+    mainEngine: text("main_engine"),
+    auxEngines: text("aux_engines"),
+    cargoCapacity: numeric("cargo_capacity"),
+    ballastCapacity: numeric("ballast_capacity"),
+    fuelOilCapacity: numeric("fuel_oil_capacity"),
+    freshWaterCapacity: numeric("fresh_water_capacity"),
+    isCurrent: boolean("is_current").notNull().default(true),
+    effectiveDate: date("effective_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("vessel_particulars_vessel_id_idx").on(t.vesselId),
+    index("vessel_particulars_is_current_idx").on(t.isCurrent),
+  ],
+);
+
+/** A row as read from {@link vesselParticulars}. */
+export type VesselParticularsRow = typeof vesselParticulars.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link vesselParticulars}. */
+export type VesselParticularsInsert = typeof vesselParticulars.$inferInsert;
+
+/**
+ * Supporting PDFs/images for a particulars record. Out of GDPR scope.
+ */
+export const vesselParticularsAttachments = pgTable(
+  "vessel_particulars_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    particularsId: uuid("particulars_id")
+      .notNull()
+      .references(() => vesselParticulars.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+/** A row as read from {@link vesselParticularsAttachments}. */
+export type VesselParticularsAttachmentRow =
+  typeof vesselParticularsAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link vesselParticularsAttachments}. */
+export type VesselParticularsAttachmentInsert =
+  typeof vesselParticularsAttachments.$inferInsert;
+
+/**
+ * Append-only free-text notes per vessel (Vessel Profile Notes tab later).
+ * No update path — delete + re-add to correct a mistake.
+ */
+export const vesselNotes = pgTable(
+  "vessel_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    authorId: uuid("author_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("vessel_notes_vessel_id_idx").on(t.vesselId)],
+);
+
+/** A row as read from {@link vesselNotes}. */
+export type VesselNoteRow = typeof vesselNotes.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link vesselNotes}. */
+export type VesselNoteInsert = typeof vesselNotes.$inferInsert;
