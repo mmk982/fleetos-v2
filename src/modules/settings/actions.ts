@@ -129,12 +129,13 @@ export async function uploadCompanyLogoAction(
   }
 }
 
-export async function clearCompanyLogoAction(): Promise<SettingsActionState> {
+export async function clearCompanyLogoAction(
+  _formData?: FormData,
+): Promise<void> {
   await assertSameOriginMutation();
   const access = toAccessContext(await requireSession({ touch: true }));
   await clearCompanyLogo(access);
   revalidatePath("/dashboard/settings/company-profile");
   revalidatePath("/dashboard");
   revalidatePath("/login");
-  return { ok: true, message: "Logo removed." };
 }

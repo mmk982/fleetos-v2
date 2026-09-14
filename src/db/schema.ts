@@ -81,6 +81,8 @@ export const users = pgTable("users", {
   }),
   /** Deactivated users cannot log in; live sessions fail `validateSession`. */
   isActive: boolean("is_active").notNull().default(true),
+  /** Updated on successful login for Users & Roles “Last login”. */
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   preferredLocale: text("preferred_locale", { enum: userLocaleEnum }),
   preferredTheme: text("preferred_theme", { enum: userThemeEnum }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

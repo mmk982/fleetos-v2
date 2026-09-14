@@ -113,6 +113,10 @@ export async function loginAction(
   clearLoginFailuresForAccount(email);
 
   try {
+    await getDb()
+      .update(users)
+      .set({ lastLoginAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, user.id));
     // Drop any prior session for this browser before issuing a fresh one
     // (session-ID rotation on login — SECURITY_PLAN.md §3).
     await destroySession();

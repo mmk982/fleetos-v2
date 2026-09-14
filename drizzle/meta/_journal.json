@@ -120,6 +120,13 @@
       "when": 1789397005043,
       "tag": "0016_users_rbac_groundwork",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789400625778,
+      "tag": "0017_users_last_login_at",
+      "breakpoints": true
     }
   ]
 }
