@@ -1,0 +1,219 @@
+/**
+ * Server Actions for ISM Templates — form boundary + attachments.
+ *
+ * Every action: {@link assertSameOriginMutation} →
+ * {@link requireSession}(`touch: true`) → {@link toAccessContext} into the
+ * controller (Phase 3 defense stack).
+ *
+ * Spec: PROJECT_PLAN.md §9.
+ */
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { toAccessContext } from "@/lib/auth/access";
+import { assertSameOriginMutation } from "@/lib/auth/request-guard";
+import { requireSession } from "@/lib/auth/session";
+import {
+  AttachmentNotFoundError,
+  AttachmentValidationError,
+  createIsmTemplate,
+  deleteIsmTemplate,
+  deleteIsmTemplateAttachment,
+  IsmTemplateConflictError,
+  IsmTemplateNotFoundError,
+  updateIsmTemplate,
+  uploadIsmTemplateAttachment,
+} from "./ismTemplate.controller";
+import {
+  ismTemplateCreateSchema,
+  ismTemplateUpdateSchema,
+} from "./validation";
+
+function isNextRedirect(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const digest = (error as { digest?: unknown }).digest;
+  return typeof digest === "string" && digest.includes("NEXT_REDIRECT");
+}
+
+const templatesPath = "/dashboard/ism-templates";
+
+function readFormString(formData: FormData, key: string): string | undefined {
+  const v = formData.get(key);
+  if (v === null || v === undefined) return undefined;
+  return String(v);
+}
+
+function fieldErrorsFromZod(issues: { path: PropertyKey[]; message: string }[]) {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of issues) {
+    const pathKey = issue.path[0];
+    if (typeof pathKey === "string") {
+      fieldErrors[pathKey] ??= [];
+      fieldErrors[pathKey].push(issue.message);
+    }
+  }
+  return fieldErrors;
+}
+
+export type IsmTemplateActionState =
+  | { ok: true }
+  | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+
+export async function createIsmTemplateAction(
+  _prev: IsmTemplateActionState | undefined,
+  formData: FormData,
+): Promise<IsmTemplateActionState> {
+  await assertSameOriginMutation();
+  const session = await requireSession({ touch: true });
+  const access = toAccessContext(session);
+
+  const raw = {
+    formCode: readFormString(formData, "formCode") ?? "",
+    formName: readFormString(formData, "formName") ?? "",
+    categoryId: readFormString(formData, "categoryId") ?? "",
+    revision: readFormString(formData, "revision"),
+    status: readFormString(formData, "status"),
+  };
+
+  const parsed = ismTemplateCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
+
+  try {
+    const row = await createIsmTemplate(access, parsed.data);
+    revalidatePath(templatesPath);
+    redirect(`${templatesPath}/${row.id}`);
+  } catch (error) {
+    if (isNextRedirect(error)) throw error;
+    if (error instanceof IsmTemplateConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateIsmTemplateAction(
+  id: string,
+  _prev: IsmTemplateActionState | undefined,
+  formData: FormData,
+): Promise<IsmTemplateActionState> {
+  await assertSameOriginMutation();
+  const session = await requireSession({ touch: true });
+  const access = toAccessContext(session);
+
+  const raw = {
+    formCode: readFormString(formData, "formCode"),
+    formName: readFormString(formData, "formName"),
+    categoryId: readFormString(formData, "categoryId"),
+    revision: readFormString(formData, "revision"),
+    status: readFormString(formData, "status"),
+  };
+
+  const parsed = ismTemplateUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
+
+  try {
+    await updateIsmTemplate(access, id, parsed.data);
+    revalidatePath(templatesPath);
+    revalidatePath(`${templatesPath}/${id}`);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof IsmTemplateNotFoundError) {
+      return { ok: false, message: error.message };
+    }
+    if (error instanceof IsmTemplateConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteIsmTemplateFormAction(
+  formData: FormData,
+): Promise<void> {
+  await assertSameOriginMutation();
+  const session = await requireSession({ touch: true });
+  const access = toAccessContext(session);
+  const id = formData.get("id");
+  if (typeof id !== "string" || id.length === 0) {
+    throw new Error("Missing ISM template id");
+  }
+  await deleteIsmTemplate(access, id);
+  revalidatePath(templatesPath);
+  redirect(templatesPath);
+}
+
+export async function uploadIsmTemplateAttachmentAction(
+  _prev: IsmTemplateActionState | undefined,
+  formData: FormData,
+): Promise<IsmTemplateActionState> {
+  await assertSameOriginMutation();
+  const session = await requireSession({ touch: true });
+  const access = toAccessContext(session);
+
+  const ismTemplateId = readFormString(formData, "ismTemplateId");
+  if (!ismTemplateId) {
+    return { ok: false, message: "Missing template id." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Choose a file to upload." };
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  try {
+    await uploadIsmTemplateAttachment(access, ismTemplateId, {
+      name: file.name,
+      type: file.type || "application/octet-stream",
+      size: file.size,
+      bytes,
+    });
+    revalidatePath(`${templatesPath}/${ismTemplateId}`);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof AttachmentValidationError) {
+      return { ok: false, message: error.message };
+    }
+    if (error instanceof IsmTemplateNotFoundError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteIsmTemplateAttachmentAction(
+  formData: FormData,
+): Promise<void> {
+  await assertSameOriginMutation();
+  const session = await requireSession({ touch: true });
+  const access = toAccessContext(session);
+
+  const id = formData.get("id");
+  const ismTemplateId = formData.get("ismTemplateId");
+  if (typeof id !== "string" || id.length === 0) {
+    throw new Error("Missing attachment id");
+  }
+  try {
+    await deleteIsmTemplateAttachment(access, id);
+  } catch (error) {
+    if (error instanceof AttachmentNotFoundError) throw error;
+    throw error;
+  }
+  if (typeof ismTemplateId === "string" && ismTemplateId.length > 0) {
+    revalidatePath(`${templatesPath}/${ismTemplateId}`);
+  }
+}
