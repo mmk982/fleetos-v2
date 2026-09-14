@@ -710,6 +710,28 @@ export type AccessLogRow = typeof accessLogs.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link accessLogs}. */
 export type AccessLogInsert = typeof accessLogs.$inferInsert;
 
+/**
+ * Append-only operational activity trail for Dashboard “Recent activity”
+ * (`PROJECT_PLAN.md` §5 / §6). `recordId` is polymorphic by `moduleName` —
+ * not a typed FK. `userId` uses SET NULL (log-userId category, §0.9).
+ */
+export const activityLogs = pgTable("activity_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  actionType: text("action_type").notNull(),
+  moduleName: text("module_name").notNull(),
+  recordId: uuid("record_id").notNull(),
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link activityLogs}. */
+export type ActivityLogRow = typeof activityLogs.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link activityLogs}. */
+export type ActivityLogInsert = typeof activityLogs.$inferInsert;
+
 // ---------------------------------------------------------------------------
 // Insurance module (PROJECT_PLAN.md §4)
 // ---------------------------------------------------------------------------
