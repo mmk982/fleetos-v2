@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/insurance", label: "Insurance" },
   { href: "/dashboard/ism-templates", label: "ISM Templates" },
   { href: "/dashboard/manuals", label: "Manuals" },
+  { href: "/dashboard/drawings", label: "Drawings" },
   { href: "/dashboard/settings", label: "Settings" },
 ] as const;
 
