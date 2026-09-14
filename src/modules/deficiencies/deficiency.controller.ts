@@ -30,6 +30,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import {
   openStoredAttachmentStream,
   removeStoredAttachmentFile,
@@ -314,6 +315,7 @@ export async function createDeficiency(
 ): Promise<DeficiencyRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: DeficiencyRow;
   try {
     const inserted = await db
       .insert(deficiencies)
@@ -334,9 +336,9 @@ export async function createDeficiency(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new DeficiencyConflictError("Vessel reference is invalid.");
@@ -347,6 +349,14 @@ export async function createDeficiency(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: `Added deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 /** Partial update. Prefer dedicated transition helpers for status changes. */
@@ -390,15 +400,16 @@ export async function updateDeficiency(
   }
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: DeficiencyRow;
   try {
     const updated = await db
       .update(deficiencies)
       .set(patch)
       .where(eq(deficiencies.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new DeficiencyNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new DeficiencyNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof DeficiencyNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -407,6 +418,17 @@ export async function updateDeficiency(
     logError("DEFICIENCY_UPDATE_FAILED", { error, deficiencyId: id });
     throw error;
   }
+  const closed = input.status === "closed";
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: closed ? "closed" : "updated",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: closed
+      ? `Closed deficiency: ${row.title}`
+      : `Updated deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 async function setStatus(
@@ -444,9 +466,17 @@ export async function closeDeficiency(
 ): Promise<DeficiencyRow> {
   const existing = await getDeficiencyById(ctx, id);
   if (!existing) throw new DeficiencyNotFoundError(id);
-  return setStatus(ctx, id, "closed", {
+  const row = await setStatus(ctx, id, "closed", {
     closedDate: existing.closedDate ?? todayIso(),
   });
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "closed",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: `Closed deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 /** → `open`; clears `closedDate`. */
@@ -454,7 +484,15 @@ export async function reopenDeficiency(
   ctx: AccessContext,
   id: string,
 ): Promise<DeficiencyRow> {
-  return setStatus(ctx, id, "open", { closedDate: null });
+  const row = await setStatus(ctx, id, "open", { closedDate: null });
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: `Updated deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 /** → `in_progress`. */
@@ -462,7 +500,15 @@ export async function startProgressDeficiency(
   ctx: AccessContext,
   id: string,
 ): Promise<DeficiencyRow> {
-  return setStatus(ctx, id, "in_progress");
+  const row = await setStatus(ctx, id, "in_progress");
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: `Updated deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 /** → `monitoring`. */
@@ -470,7 +516,15 @@ export async function setMonitoringDeficiency(
   ctx: AccessContext,
   id: string,
 ): Promise<DeficiencyRow> {
-  return setStatus(ctx, id, "monitoring");
+  const row = await setStatus(ctx, id, "monitoring");
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "deficiency",
+    recordId: row.id,
+    description: `Updated deficiency: ${row.title}`,
+  });
+  return row;
 }
 
 /** Hard-delete; attachments cascade + on-disk files removed. */
@@ -480,6 +534,12 @@ export async function deleteDeficiency(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existingRows = await db
+    .select({ title: deficiencies.title })
+    .from(deficiencies)
+    .where(eq(deficiencies.id, id))
+    .limit(1);
+  const title = existingRows[0]?.title;
   try {
     const atts = await db
       .select()
@@ -498,6 +558,15 @@ export async function deleteDeficiency(
     logError("DEFICIENCY_DELETE_FAILED", { error, deficiencyId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "deficiency",
+    recordId: id,
+    description: title
+      ? `Deleted deficiency: ${title}`
+      : "Deleted deficiency",
+  });
 }
 
 function extensionForMime(mime: string): string {
@@ -527,6 +596,7 @@ export async function uploadDeficiencyAttachment(
   }
 
   const db = getDb();
+  let row: DeficiencyAttachmentRow;
   try {
     const parent = await db
       .select({ id: deficiencies.id })
@@ -554,12 +624,12 @@ export async function uploadDeficiencyAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof DeficiencyNotFoundError ||
@@ -573,6 +643,14 @@ export async function uploadDeficiencyAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "deficiency",
+    recordId: deficiencyId,
+    description: `Uploaded attachment to deficiency: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteDeficiencyAttachment(

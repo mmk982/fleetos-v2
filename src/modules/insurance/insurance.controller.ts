@@ -31,8 +31,10 @@ import {
   type ComplianceStatus,
 } from "@/lib/expiry";
 import { logError } from "@/lib/logging";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import {
   INSURANCE_REMINDER_RULE,
+  insuranceTypeLabel,
   type InsuranceListItem,
 } from "./insurance.model";
 import type {
@@ -194,6 +196,7 @@ export async function createInsurancePolicy(
 ): Promise<InsurancePolicyRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: InsurancePolicyRow;
   try {
     const inserted = await db
       .insert(insurancePolicies)
@@ -209,15 +212,15 @@ export async function createInsurancePolicy(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Insurance policy insert did not return a row");
-    await refreshCachedStatus(row);
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Insurance policy insert did not return a row");
+    await refreshCachedStatus(insertedRow);
     const refreshed = await db
       .select()
       .from(insurancePolicies)
-      .where(eq(insurancePolicies.id, row.id))
+      .where(eq(insurancePolicies.id, insertedRow.id))
       .limit(1);
-    return refreshed[0] ?? row;
+    row = refreshed[0] ?? insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new InsuranceConflictError("Vessel reference is invalid.");
@@ -225,6 +228,15 @@ export async function createInsurancePolicy(
     logError("INSURANCE_CREATE_FAILED", { error });
     throw error;
   }
+  const label = insuranceTypeLabel(row.policyType);
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "insurance",
+    recordId: row.id,
+    description: `Added insurance: ${label}`,
+  });
+  return row;
 }
 
 export async function updateInsurancePolicy(
@@ -257,21 +269,22 @@ export async function updateInsurancePolicy(
   if (input.expiryDate !== undefined) patch.expiryDate = input.expiryDate;
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: InsurancePolicyRow;
   try {
     const updated = await db
       .update(insurancePolicies)
       .set(patch)
       .where(eq(insurancePolicies.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new InsuranceNotFoundError(id);
-    await refreshCachedStatus(row);
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new InsuranceNotFoundError(id);
+    await refreshCachedStatus(updatedRow);
     const refreshed = await db
       .select()
       .from(insurancePolicies)
       .where(eq(insurancePolicies.id, id))
       .limit(1);
-    return refreshed[0] ?? row;
+    row = refreshed[0] ?? updatedRow;
   } catch (error) {
     if (error instanceof InsuranceNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -280,6 +293,15 @@ export async function updateInsurancePolicy(
     logError("INSURANCE_UPDATE_FAILED", { error, insurancePolicyId: id });
     throw error;
   }
+  const label = insuranceTypeLabel(row.policyType);
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "insurance",
+    recordId: row.id,
+    description: `Updated insurance: ${label}`,
+  });
+  return row;
 }
 
 /** Hard-delete; removes on-disk attachment files first (same order as crew certs). */
@@ -289,6 +311,12 @@ export async function deleteInsurancePolicy(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existingRows = await db
+    .select({ policyType: insurancePolicies.policyType })
+    .from(insurancePolicies)
+    .where(eq(insurancePolicies.id, id))
+    .limit(1);
+  const policyType = existingRows[0]?.policyType;
   try {
     const atts = await db
       .select()
@@ -307,6 +335,14 @@ export async function deleteInsurancePolicy(
     logError("INSURANCE_DELETE_FAILED", { error, insurancePolicyId: id });
     throw error;
   }
+  const label = policyType ? insuranceTypeLabel(policyType) : "insurance";
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "insurance",
+    recordId: id,
+    description: `Deleted insurance: ${label}`,
+  });
 }
 
 export async function listInsuranceAttachments(
@@ -347,6 +383,7 @@ export async function uploadInsuranceAttachment(
   }
 
   const db = getDb();
+  let row: InsuranceAttachmentRow;
   try {
     const parent = await db
       .select({ id: insurancePolicies.id })
@@ -374,12 +411,12 @@ export async function uploadInsuranceAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof InsuranceNotFoundError ||
@@ -393,6 +430,14 @@ export async function uploadInsuranceAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "insurance",
+    recordId: insurancePolicyId,
+    description: `Uploaded attachment to insurance: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteInsuranceAttachment(

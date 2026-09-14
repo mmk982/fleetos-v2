@@ -25,6 +25,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type { VesselCreateInput, VesselUpdateInput } from "./validation";
 
@@ -110,6 +111,7 @@ export async function createVessel(
 ): Promise<VesselRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: VesselRow;
   try {
     const inserted = await db
       .insert(vessels)
@@ -126,11 +128,11 @@ export async function createVessel(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       throw new Error("Insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       throw new VesselConflictError("That IMO number is already assigned to another vessel.");
@@ -138,6 +140,14 @@ export async function createVessel(
     logError("VESSEL_CREATE_FAILED", { error, imoNumber: input.imoNumber ?? null });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "vessel",
+    recordId: row.id,
+    description: `Added vessel: ${row.name}`,
+  });
+  return row;
 }
 
 /**
@@ -197,17 +207,18 @@ export async function updateVessel(
     patch.notes = input.notes;
   }
 
+  let row: VesselRow;
   try {
     const updated = await db
       .update(vessels)
       .set(patch)
       .where(eq(vessels.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) {
+    const updatedRow = updated[0];
+    if (!updatedRow) {
       throw new VesselNotFoundError(id);
     }
-    return row;
+    row = updatedRow;
   } catch (error) {
     if (error instanceof VesselNotFoundError) {
       throw error;
@@ -218,6 +229,14 @@ export async function updateVessel(
     logError("VESSEL_UPDATE_FAILED", { error, vesselId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "vessel",
+    recordId: row.id,
+    description: `Updated vessel: ${row.name}`,
+  });
+  return row;
 }
 
 /**
@@ -235,6 +254,8 @@ export async function updateVessel(
 export async function deleteVessel(ctx: AccessContext, id: string): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await getVesselById(ctx, id);
+  const name = existing?.name;
   try {
     const deleted = await db.delete(vessels).where(eq(vessels.id, id)).returning({ id: vessels.id });
     if (deleted.length === 0) {
@@ -247,4 +268,11 @@ export async function deleteVessel(ctx: AccessContext, id: string): Promise<void
     logError("VESSEL_DELETE_FAILED", { error, vesselId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "vessel",
+    recordId: id,
+    description: name ? `Deleted vessel: ${name}` : "Deleted vessel",
+  });
 }

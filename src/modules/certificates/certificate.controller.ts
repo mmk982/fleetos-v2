@@ -35,6 +35,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import {
   openStoredAttachmentStream,
   removeStoredAttachmentFile,
@@ -599,6 +600,7 @@ export async function createCertificate(
   assertAuthenticatedAccess(ctx);
   const type = await loadType(ctx, input.certificateTypeId);
   const db = getDb();
+  let result: CertificateRow;
 
   try {
     const inserted = await db
@@ -628,7 +630,7 @@ export async function createCertificate(
       .from(certificates)
       .where(eq(certificates.id, row.id))
       .limit(1);
-    return refreshed[0] ?? row;
+    result = refreshed[0] ?? row;
   } catch (error) {
     if (error instanceof CertificateTypeNotFoundError) {
       throw error;
@@ -648,6 +650,16 @@ export async function createCertificate(
     });
     throw error;
   }
+  const label =
+    type.name || result.certificateNumber || "certificate";
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "certificate",
+    recordId: result.id,
+    description: `Added certificate: ${label}`,
+  });
+  return result;
 }
 
 /**
@@ -703,6 +715,8 @@ export async function updateCertificate(
   }
   if (input.remarks !== undefined) patch.remarks = input.remarks;
 
+  let result: CertificateRow;
+  let typeName: string | undefined;
   try {
     const updated = await db
       .update(certificates)
@@ -714,13 +728,14 @@ export async function updateCertificate(
       throw new CertificateNotFoundError(id);
     }
     const type = await loadType(ctx, row.certificateTypeId);
+    typeName = type.name;
     await refreshCachedStatus(ctx, row, type);
     const refreshed = await db
       .select()
       .from(certificates)
       .where(eq(certificates.id, id))
       .limit(1);
-    return refreshed[0] ?? row;
+    result = refreshed[0] ?? row;
   } catch (error) {
     if (
       error instanceof CertificateNotFoundError ||
@@ -736,6 +751,16 @@ export async function updateCertificate(
     logError("CERTIFICATE_UPDATE_FAILED", { error, certificateId: id });
     throw error;
   }
+  const label =
+    typeName || result.certificateNumber || "certificate";
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "certificate",
+    recordId: result.id,
+    description: `Updated certificate: ${label}`,
+  });
+  return result;
 }
 
 /**
@@ -750,12 +775,27 @@ export async function deleteCertificate(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existingRows = await db
+    .select({
+      certificateNumber: certificates.certificateNumber,
+      typeName: certificateTypes.name,
+    })
+    .from(certificates)
+    .leftJoin(
+      certificateTypes,
+      eq(certificates.certificateTypeId, certificateTypes.id),
+    )
+    .where(eq(certificates.id, id))
+    .limit(1);
+  const existing = existingRows[0];
+  const label =
+    existing?.typeName || existing?.certificateNumber || "certificate";
   try {
-    const existing = await db
+    const atts = await db
       .select()
       .from(certificateAttachments)
       .where(eq(certificateAttachments.certificateId, id));
-    for (const att of existing) {
+    for (const att of atts) {
       await removeStoredAttachmentFile(att.filePath);
     }
     const deleted = await db
@@ -772,6 +812,13 @@ export async function deleteCertificate(
     logError("CERTIFICATE_DELETE_FAILED", { error, certificateId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "certificate",
+    recordId: id,
+    description: `Deleted certificate: ${label}`,
+  });
 }
 
 /**
@@ -877,6 +924,7 @@ export async function uploadCertificateAttachment(
   }
 
   const db = getDb();
+  let row: CertificateAttachmentRow;
   try {
     const cert = await db
       .select({ id: certificates.id })
@@ -904,12 +952,12 @@ export async function uploadCertificateAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof CertificateNotFoundError ||
@@ -923,6 +971,14 @@ export async function uploadCertificateAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "certificate",
+    recordId: certificateId,
+    description: `Uploaded attachment to certificate: ${row.fileName}`,
+  });
+  return row;
 }
 
 /** Deletes an attachment row and its on-disk file. */
