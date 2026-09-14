@@ -949,3 +949,147 @@ export const drawingAttachments = pgTable("drawing_attachments", {
 export type DrawingAttachmentRow = typeof drawingAttachments.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link drawingAttachments}. */
 export type DrawingAttachmentInsert = typeof drawingAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Monthly Executed Forms (PROJECT_PLAN.md §10)
+// ---------------------------------------------------------------------------
+
+/** How often a vessel/template requirement is due. */
+export const monthlyFormFrequencyEnum = [
+  "monthly",
+  "quarterly",
+  "yearly",
+  "on_demand",
+] as const;
+/** Union of {@link monthlyFormFrequencyEnum} literals. */
+export type MonthlyFormFrequency = (typeof monthlyFormFrequencyEnum)[number];
+
+/**
+ * Stored execution status only. `"overdue"` is never persisted — derive it
+ * at read time via `deriveMonthlyFormDisplayStatus`.
+ */
+export const monthlyFormStatusEnum = ["submitted", "pending"] as const;
+/** Union of {@link monthlyFormStatusEnum} literals. */
+export type MonthlyFormStatus = (typeof monthlyFormStatusEnum)[number];
+
+/**
+ * Per-vessel / per-template requirement (independent of any month).
+ * Checklist generation reads `activeStatus = true` rows.
+ */
+export const monthlyFormRequirements = pgTable(
+  "monthly_form_requirements",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    ismTemplateId: uuid("ism_template_id")
+      .notNull()
+      .references(() => ismTemplates.id, { onDelete: "restrict" }),
+    frequency: text("frequency", { enum: monthlyFormFrequencyEnum })
+      .notNull()
+      .default("monthly"),
+    activeStatus: boolean("active_status").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("monthly_form_requirements_vessel_template_uidx").on(
+      t.vesselId,
+      t.ismTemplateId,
+    ),
+    index("monthly_form_requirements_vessel_id_idx").on(t.vesselId),
+  ],
+);
+
+/** A row as read from {@link monthlyFormRequirements}. */
+export type MonthlyFormRequirementRow =
+  typeof monthlyFormRequirements.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link monthlyFormRequirements}. */
+export type MonthlyFormRequirementInsert =
+  typeof monthlyFormRequirements.$inferInsert;
+
+/**
+ * One vessel/template/period execution row. `formName` is denormalized so
+ * history stays readable if the template is renamed. Unique on
+ * (vessel, template, month, year).
+ */
+export const monthlyExecutedForms = pgTable(
+  "monthly_executed_forms",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    ismTemplateId: uuid("ism_template_id").references(() => ismTemplates.id, {
+      onDelete: "restrict",
+    }),
+    formName: text("form_name").notNull(),
+    month: integer("month").notNull(),
+    year: integer("year").notNull(),
+    required: boolean("required").notNull().default(true),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    status: text("status", { enum: monthlyFormStatusEnum })
+      .notNull()
+      .default("pending"),
+    remarks: text("remarks"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("monthly_executed_forms_vessel_template_period_uidx").on(
+      t.vesselId,
+      t.ismTemplateId,
+      t.month,
+      t.year,
+    ),
+    index("monthly_executed_forms_vessel_id_idx").on(t.vesselId),
+    index("monthly_executed_forms_period_idx").on(t.year, t.month),
+    index("monthly_executed_forms_status_idx").on(t.status),
+  ],
+);
+
+/** A row as read from {@link monthlyExecutedForms}. */
+export type MonthlyExecutedFormRow = typeof monthlyExecutedForms.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link monthlyExecutedForms}. */
+export type MonthlyExecutedFormInsert =
+  typeof monthlyExecutedForms.$inferInsert;
+
+/**
+ * Submitted file(s) for an executed form. Out of GDPR access-log scope.
+ */
+export const monthlyExecutedFormAttachments = pgTable(
+  "monthly_executed_form_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    executedFormId: uuid("executed_form_id")
+      .notNull()
+      .references(() => monthlyExecutedForms.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+/** A row as read from {@link monthlyExecutedFormAttachments}. */
+export type MonthlyExecutedFormAttachmentRow =
+  typeof monthlyExecutedFormAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link monthlyExecutedFormAttachments}. */
+export type MonthlyExecutedFormAttachmentInsert =
+  typeof monthlyExecutedFormAttachments.$inferInsert;

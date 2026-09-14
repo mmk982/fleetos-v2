@@ -71,6 +71,13 @@
       "when": 1789391134589,
       "tag": "0009_same_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789391909179,
+      "tag": "0010_blushing_hobgoblin",
+      "breakpoints": true
     }
   ]
 }
