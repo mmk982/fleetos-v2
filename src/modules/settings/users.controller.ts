@@ -17,6 +17,7 @@ import {
   ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { hashPassword } from "@/lib/auth/password";
 import { logError } from "@/lib/logging";
 import { roleRequiresVessel, type UserListItem } from "./users.model";
@@ -118,6 +119,7 @@ export async function createUser(
     ? (input.vesselId ?? null)
     : null;
 
+  let row: UserRow;
   try {
     const passwordHash = await hashPassword(input.password);
     const inserted = await getDb()
@@ -131,9 +133,9 @@ export async function createUser(
         isActive: true,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("User insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("User insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       throw new UserConflictError("A user with that email already exists.");
@@ -144,6 +146,14 @@ export async function createUser(
     logError("USER_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "user",
+    recordId: row.id,
+    description: `Added user: ${name}`,
+  });
+  return row;
 }
 
 export type UpdateUserInput = {
@@ -194,15 +204,16 @@ export async function updateUser(
   if (input.role !== undefined) patch.role = input.role;
   patch.vesselId = vesselId;
 
+  let row: UserRow;
   try {
     const updated = await db
       .update(users)
       .set(patch)
       .where(eq(users.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new UserNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new UserNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof UserNotFoundError) throw error;
     if (isPgUniqueViolation(error)) {
@@ -214,6 +225,14 @@ export async function updateUser(
     logError("USER_UPDATE_FAILED", { error, userId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "user",
+    recordId: row.id,
+    description: `Updated user: ${row.name}`,
+  });
+  return row;
 }
 
 export async function changeUserPassword(
@@ -227,7 +246,7 @@ export async function changeUserPassword(
   }
   const db = getDb();
   const existing = await db
-    .select({ id: users.id })
+    .select({ id: users.id, name: users.name })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);
@@ -238,6 +257,14 @@ export async function changeUserPassword(
     .update(users)
     .set({ passwordHash, updatedAt: new Date() })
     .where(eq(users.id, id));
+
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "user",
+    recordId: id,
+    description: `Changed password for user: ${existing[0].name}`,
+  });
 }
 
 export async function setUserActive(
@@ -256,5 +283,14 @@ export async function setUserActive(
     .returning();
   const row = updated[0];
   if (!row) throw new UserNotFoundError(id);
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "user",
+    recordId: row.id,
+    description: isActive
+      ? `Activated user: ${row.name}`
+      : `Deactivated user: ${row.name}`,
+  });
   return row;
 }
