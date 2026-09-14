@@ -27,6 +27,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
 import { logError } from "@/lib/logging";
 
@@ -52,13 +53,20 @@ export async function scrubCrewMemberPii(
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
 
+  let name: string | undefined;
+  let attachmentsRemoved = 0;
   try {
     const members = await db
-      .select({ id: crewMembers.id })
+      .select({
+        id: crewMembers.id,
+        firstName: crewMembers.firstName,
+        lastName: crewMembers.lastName,
+      })
       .from(crewMembers)
       .where(eq(crewMembers.id, id))
       .limit(1);
     if (!members[0]) throw new CrewMemberNotFoundError(id);
+    name = `${members[0].firstName} ${members[0].lastName}`;
 
     const certs = await db
       .select({ id: crewCertificates.id })
@@ -117,7 +125,6 @@ export async function scrubCrewMemberPii(
         .where(eq(crewMembers.id, id));
     });
 
-    let attachmentsRemoved = 0;
     for (const filePath of filePaths) {
       try {
         await removeStoredAttachmentFile(filePath);
@@ -130,11 +137,19 @@ export async function scrubCrewMemberPii(
         });
       }
     }
-
-    return { attachmentsRemoved };
   } catch (error) {
     if (error instanceof CrewMemberNotFoundError) throw error;
     logError("CREW_SCRUB_PII_FAILED", { error, crewMemberId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "crew",
+    recordId: id,
+    description: name
+      ? `Deleted crew member: ${name}`
+      : "Deleted crew member",
+  });
+  return { attachmentsRemoved };
 }

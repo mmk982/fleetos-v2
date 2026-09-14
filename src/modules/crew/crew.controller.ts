@@ -24,6 +24,7 @@ import {
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeAccessLog } from "@/lib/access-log/write";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type { CrewMemberListItem } from "./crew.model";
 import type {
@@ -385,6 +386,7 @@ export async function createCrewMember(
 ): Promise<CrewMemberRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: CrewMemberRow;
   try {
     const inserted = await db
       .insert(crewMembers)
@@ -399,9 +401,9 @@ export async function createCrewMember(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Crew member insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Crew member insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new CrewConflictError(
@@ -411,6 +413,14 @@ export async function createCrewMember(
     logError("CREW_MEMBER_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "crew",
+    recordId: row.id,
+    description: `Added crew member: ${row.firstName} ${row.lastName}`,
+  });
+  return row;
 }
 
 export async function updateCrewMember(
@@ -440,15 +450,16 @@ export async function updateCrewMember(
   if (input.status !== undefined) patch.status = input.status;
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: CrewMemberRow;
   try {
     const updated = await db
       .update(crewMembers)
       .set(patch)
       .where(eq(crewMembers.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new CrewMemberNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new CrewMemberNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof CrewMemberNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -459,6 +470,14 @@ export async function updateCrewMember(
     logError("CREW_MEMBER_UPDATE_FAILED", { error, crewMemberId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "crew",
+    recordId: row.id,
+    description: `Updated crew member: ${row.firstName} ${row.lastName}`,
+  });
+  return row;
 }
 
 /** Hard-delete — blocked while certificates remain (RESTRICT). */
@@ -468,6 +487,17 @@ export async function deleteCrewMember(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({
+      firstName: crewMembers.firstName,
+      lastName: crewMembers.lastName,
+    })
+    .from(crewMembers)
+    .where(eq(crewMembers.id, id))
+    .limit(1);
+  const name = existing[0]
+    ? `${existing[0].firstName} ${existing[0].lastName}`
+    : undefined;
   try {
     const deleted = await db
       .delete(crewMembers)
@@ -484,4 +514,13 @@ export async function deleteCrewMember(
     logError("CREW_MEMBER_DELETE_FAILED", { error, crewMemberId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "crew",
+    recordId: id,
+    description: name
+      ? `Deleted crew member: ${name}`
+      : "Deleted crew member",
+  });
 }

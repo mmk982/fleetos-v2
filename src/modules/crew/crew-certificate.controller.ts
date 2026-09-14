@@ -25,6 +25,7 @@ import {
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeAccessLog } from "@/lib/access-log/write";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import {
   openStoredAttachmentStream,
   removeStoredAttachmentFile,
@@ -187,6 +188,7 @@ export async function createCrewCertificate(
   assertAuthenticatedAccess(ctx, input.crewMemberId);
   const db = getDb();
 
+  let row: CrewCertificateRow;
   try {
     const member = await db
       .select({ id: crewMembers.id })
@@ -208,10 +210,10 @@ export async function createCrewCertificate(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Crew certificate insert did not return a row");
-    await refreshCachedStatus(row);
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Crew certificate insert did not return a row");
+    await refreshCachedStatus(insertedRow);
+    row = insertedRow;
   } catch (error) {
     if (error instanceof CrewMemberNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -222,6 +224,14 @@ export async function createCrewCertificate(
     logError("CREW_CERTIFICATE_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "crew",
+    recordId: row.id,
+    description: `Added crew certificate: ${row.name}`,
+  });
+  return row;
 }
 
 export async function updateCrewCertificate(
@@ -256,16 +266,17 @@ export async function updateCrewCertificate(
   if (input.expiryDate !== undefined) patch.expiryDate = input.expiryDate;
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: CrewCertificateRow;
   try {
     const updated = await db
       .update(crewCertificates)
       .set(patch)
       .where(eq(crewCertificates.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new CrewCertificateNotFoundError(id);
-    await refreshCachedStatus(row);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new CrewCertificateNotFoundError(id);
+    await refreshCachedStatus(updatedRow);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof CrewCertificateNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -279,6 +290,14 @@ export async function updateCrewCertificate(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "crew",
+    recordId: row.id,
+    description: `Updated crew certificate: ${row.name}`,
+  });
+  return row;
 }
 
 export async function deleteCrewCertificate(
@@ -287,6 +306,12 @@ export async function deleteCrewCertificate(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({ name: crewCertificates.name })
+    .from(crewCertificates)
+    .where(eq(crewCertificates.id, id))
+    .limit(1);
+  const name = existing[0]?.name;
   try {
     const atts = await db
       .select()
@@ -308,6 +333,15 @@ export async function deleteCrewCertificate(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "crew",
+    recordId: id,
+    description: name
+      ? `Deleted crew certificate: ${name}`
+      : "Deleted crew certificate",
+  });
 }
 
 export async function listCrewCertificateAttachments(
@@ -348,6 +382,7 @@ export async function uploadCrewCertificateAttachment(
   }
 
   const db = getDb();
+  let row: CrewCertificateAttachmentRow;
   try {
     const parent = await db
       .select({ id: crewCertificates.id })
@@ -375,12 +410,12 @@ export async function uploadCrewCertificateAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof CrewCertificateNotFoundError ||
@@ -394,6 +429,14 @@ export async function uploadCrewCertificateAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "crew",
+    recordId: crewCertificateId,
+    description: `Uploaded attachment to crew certificate: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteCrewCertificateAttachment(
