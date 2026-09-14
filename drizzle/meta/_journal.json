@@ -64,6 +64,13 @@
       "when": 1789389492248,
       "tag": "0008_wandering_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789391134589,
+      "tag": "0009_same_whiplash",
+      "breakpoints": true
     }
   ]
 }

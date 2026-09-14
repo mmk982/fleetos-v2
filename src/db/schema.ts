@@ -866,3 +866,86 @@ export const manualRevisions = pgTable(
 export type ManualRevisionRow = typeof manualRevisions.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link manualRevisions}. */
 export type ManualRevisionInsert = typeof manualRevisions.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Drawings module (PROJECT_PLAN.md §11) — vessel-scoped technical drawings
+// ---------------------------------------------------------------------------
+
+/**
+ * Seeded/extensible drawing categories (General Arrangement, …).
+ * User CRUD deferred to Settings (§7a); this pass is seed + read-only list.
+ */
+export const drawingCategories = pgTable("drawing_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link drawingCategories}. */
+export type DrawingCategoryRow = typeof drawingCategories.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link drawingCategories}. */
+export type DrawingCategoryInsert = typeof drawingCategories.$inferInsert;
+
+/**
+ * Vessel technical drawing metadata. `revision` is a display label on the
+ * row itself — file history lives in {@link drawingAttachments}.
+ * Not an expiry-engine consumer.
+ */
+export const drawings = pgTable(
+  "drawings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => drawingCategories.id, { onDelete: "restrict" }),
+    drawingName: text("drawing_name").notNull(),
+    drawingNumber: text("drawing_number"),
+    revision: text("revision"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("drawings_vessel_id_idx").on(t.vesselId),
+    index("drawings_category_id_idx").on(t.categoryId),
+  ],
+);
+
+/** A row as read from {@link drawings}. */
+export type DrawingRow = typeof drawings.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link drawings}. */
+export type DrawingInsert = typeof drawings.$inferInsert;
+
+/**
+ * File attachments for a drawing. Same on-disk / serve conventions as
+ * other `*_attachments` tables. Out of GDPR access-log scope.
+ */
+export const drawingAttachments = pgTable("drawing_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  drawingId: uuid("drawing_id")
+    .notNull()
+    .references(() => drawings.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link drawingAttachments}. */
+export type DrawingAttachmentRow = typeof drawingAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link drawingAttachments}. */
+export type DrawingAttachmentInsert = typeof drawingAttachments.$inferInsert;

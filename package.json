@@ -13,6 +13,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed:certificates": "tsx scripts/seed-certificates.ts",
     "db:seed:ism-templates": "tsx scripts/seed-ism-templates.ts",
+    "db:seed:drawings": "tsx scripts/seed-drawings.ts",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
     "test:watch": "vitest"
