@@ -1,0 +1,70 @@
+import { NextResponse } from "next/server";
+import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { validateSession } from "@/lib/auth/session";
+import {
+  AttachmentValidationError,
+  MonthlyFormNotFoundError,
+  submitMonthlyForm,
+} from "@/modules/monthly-forms/monthlyForm.controller";
+import { monthlyFormSubmitSchema } from "@/modules/monthly-forms/validation";
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+/** POST multipart submit (`file` + optional `remarks`). */
+export async function POST(request: Request, context: RouteContext) {
+  const session = await validateSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const access = toAccessContext(session);
+  const { id } = await context.params;
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Expected multipart form data" },
+      { status: 400 },
+    );
+  }
+
+  const remarks = formData.get("remarks");
+  const parsed = monthlyFormSubmitSchema.safeParse({
+    remarks: typeof remarks === "string" ? remarks : undefined,
+  });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return NextResponse.json({ error: "Missing file" }, { status: 400 });
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  try {
+    const data = await submitMonthlyForm(access, id, parsed.data, {
+      name: file.name,
+      type: file.type || "application/octet-stream",
+      size: file.size,
+      bytes,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    if (error instanceof MonthlyFormNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof AttachmentValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
+}
