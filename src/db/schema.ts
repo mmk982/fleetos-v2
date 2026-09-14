@@ -611,3 +611,86 @@ export const accessLogs = pgTable("access_logs", {
 export type AccessLogRow = typeof accessLogs.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link accessLogs}. */
 export type AccessLogInsert = typeof accessLogs.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Insurance module (PROJECT_PLAN.md §4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Policy type vocabulary — plain TS const (same style as deficiencyStatusEnum),
+ * not a Postgres enum. `"other"` is the catch-all for types outside the four
+ * archive-grounded values (Revision note 7).
+ */
+export const insuranceTypeEnum = [
+  "pi",
+  "hm",
+  "war_risk",
+  "fdd",
+  "other",
+] as const;
+/** Union of {@link insuranceTypeEnum} literals. */
+export type InsuranceType = (typeof insuranceTypeEnum)[number];
+
+/**
+ * Vessel insurance policy. Expiry uses the shared engine with a fixed 30d
+ * offset rule (§4) — `cachedStatus` is a non-authoritative write-side cache.
+ */
+export const insurancePolicies = pgTable(
+  "insurance_policies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    policyType: text("policy_type", { enum: insuranceTypeEnum }).notNull(),
+    provider: text("provider"),
+    policyNumber: text("policy_number"),
+    coverageAmount: integer("coverage_amount"),
+    currency: text("currency"),
+    startDate: date("start_date"),
+    expiryDate: date("expiry_date"),
+    cachedStatus: text("cached_status"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("insurance_policies_vessel_id_idx").on(t.vesselId),
+    index("insurance_policies_policy_type_idx").on(t.policyType),
+    index("insurance_policies_expiry_date_idx").on(t.expiryDate),
+  ],
+);
+
+/** A row as read from {@link insurancePolicies}. */
+export type InsurancePolicyRow = typeof insurancePolicies.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link insurancePolicies}. */
+export type InsurancePolicyInsert = typeof insurancePolicies.$inferInsert;
+
+/**
+ * Files attached to an insurance policy. Same on-disk / serve conventions as
+ * other `*_attachments` tables. Out of GDPR `access_logs` scope (§6b).
+ */
+export const insuranceAttachments = pgTable("insurance_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  insurancePolicyId: uuid("insurance_policy_id")
+    .notNull()
+    .references(() => insurancePolicies.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link insuranceAttachments}. */
+export type InsuranceAttachmentRow = typeof insuranceAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link insuranceAttachments}. */
+export type InsuranceAttachmentInsert =
+  typeof insuranceAttachments.$inferInsert;
