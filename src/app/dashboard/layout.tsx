@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DashboardTopBar } from "@/components/dashboard-top-bar";
 
 export const metadata: Metadata = {
   title: "FleetOS — Dashboard",
@@ -13,7 +14,10 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-full flex-1 bg-zinc-50 dark:bg-black">
       <DashboardSidebar />
-      <div className="flex min-h-full min-w-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-full min-w-0 flex-1 flex-col">
+        <DashboardTopBar />
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,207 @@
+"use client";
+
+import { useActionState } from "react";
+import {
+  clearCompanyLogoAction,
+  updateCompanyProfileAction,
+  uploadCompanyLogoAction,
+  type SettingsActionState,
+} from "@/modules/settings/actions";
+import type { CompanyProfileRow } from "@/db/schema";
+
+const labelClass =
+  "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+const inputClass =
+  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+
+export function CompanyProfileForm({
+  profile,
+}: {
+  profile: CompanyProfileRow;
+}) {
+  const [state, formAction, pending] = useActionState(
+    updateCompanyProfileAction as (
+      prev: SettingsActionState | undefined,
+      formData: FormData,
+    ) => Promise<SettingsActionState>,
+    undefined,
+  );
+  const [logoState, logoAction, logoPending] = useActionState(
+    uploadCompanyLogoAction as (
+      prev: SettingsActionState | undefined,
+      formData: FormData,
+    ) => Promise<SettingsActionState>,
+    undefined,
+  );
+
+  return (
+    <div className="space-y-8">
+      <form action={formAction} className="space-y-4">
+        {state && !state.ok ? (
+          <div
+            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+            role="alert"
+          >
+            {state.message}
+          </div>
+        ) : null}
+        {state?.ok ? (
+          <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+            {state.message ?? "Saved."}
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="companyName" className={labelClass}>
+              Company name
+            </label>
+            <input
+              id="companyName"
+              name="companyName"
+              defaultValue={profile.companyName ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="registrationNumber" className={labelClass}>
+              Registration number
+            </label>
+            <input
+              id="registrationNumber"
+              name="registrationNumber"
+              defaultValue={profile.registrationNumber ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="contactEmail" className={labelClass}>
+              Contact email
+            </label>
+            <input
+              id="contactEmail"
+              name="contactEmail"
+              type="email"
+              defaultValue={profile.contactEmail ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="contactPhone" className={labelClass}>
+              Contact phone
+            </label>
+            <input
+              id="contactPhone"
+              name="contactPhone"
+              defaultValue={profile.contactPhone ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="timezone" className={labelClass}>
+              Timezone
+            </label>
+            <input
+              id="timezone"
+              name="timezone"
+              placeholder="e.g. Asia/Dubai"
+              defaultValue={profile.timezone ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="dateFormat" className={labelClass}>
+              Date format
+            </label>
+            <input
+              id="dateFormat"
+              name="dateFormat"
+              placeholder="e.g. YYYY-MM-DD"
+              defaultValue={profile.dateFormat ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="address" className={labelClass}>
+              Address
+            </label>
+            <textarea
+              id="address"
+              name="address"
+              rows={3}
+              defaultValue={profile.address ?? ""}
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
+        >
+          {pending ? "Saving…" : "Save profile"}
+        </button>
+      </form>
+
+      <section className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+          Company logo
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          Shown on the login page and dashboard top bar. JPEG or PNG, max 10 MB.
+        </p>
+
+        {profile.logoPath ? (
+          <div className="mt-4 flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/api/company-profile/logo"
+              alt="Company logo"
+              className="h-16 w-auto max-w-[12rem] object-contain"
+            />
+            <form action={clearCompanyLogoAction}>
+              <button
+                type="submit"
+                className="text-sm font-medium text-red-600 hover:underline dark:text-red-400"
+              >
+                Remove logo
+              </button>
+            </form>
+          </div>
+        ) : null}
+
+        <form action={logoAction} className="mt-4 flex flex-wrap items-end gap-3">
+          {logoState && !logoState.ok ? (
+            <p className="w-full text-sm text-red-600" role="alert">
+              {logoState.message}
+            </p>
+          ) : null}
+          {logoState?.ok ? (
+            <p className="w-full text-sm text-green-700">{logoState.message}</p>
+          ) : null}
+          <div>
+            <label htmlFor="logo" className={labelClass}>
+              Upload logo
+            </label>
+            <input
+              id="logo"
+              name="logo"
+              type="file"
+              accept="image/jpeg,image/png"
+              required
+              className="block text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={logoPending}
+            className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-200 px-4 text-sm font-medium disabled:opacity-60 dark:border-zinc-700"
+          >
+            {logoPending ? "Uploading…" : "Upload"}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}

@@ -10,16 +10,19 @@
  */
 import {
   boolean,
+  check,
   date,
   index,
   integer,
   numeric,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 /** Lifecycle state of a vessel record. `archived` is a soft-retire, not a delete. */
 export const vesselStatusEnum = ["active", "inactive", "archived"] as const;
@@ -105,6 +108,35 @@ export const settings = pgTable("settings", {
 export type SettingRow = typeof settings.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link settings}. */
 export type SettingInsert = typeof settings.$inferInsert;
+
+/**
+ * Single-row company identity (`PROJECT_PLAN.md` §7a Company Profile).
+ * Always `id = 1` — not a key-value setting because the shape is fixed.
+ */
+export const companyProfile = pgTable(
+  "company_profile",
+  {
+    id: smallint("id").primaryKey().default(1),
+    companyName: text("company_name"),
+    registrationNumber: text("registration_number"),
+    address: text("address"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    timezone: text("timezone"),
+    dateFormat: text("date_format"),
+    /** Relative path under `data/attachments/` (same convention as module uploads). */
+    logoPath: text("logo_path"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [check("company_profile_singleton_chk", sql`${t.id} = 1`)],
+);
+
+/** A company profile row as read from the database. */
+export type CompanyProfileRow = typeof companyProfile.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link companyProfile}. */
+export type CompanyProfileInsert = typeof companyProfile.$inferInsert;
 
 /**
  * Fleet units. The reference schema/module for every later module — see
