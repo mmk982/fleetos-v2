@@ -13,6 +13,7 @@ function isGroup(item: NavEntry): item is NavGroup {
 
 const NAV: readonly NavEntry[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/alerts", label: "Alerts" },
   { href: "/dashboard/vessels", label: "Vessels" },
   { href: "/dashboard/certificates", label: "Certificates" },
   { href: "/dashboard/deficiencies", label: "Deficiencies" },
