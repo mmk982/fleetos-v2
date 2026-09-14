@@ -1,20 +1,22 @@
 /**
  * Cross-module attachment lookup for `/api/attachments/[id]`.
  *
- * Decision (Task 5.3): **genericize** the existing route rather than add a
- * parallel `/api/deficiency-attachments/[id]`. MASTER_IMPLEMENTATION_PLAN
- * Task 5.2 already framed `/api/attachments/[id]` as the single authenticated
- * serve path every module reuses; Certificates was only the first table.
- * UUIDs are unique across tables, so we try each attachments table in turn
- * and stream via the shared path-escape helper — no discriminator column
- * needed on disk or in the URL.
+ * Decision (Task 5.3): **genericize** the existing route rather than add
+ * parallel per-module download URLs. Try each `*_attachments` table in turn
+ * (certificates → deficiencies → crew certificates). UUIDs are unique across
+ * tables; path always comes from the DB row.
+ *
+ * Crew attachment hits also write a GDPR `access_logs` row
+ * (`download_attachment`) — see PROJECT_PLAN.md §6.
  */
 import "server-only";
 
 import type { AccessContext } from "@/lib/auth/access";
+import { writeAccessLog } from "@/lib/access-log/write";
 import { openStoredAttachmentStream } from "@/lib/attachments/stream";
 import { getCertificateAttachmentById } from "@/modules/certificates/certificate.controller";
 import { getDeficiencyAttachmentById } from "@/modules/deficiencies/deficiency.controller";
+import { getCrewCertificateAttachmentById } from "@/modules/crew/crew-certificate.controller";
 
 export type ResolvedAttachment = {
   fileName: string;
@@ -48,6 +50,18 @@ export async function resolveAttachmentStream(
   if (def) {
     const { stream } = openStoredAttachmentStream(def.filePath);
     return { fileName: def.fileName, filePath: def.filePath, stream };
+  }
+
+  const crew = await getCrewCertificateAttachmentById(ctx, attachmentId);
+  if (crew) {
+    await writeAccessLog({
+      userId: ctx.userId,
+      moduleName: "crew",
+      recordId: crew.crewCertificateId,
+      accessType: "download_attachment",
+    });
+    const { stream } = openStoredAttachmentStream(crew.filePath);
+    return { fileName: crew.fileName, filePath: crew.filePath, stream };
   }
 
   throw new AttachmentNotFoundError(attachmentId);
