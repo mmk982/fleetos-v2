@@ -68,7 +68,7 @@ export async function createVesselAction(
   formData: FormData,
 ): Promise<VesselActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const raw = {
@@ -129,7 +129,7 @@ export async function updateVesselAction(
   formData: FormData,
 ): Promise<VesselActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const raw: Record<string, string | undefined> = {};
@@ -193,7 +193,7 @@ export async function updateVesselAction(
  */
 export async function deleteVesselFormAction(formData: FormData): Promise<void> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const id = formData.get("id");

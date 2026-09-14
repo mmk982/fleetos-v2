@@ -8,7 +8,10 @@
  *
  * Lifetime (crew-PII-aware, not a flat 24h):
  * - **Idle:** 8 hours — each successful {@link validateSession} slides
- *   `expiresAt` forward by 8h, capped by the absolute deadline.
+ *   `expiresAt` forward by 8h in the DB, capped by the absolute deadline.
+ *   The httpOnly cookie is only rewritten when `touch: true` (Server Actions /
+ *   Route Handlers); Server Components and `proxy.ts` pass `touch: false`
+ *   because Next.js forbids `cookies().set` outside those contexts.
  * - **Absolute:** 24 hours from `createdAt` — the session cannot outlive
  *   this even with continuous activity.
  *
@@ -176,13 +179,17 @@ export async function createSession(userId: string): Promise<SessionRow> {
  * Reads the signed cookie, verifies the HMAC, loads the session+user, and
  * rejects expired or orphaned rows.
  *
- * @param options.touch - When `true` (default), slides the idle window and
- *   refreshes the cookie. Pass `false` from `proxy.ts` so the UX redirect
- *   layer can validate without writing cookies on every navigation
- *   (`SECURITY_PLAN.md` §3 — proxy is not the security boundary; Server
- *   Actions call this again with the default and perform the real check).
- * @returns Session + user when valid; `null` when missing/invalid/expired
- *   (also clears a bad cookie when present and `touch` is enabled).
+ * On a valid session the idle `expiresAt` is always slid forward in the DB
+ * (DB is authoritative). Cookie writes — refresh on success, clear on
+ * failure — only run when `touch` is `true`, because Next.js forbids
+ * `cookies().set` outside Server Actions and Route Handlers.
+ *
+ * @param options.touch - When `true` (default for Route Handlers / Actions),
+ *   also refreshes or clears the httpOnly cookie. Pass `false` from
+ *   `proxy.ts` and from Server Components via {@link requireSession} so
+ *   those paths validate (and still slide the DB idle window) without
+ *   mutating cookies.
+ * @returns Session + user when valid; `null` when missing/invalid/expired.
  */
 export async function validateSession(
   options: { touch?: boolean } = {},
@@ -232,10 +239,6 @@ export async function validateSession(
     return null;
   }
 
-  if (!touch) {
-    return { session: hit.session, user: hit.user };
-  }
-
   const expiresAt = nextExpiry(hit.session.createdAt, now);
   const updated = await db
     .update(sessions)
@@ -244,20 +247,30 @@ export async function validateSession(
     .returning();
 
   const session = updated[0] ?? { ...hit.session, expiresAt };
-  await setSessionCookie(session.id, session.expiresAt);
+
+  // Cookie refresh is Action/Route-Handler only — Server Components throw.
+  if (touch) {
+    await setSessionCookie(session.id, session.expiresAt);
+  }
 
   return { session, user: hit.user };
 }
 
 /**
  * Like {@link validateSession}, but redirects to `/login` when absent.
- * Call at the top of every mutating Server Action / protected Route Handler
- * — this is the real enforcement layer (`SECURITY_PLAN.md` §3).
+ *
+ * Defaults to {@link validateSession} with `touch: false` because this helper
+ * is used from Server Components (dashboard pages). Next.js only allows
+ * `cookies().set` in Server Actions and Route Handlers — sliding the idle
+ * cookie from a page render throws. Callers that *can* mutate cookies
+ * (Server Actions) must pass `{ touch: true }` so the idle window slides.
  *
  * @returns Guaranteed session context (never `null`).
  */
-export async function requireSession(): Promise<SessionContext> {
-  const ctx = await validateSession();
+export async function requireSession(
+  options: { touch?: boolean } = {},
+): Promise<SessionContext> {
+  const ctx = await validateSession({ touch: options.touch === true });
   if (!ctx) {
     redirect("/login");
   }

@@ -70,7 +70,7 @@ export async function createCertificateAction(
   formData: FormData,
 ): Promise<CertificateActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const raw = {
@@ -118,7 +118,7 @@ export async function updateCertificateAction(
   formData: FormData,
 ): Promise<CertificateActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const keys = [
@@ -181,7 +181,7 @@ export async function deleteCertificateFormAction(
   formData: FormData,
 ): Promise<void> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const id = formData.get("id");
@@ -198,7 +198,7 @@ export async function addCertificateEventAction(
   formData: FormData,
 ): Promise<CertificateActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const raw = {
@@ -235,7 +235,7 @@ export async function uploadCertificateAttachmentAction(
   formData: FormData,
 ): Promise<CertificateActionState> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const certificateId = readFormString(formData, "certificateId");
@@ -274,7 +274,7 @@ export async function deleteCertificateAttachmentAction(
   formData: FormData,
 ): Promise<void> {
   await assertSameOriginMutation();
-  const session = await requireSession();
+  const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const id = formData.get("id");
