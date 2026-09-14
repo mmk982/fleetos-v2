@@ -3,11 +3,12 @@
  *
  * Decision (Task 5.3): **genericize** the existing route rather than add
  * parallel per-module download URLs. Try each `*_attachments` table in turn
- * (certificates → deficiencies → crew certificates). UUIDs are unique across
- * tables; path always comes from the DB row.
+ * (certificates → deficiencies → crew certificates → insurance). UUIDs are
+ * unique across tables; path always comes from the DB row.
  *
  * Crew attachment hits also write a GDPR `access_logs` row
- * (`download_attachment`) — see PROJECT_PLAN.md §6.
+ * (`download_attachment`) — see PROJECT_PLAN.md §6. Insurance does **not**
+ * (SECURITY_PLAN.md §6b is Crew-only).
  */
 import "server-only";
 
@@ -17,6 +18,7 @@ import { openStoredAttachmentStream } from "@/lib/attachments/stream";
 import { getCertificateAttachmentById } from "@/modules/certificates/certificate.controller";
 import { getDeficiencyAttachmentById } from "@/modules/deficiencies/deficiency.controller";
 import { getCrewCertificateAttachmentById } from "@/modules/crew/crew-certificate.controller";
+import { getInsuranceAttachmentById } from "@/modules/insurance/insurance.controller";
 
 export type ResolvedAttachment = {
   fileName: string;
@@ -62,6 +64,16 @@ export async function resolveAttachmentStream(
     });
     const { stream } = openStoredAttachmentStream(crew.filePath);
     return { fileName: crew.fileName, filePath: crew.filePath, stream };
+  }
+
+  const insurance = await getInsuranceAttachmentById(ctx, attachmentId);
+  if (insurance) {
+    const { stream } = openStoredAttachmentStream(insurance.filePath);
+    return {
+      fileName: insurance.fileName,
+      filePath: insurance.filePath,
+      stream,
+    };
   }
 
   throw new AttachmentNotFoundError(attachmentId);

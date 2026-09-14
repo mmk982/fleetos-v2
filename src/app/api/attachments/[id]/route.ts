@@ -2,9 +2,10 @@
  * Authenticated attachment download (SECURITY_PLAN.md §6).
  *
  * Generic across modules: looks up `certificate_attachments`, then
- * `deficiency_attachments`, then `crew_certificate_attachments` (see
- * `src/lib/attachments/resolve.ts`). Path is taken only from the DB row —
- * never from the request. Crew downloads also write `access_logs`.
+ * `deficiency_attachments`, then `crew_certificate_attachments`, then
+ * `insurance_attachments` (see `src/lib/attachments/resolve.ts`). Path is
+ * taken only from the DB row — never from the request. Crew downloads also
+ * write `access_logs`.
  */
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
