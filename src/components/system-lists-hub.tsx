@@ -24,6 +24,11 @@ import {
   updateEndorsementTypeAction,
 } from "@/modules/crew/actions";
 import {
+  createDeficiencySeverityLevelAction,
+  deleteDeficiencySeverityLevelFormAction,
+  updateDeficiencySeverityLevelAction,
+} from "@/modules/deficiencies/actions";
+import {
   createDrawingCategoryAction,
   deleteDrawingCategoryFormAction,
   updateDrawingCategoryAction,
@@ -44,7 +49,8 @@ export type SystemListKey =
   | "ism_template_categories"
   | "drawing_categories"
   | "crew_categories"
-  | "endorsement_types";
+  | "endorsement_types"
+  | "deficiency_severity_levels";
 
 export type SystemListRow = {
   id: string;
@@ -87,6 +93,11 @@ const LIST_META: { key: SystemListKey; label: string; description: string }[] =
       label: "Endorsement Types",
       description: "STCW and similar endorsement kinds",
     },
+    {
+      key: "deficiency_severity_levels",
+      label: "Deficiency Severity Levels",
+      description: "User-defined severity labels (form wiring later)",
+    },
   ];
 
 type ActionFn = (
@@ -101,6 +112,7 @@ const CREATE: Record<SystemListKey, ActionFn> = {
   drawing_categories: createDrawingCategoryAction,
   crew_categories: createCrewCategoryAction,
   endorsement_types: createEndorsementTypeAction,
+  deficiency_severity_levels: createDeficiencySeverityLevelAction,
 };
 
 const UPDATE: Record<SystemListKey, ActionFn> = {
@@ -110,6 +122,7 @@ const UPDATE: Record<SystemListKey, ActionFn> = {
   drawing_categories: updateDrawingCategoryAction,
   crew_categories: updateCrewCategoryAction,
   endorsement_types: updateEndorsementTypeAction,
+  deficiency_severity_levels: updateDeficiencySeverityLevelAction,
 };
 
 const DELETE: Record<
@@ -122,6 +135,7 @@ const DELETE: Record<
   drawing_categories: deleteDrawingCategoryFormAction,
   crew_categories: deleteCrewCategoryFormAction,
   endorsement_types: deleteEndorsementTypeFormAction,
+  deficiency_severity_levels: deleteDeficiencySeverityLevelFormAction,
 };
 
 const inputClass =

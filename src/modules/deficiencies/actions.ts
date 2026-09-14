@@ -19,20 +19,25 @@ import {
   AttachmentValidationError,
   closeDeficiency,
   createDeficiency,
+  createDeficiencySeverityLevel,
   deleteDeficiency,
   deleteDeficiencyAttachment,
+  deleteDeficiencySeverityLevel,
   DeficiencyConflictError,
   DeficiencyNotFoundError,
+  DeficiencySeverityLevelNotFoundError,
   reopenDeficiency,
   setMonitoringDeficiency,
   startProgressDeficiency,
   updateDeficiency,
+  updateDeficiencySeverityLevel,
   uploadDeficiencyAttachment,
 } from "./deficiency.controller";
 import {
   deficiencyCreateSchema,
   deficiencyUpdateSchema,
 } from "./validation";
+import { z } from "zod";
 
 function isNextRedirect(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -324,5 +329,86 @@ export async function deleteDeficiencyAttachmentAction(
   }
   if (typeof deficiencyId === "string" && deficiencyId.length > 0) {
     revalidatePath(`${deficienciesPath}/${deficiencyId}`);
+  }
+}
+
+const systemListsPath = "/dashboard/settings/system-lists";
+const nameOnlySchema = z.object({ name: z.string().trim().min(1).max(200) });
+
+export type SystemListActionState =
+  | { ok: true; message?: string }
+  | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+
+export async function createDeficiencySeverityLevelAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "Name is required." };
+  }
+  try {
+    await createDeficiencySeverityLevel(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof DeficiencyConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateDeficiencySeverityLevelAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateDeficiencySeverityLevel(access, id, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof DeficiencyConflictError ||
+      error instanceof DeficiencySeverityLevelNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteDeficiencySeverityLevelFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteDeficiencySeverityLevel(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof DeficiencyConflictError ||
+      error instanceof DeficiencySeverityLevelNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
   }
 }

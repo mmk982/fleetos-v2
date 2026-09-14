@@ -18,9 +18,11 @@ import { getDb } from "@/db/client";
 import {
   deficiencies,
   deficiencyAttachments,
+  deficiencySeverityLevels,
   vessels,
   type DeficiencyAttachmentRow,
   type DeficiencyRow,
+  type DeficiencySeverityLevelRow,
   type DeficiencyStatus,
   type VesselRow,
 } from "@/db/schema";
@@ -79,12 +81,29 @@ export class AttachmentNotFoundError extends Error {
   }
 }
 
+export class DeficiencySeverityLevelNotFoundError extends Error {
+  readonly code = "DEFICIENCY_SEVERITY_LEVEL_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`Deficiency severity level not found: ${id}`);
+    this.name = "DeficiencySeverityLevelNotFoundError";
+  }
+}
+
 function isPgForeignKeyViolation(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
     (error as { code: string }).code === "23503"
+  );
+}
+
+function isPgUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "23505"
   );
 }
 
@@ -98,6 +117,109 @@ export type DeficiencyListFilters = {
   source?: string;
   category?: string;
 };
+
+/** Severity levels for Settings System Lists (form wiring deferred). */
+export async function listDeficiencySeverityLevels(
+  ctx: AccessContext,
+): Promise<DeficiencySeverityLevelRow[]> {
+  assertAuthenticatedAccess(ctx);
+  return getDb()
+    .select()
+    .from(deficiencySeverityLevels)
+    .orderBy(asc(deficiencySeverityLevels.name));
+}
+
+export async function createDeficiencySeverityLevel(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<DeficiencySeverityLevelRow> {
+  assertAuthenticatedAccess(ctx);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DeficiencyConflictError("Name is required.");
+  }
+  try {
+    const inserted = await getDb()
+      .insert(deficiencySeverityLevels)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("Severity level insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new DeficiencyConflictError(
+        "A severity level with that name already exists.",
+      );
+    }
+    logError("DEFICIENCY_SEVERITY_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateDeficiencySeverityLevel(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<DeficiencySeverityLevelRow> {
+  assertAuthenticatedAccess(ctx, id);
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DeficiencyConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: deficiencySeverityLevels.id })
+    .from(deficiencySeverityLevels)
+    .where(eq(deficiencySeverityLevels.id, id))
+    .limit(1);
+  if (!existing[0]) throw new DeficiencySeverityLevelNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(deficiencySeverityLevels)
+      .set({ name })
+      .where(eq(deficiencySeverityLevels.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new DeficiencySeverityLevelNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof DeficiencySeverityLevelNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new DeficiencyConflictError(
+        "A severity level with that name already exists.",
+      );
+    }
+    logError("DEFICIENCY_SEVERITY_UPDATE_FAILED", { error, severityLevelId: id });
+    throw error;
+  }
+}
+
+export async function deleteDeficiencySeverityLevel(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  try {
+    const deleted = await getDb()
+      .delete(deficiencySeverityLevels)
+      .where(eq(deficiencySeverityLevels.id, id))
+      .returning({ id: deficiencySeverityLevels.id });
+    if (deleted.length === 0) {
+      throw new DeficiencySeverityLevelNotFoundError(id);
+    }
+  } catch (error) {
+    if (error instanceof DeficiencySeverityLevelNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new DeficiencyConflictError(
+        "Cannot delete: this severity level is still referenced by deficiencies.",
+      );
+    }
+    logError("DEFICIENCY_SEVERITY_DELETE_FAILED", { error, severityLevelId: id });
+    throw error;
+  }
+}
 
 export type DeficiencyDetail = DeficiencyListItem & {
   attachments: DeficiencyAttachmentRow[];

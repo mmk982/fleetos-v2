@@ -367,7 +367,25 @@ export type DeficiencyStatus = (typeof deficiencyStatusEnum)[number];
 /**
  * Vessel findings / non-conformities. `status` is a real stored column,
  * not an engine cache. Vessel FK is `ON DELETE RESTRICT`.
+ * `severityLevelId` is additive/nullable — Settings System Lists CRUD only
+ * in this pass; Deficiencies form wiring is deferred.
  */
+export const deficiencySeverityLevels = pgTable("deficiency_severity_levels", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link deficiencySeverityLevels}. */
+export type DeficiencySeverityLevelRow =
+  typeof deficiencySeverityLevels.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link deficiencySeverityLevels}. */
+export type DeficiencySeverityLevelInsert =
+  typeof deficiencySeverityLevels.$inferInsert;
+
 export const deficiencies = pgTable(
   "deficiencies",
   {
@@ -383,6 +401,10 @@ export const deficiencies = pgTable(
     status: text("status", { enum: deficiencyStatusEnum })
       .notNull()
       .default("open"),
+    severityLevelId: uuid("severity_level_id").references(
+      () => deficiencySeverityLevels.id,
+      { onDelete: "restrict" },
+    ),
     reference: text("reference"),
     identifiedDate: date("identified_date"),
     dueDate: date("due_date"),
