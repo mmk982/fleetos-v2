@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/crew", label: "Crew" },
   { href: "/dashboard/insurance", label: "Insurance" },
   { href: "/dashboard/ism-templates", label: "ISM Templates" },
+  { href: "/dashboard/monthly-forms", label: "Monthly Executed Forms" },
   { href: "/dashboard/manuals", label: "Manuals" },
   { href: "/dashboard/drawings", label: "Drawings" },
   { href: "/dashboard/settings", label: "Settings" },
