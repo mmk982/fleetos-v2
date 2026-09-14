@@ -790,3 +790,79 @@ export type IsmTemplateAttachmentRow =
 /** Shape accepted by Drizzle's `.insert()` for {@link ismTemplateAttachments}. */
 export type IsmTemplateAttachmentInsert =
   typeof ismTemplateAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Manuals module (PROJECT_PLAN.md §8) — vessel-linked + revision history
+// ---------------------------------------------------------------------------
+
+/**
+ * Vessel manual metadata (title/type/department stay stable across uploads).
+ * Each file upload is a row in {@link manualRevisions}.
+ */
+export const manuals = pgTable(
+  "manuals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    title: text("title").notNull(),
+    manualType: text("manual_type"),
+    department: text("department"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("manuals_vessel_id_idx").on(t.vesselId),
+    index("manuals_department_idx").on(t.department),
+  ],
+);
+
+/** A row as read from {@link manuals}. */
+export type ManualRow = typeof manuals.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link manuals}. */
+export type ManualInsert = typeof manuals.$inferInsert;
+
+/**
+ * One uploaded version of a manual. Carries both the "event" and the file
+ * (unlike Certificates' split events/attachments). `fileName` / `uploadedBy`
+ * added for parity with other `*_attachments` tables so revisions serve
+ * through the generic `/api/attachments/[id]` resolver.
+ *
+ * Exactly one row per manual should have `isCurrentVersion = true` —
+ * enforced in the controller via transactions, not a DB unique constraint.
+ */
+export const manualRevisions = pgTable(
+  "manual_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    manualId: uuid("manual_id")
+      .notNull()
+      .references(() => manuals.id, { onDelete: "cascade" }),
+    revisionNumber: text("revision_number"),
+    revisionDate: date("revision_date"),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    isCurrentVersion: boolean("is_current_version").notNull().default(true),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("manual_revisions_manual_id_idx").on(t.manualId),
+    index("manual_revisions_is_current_idx").on(t.isCurrentVersion),
+  ],
+);
+
+/** A row as read from {@link manualRevisions}. */
+export type ManualRevisionRow = typeof manualRevisions.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link manualRevisions}. */
+export type ManualRevisionInsert = typeof manualRevisions.$inferInsert;

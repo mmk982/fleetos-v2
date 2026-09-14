@@ -57,6 +57,13 @@
       "when": 1789386696452,
       "tag": "0007_steady_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789389492248,
+      "tag": "0008_wandering_mesmero",
+      "breakpoints": true
     }
   ]
 }
