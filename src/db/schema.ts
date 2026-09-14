@@ -694,3 +694,99 @@ export type InsuranceAttachmentRow = typeof insuranceAttachments.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link insuranceAttachments}. */
 export type InsuranceAttachmentInsert =
   typeof insuranceAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// ISM Templates module (PROJECT_PLAN.md §9) — fleet-wide, not vessel-specific
+// ---------------------------------------------------------------------------
+
+/**
+ * Template lifecycle — stored domain enum, not engine-derived.
+ * Plain TS const (same style as insuranceTypeEnum).
+ */
+export const ismTemplateStatusEnum = [
+  "active",
+  "superseded",
+  "draft",
+] as const;
+/** Union of {@link ismTemplateStatusEnum} literals. */
+export type IsmTemplateStatus = (typeof ismTemplateStatusEnum)[number];
+
+/**
+ * Seeded/extensible ISM form categories (Drill, Maintenance, …).
+ * User CRUD deferred to Settings (§7a); this pass is seed + read-only list.
+ */
+export const ismTemplateCategories = pgTable("ism_template_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link ismTemplateCategories}. */
+export type IsmTemplateCategoryRow = typeof ismTemplateCategories.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link ismTemplateCategories}. */
+export type IsmTemplateCategoryInsert =
+  typeof ismTemplateCategories.$inferInsert;
+
+/**
+ * Fleet-wide blank form template (no vesselId — Monthly Executed Forms
+ * later bind an execution to a vessel). Not an expiry-engine consumer.
+ */
+export const ismTemplates = pgTable(
+  "ism_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    formCode: text("form_code").notNull().unique(),
+    formName: text("form_name").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => ismTemplateCategories.id, { onDelete: "restrict" }),
+    revision: text("revision"),
+    status: text("status", { enum: ismTemplateStatusEnum })
+      .notNull()
+      .default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("ism_templates_category_id_idx").on(t.categoryId),
+    index("ism_templates_status_idx").on(t.status),
+  ],
+);
+
+/** A row as read from {@link ismTemplates}. */
+export type IsmTemplateRow = typeof ismTemplates.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link ismTemplates}. */
+export type IsmTemplateInsert = typeof ismTemplates.$inferInsert;
+
+/**
+ * Blank-form PDF (etc.) attachments for an ISM template. Same on-disk /
+ * serve conventions as other `*_attachments` tables. Out of GDPR scope.
+ */
+export const ismTemplateAttachments = pgTable("ism_template_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ismTemplateId: uuid("ism_template_id")
+    .notNull()
+    .references(() => ismTemplates.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link ismTemplateAttachments}. */
+export type IsmTemplateAttachmentRow =
+  typeof ismTemplateAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link ismTemplateAttachments}. */
+export type IsmTemplateAttachmentInsert =
+  typeof ismTemplateAttachments.$inferInsert;

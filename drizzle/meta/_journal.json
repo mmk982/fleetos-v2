@@ -50,6 +50,13 @@
       "when": 1789385539207,
       "tag": "0006_mature_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789386696452,
+      "tag": "0007_steady_nekra",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import * as schema from "../src/db/schema";
 import { seedCertificateReferenceData } from "../src/db/seed/certificates";
 import { seedCrewReferenceData } from "../src/db/seed/crew";
+import { seedIsmTemplateReferenceData } from "../src/db/seed/ism-templates";
 
 const defaultDatabaseUrl = "postgres://fleetos:fleetos@localhost:5433/fleetos";
 
@@ -25,6 +26,11 @@ async function main() {
     const crewResult = await seedCrewReferenceData(db);
     console.log(
       `Crew seed: up to ${crewResult.categories} categories, ${crewResult.endorsementTypes} endorsement types (idempotent).`,
+    );
+
+    const ismResult = await seedIsmTemplateReferenceData(db);
+    console.log(
+      `ISM template seed: up to ${ismResult.categories} categories (idempotent).`,
     );
   } finally {
     await pool.end();
