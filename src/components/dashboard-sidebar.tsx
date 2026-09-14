@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/deficiencies", label: "Deficiencies" },
   { href: "/dashboard/crew", label: "Crew" },
   { href: "/dashboard/insurance", label: "Insurance" },
+  { href: "/dashboard/ism-templates", label: "ISM Templates" },
   { href: "/dashboard/settings", label: "Settings" },
 ] as const;
 
