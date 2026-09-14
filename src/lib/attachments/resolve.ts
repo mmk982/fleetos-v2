@@ -3,12 +3,13 @@
  *
  * Decision (Task 5.3): **genericize** the existing route rather than add
  * parallel per-module download URLs. Try each `*_attachments` table in turn
- * (certificates → deficiencies → crew certificates → insurance). UUIDs are
- * unique across tables; path always comes from the DB row.
+ * (certificates → deficiencies → crew certificates → insurance →
+ * ISM templates). UUIDs are unique across tables; path always comes from
+ * the DB row.
  *
  * Crew attachment hits also write a GDPR `access_logs` row
- * (`download_attachment`) — see PROJECT_PLAN.md §6. Insurance does **not**
- * (SECURITY_PLAN.md §6b is Crew-only).
+ * (`download_attachment`) — see PROJECT_PLAN.md §6. Insurance and ISM
+ * templates do **not** (SECURITY_PLAN.md §6b is Crew-only).
  */
 import "server-only";
 
@@ -19,6 +20,7 @@ import { getCertificateAttachmentById } from "@/modules/certificates/certificate
 import { getDeficiencyAttachmentById } from "@/modules/deficiencies/deficiency.controller";
 import { getCrewCertificateAttachmentById } from "@/modules/crew/crew-certificate.controller";
 import { getInsuranceAttachmentById } from "@/modules/insurance/insurance.controller";
+import { getIsmTemplateAttachmentById } from "@/modules/ism-templates/ismTemplate.controller";
 
 export type ResolvedAttachment = {
   fileName: string;
@@ -74,6 +76,12 @@ export async function resolveAttachmentStream(
       filePath: insurance.filePath,
       stream,
     };
+  }
+
+  const ism = await getIsmTemplateAttachmentById(ctx, attachmentId);
+  if (ism) {
+    const { stream } = openStoredAttachmentStream(ism.filePath);
+    return { fileName: ism.fileName, filePath: ism.filePath, stream };
   }
 
   throw new AttachmentNotFoundError(attachmentId);
