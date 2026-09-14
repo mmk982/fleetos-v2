@@ -200,13 +200,7 @@ function SystemListsModal({
   onActiveChange: (key: SystemListKey) => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
-  const rows = lists[active];
   const meta = LIST_META.find((m) => m.key === active)!;
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [pendingDelete, startDelete] = useTransition();
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -220,60 +214,6 @@ function SystemListsModal({
       document.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
-
-  const [createState, createAction, createPending] = useActionState(
-    CREATE[active],
-    undefined,
-  );
-  const [updateState, updateAction, updatePending] = useActionState(
-    UPDATE[active],
-    undefined,
-  );
-
-  useEffect(() => {
-    setEditingId(null);
-    setMessage(null);
-    setError(null);
-  }, [active]);
-
-  useEffect(() => {
-    if (createState?.ok) {
-      setMessage(createState.message ?? "Added.");
-      setError(null);
-      router.refresh();
-    } else if (createState && !createState.ok) {
-      setError(createState.message);
-      setMessage(null);
-    }
-  }, [createState, router]);
-
-  useEffect(() => {
-    if (updateState?.ok) {
-      setMessage(updateState.message ?? "Saved.");
-      setError(null);
-      setEditingId(null);
-      router.refresh();
-    } else if (updateState && !updateState.ok) {
-      setError(updateState.message);
-      setMessage(null);
-    }
-  }, [updateState, router]);
-
-  function onDelete(id: string) {
-    const fd = new FormData();
-    fd.set("id", id);
-    startDelete(async () => {
-      const result = await DELETE[active](fd);
-      if (result.ok) {
-        setMessage(result.message ?? "Deleted.");
-        setError(null);
-        router.refresh();
-      } else {
-        setError(result.message);
-        setMessage(null);
-      }
-    });
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -305,7 +245,9 @@ function SystemListsModal({
                 }`}
               >
                 {item.label}
-                <span className="ms-1 opacity-70">({lists[item.key].length})</span>
+                <span className="ms-1 opacity-70">
+                  ({lists[item.key].length})
+                </span>
               </button>
             ))}
           </nav>
@@ -343,92 +285,182 @@ function SystemListsModal({
             </select>
           </div>
 
-          {(message || error) && (
-            <div
-              className={`mx-4 mt-3 rounded-md px-3 py-2 text-sm ${
-                error
-                  ? "border border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
-                  : "border border-green-200 bg-green-50 text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
-              }`}
-              role={error ? "alert" : "status"}
-            >
-              {error ?? message}
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {rows.length === 0 ? (
-                <li className="py-8 text-center text-sm text-zinc-500">
-                  No items yet.
-                </li>
-              ) : (
-                rows.map((row) => (
-                  <li key={row.id} className="py-3">
-                    {editingId === row.id ? (
-                      <EditRowForm
-                        listKey={active}
-                        row={row}
-                        action={updateAction}
-                        pending={updatePending}
-                        onCancel={() => setEditingId(null)}
-                      />
-                    ) : (
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                            {row.name}
-                          </p>
-                          {row.authority ? (
-                            <p className="text-xs text-zinc-500">
-                              {row.authority}
-                              {row.ruleKind ? ` · ${row.ruleKind}` : ""}
-                              {row.offsetDays != null
-                                ? ` · ${row.offsetDays}d`
-                                : ""}
-                            </p>
-                          ) : null}
-                          {row.isCustom === false ? (
-                            <span className="text-[11px] text-zinc-400">
-                              Seeded
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="flex shrink-0 gap-2">
-                          <button
-                            type="button"
-                            className="text-sm font-medium text-[#378ADD] hover:underline"
-                            onClick={() => setEditingId(row.id)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            disabled={pendingDelete}
-                            className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
-                            onClick={() => onDelete(row.id)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-
-          <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
-            <AddRowForm
-              listKey={active}
-              action={createAction}
-              pending={createPending}
-            />
-          </div>
+          {/* Remount on list change so action state / edit form reset without effects. */}
+          <SystemListPane key={active} listKey={active} rows={lists[active]} />
         </div>
       </div>
     </div>
+  );
+}
+
+function SystemListPane({
+  listKey,
+  rows,
+}: {
+  listKey: SystemListKey;
+  rows: SystemListRow[];
+}) {
+  const router = useRouter();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteFlash, setDeleteFlash] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
+  const [pendingDelete, startDelete] = useTransition();
+
+  const [createState, createAction, createPending] = useActionState(
+    CREATE[listKey],
+    undefined,
+  );
+  const [updateState, updateAction, updatePending] = useActionState(
+    UPDATE[listKey],
+    undefined,
+  );
+
+  // Close the edit form when a new successful update result arrives.
+  // Track previous action state in React state (not a ref) so we can adjust
+  // during render — the recommended alternative to setState-in-effect.
+  const [prevUpdateState, setPrevUpdateState] = useState(updateState);
+  if (updateState !== prevUpdateState) {
+    setPrevUpdateState(updateState);
+    if (updateState?.ok && editingId !== null) {
+      setEditingId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (createState?.ok || updateState?.ok) {
+      router.refresh();
+    }
+  }, [createState, updateState, router]);
+
+  // Derive create/update banners from action state; deleteFlash is only for
+  // the startTransition delete path (setState there is fine — not an effect).
+  const banner = (() => {
+    if (createState?.ok) {
+      return { ok: true as const, message: createState.message ?? "Added." };
+    }
+    if (createState && !createState.ok) {
+      return { ok: false as const, message: createState.message };
+    }
+    if (updateState?.ok) {
+      return { ok: true as const, message: updateState.message ?? "Saved." };
+    }
+    if (updateState && !updateState.ok) {
+      return { ok: false as const, message: updateState.message };
+    }
+    if (deleteFlash) {
+      return {
+        ok: deleteFlash.ok,
+        message: deleteFlash.message,
+      };
+    }
+    return null;
+  })();
+
+  function onDelete(id: string) {
+    const fd = new FormData();
+    fd.set("id", id);
+    startDelete(async () => {
+      const result = await DELETE[listKey](fd);
+      if (result.ok) {
+        setDeleteFlash({
+          ok: true,
+          message: result.message ?? "Deleted.",
+        });
+        router.refresh();
+      } else {
+        setDeleteFlash({ ok: false, message: result.message });
+      }
+    });
+  }
+
+  return (
+    <>
+      {banner ? (
+        <div
+          className={`mx-4 mt-3 rounded-md px-3 py-2 text-sm ${
+            banner.ok
+              ? "border border-green-200 bg-green-50 text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
+              : "border border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          }`}
+          role={banner.ok ? "status" : "alert"}
+        >
+          {banner.message}
+        </div>
+      ) : null}
+
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          {rows.length === 0 ? (
+            <li className="py-8 text-center text-sm text-zinc-500">
+              No items yet.
+            </li>
+          ) : (
+            rows.map((row) => (
+              <li key={row.id} className="py-3">
+                {editingId === row.id ? (
+                  <EditRowForm
+                    listKey={listKey}
+                    row={row}
+                    action={updateAction}
+                    pending={updatePending}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                        {row.name}
+                      </p>
+                      {row.authority ? (
+                        <p className="text-xs text-zinc-500">
+                          {row.authority}
+                          {row.ruleKind ? ` · ${row.ruleKind}` : ""}
+                          {row.offsetDays != null
+                            ? ` · ${row.offsetDays}d`
+                            : ""}
+                        </p>
+                      ) : null}
+                      {row.isCustom === false ? (
+                        <span className="text-[11px] text-zinc-400">
+                          Seeded
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-[#378ADD] hover:underline"
+                        onClick={() => setEditingId(row.id)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pendingDelete}
+                        className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                        onClick={() => onDelete(row.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+
+      <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <AddRowForm
+          listKey={listKey}
+          action={createAction}
+          pending={createPending}
+        />
+      </div>
+    </>
   );
 }
 

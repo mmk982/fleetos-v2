@@ -179,7 +179,8 @@ export async function updateReminder(
   if (input.title !== undefined) patch.title = input.title;
   if (input.type !== undefined) patch.type = input.type;
   if (input.priority !== undefined) patch.priority = input.priority;
-  if (input.reminderDate !== undefined) patch.reminderDate = input.reminderDate;
+  // isoDateField allows null (clear), but reminder_date is NOT NULL — ignore null.
+  if (input.reminderDate != null) patch.reminderDate = input.reminderDate;
   if (input.vesselId !== undefined) patch.vesselId = input.vesselId;
   if (input.relatedItemKind !== undefined) {
     patch.relatedItemKind = input.relatedItemKind;
