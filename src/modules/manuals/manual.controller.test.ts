@@ -263,13 +263,8 @@ describe("manual.controller transactions", () => {
     const ops: AppliedOp[] = [];
 
     getDb.mockReturnValue({
-      transaction: async (fn: (tx: {
-        insert: () => {
-          values: (vals: Record<string, unknown>) => {
-            returning: () => Promise<unknown[]>;
-          } & PromiseLike<void>;
-        };
-      }) => Promise<unknown>) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- drizzle builder mock
+      transaction: async (fn: (tx: any) => Promise<unknown>) => {
         let call = 0;
         return fn({
           insert: () => ({
@@ -299,14 +294,7 @@ describe("manual.controller transactions", () => {
               ops.push("insert-revision");
               expect(vals.isCurrentVersion).toBe(true);
               expect(vals.manualId).toBe(MANUAL_ID);
-              // Controller awaits insert().values() without .returning()
-              return {
-                then: (
-                  onfulfilled?: (v: void) => unknown,
-                  onrejected?: (e: unknown) => unknown,
-                ) => Promise.resolve().then(onfulfilled, onrejected),
-                returning: async () => [],
-              };
+              return Promise.resolve();
             },
           }),
         });
