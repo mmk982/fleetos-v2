@@ -416,3 +416,161 @@ export type DeficiencyAttachmentRow = typeof deficiencyAttachments.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link deficiencyAttachments}. */
 export type DeficiencyAttachmentInsert =
   typeof deficiencyAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Crew module (PROJECT_PLAN.md §3) — five tables
+// ---------------------------------------------------------------------------
+
+/** Crew member employment lifecycle — stored domain enum, not engine-derived. */
+export const crewStatusEnum = ["active", "inactive"] as const;
+/** Union of {@link crewStatusEnum} literals. */
+export type CrewStatus = (typeof crewStatusEnum)[number];
+
+/**
+ * Seeded/extensible crew rank/category (Master, Chief Engineer, …).
+ * Replaces free-text `rank` per System Lists Management (§3 / §7a).
+ */
+export const crewCategories = pgTable("crew_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link crewCategories}. */
+export type CrewCategoryRow = typeof crewCategories.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link crewCategories}. */
+export type CrewCategoryInsert = typeof crewCategories.$inferInsert;
+
+/**
+ * Seeded/extensible STCW (and similar) endorsement categories.
+ * Nullable on crew certificates — not every document is endorsement-bearing.
+ */
+export const endorsementTypes = pgTable("endorsement_types", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link endorsementTypes}. */
+export type EndorsementTypeRow = typeof endorsementTypes.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link endorsementTypes}. */
+export type EndorsementTypeInsert = typeof endorsementTypes.$inferInsert;
+
+/**
+ * Crew member with optional current vessel assignment.
+ * Holds GDPR-scope PII (names, nationality, DOB) — see `scrubCrewMemberPii`
+ * and `access_logs` (PROJECT_PLAN.md §6 / Phase 4).
+ */
+export const crewMembers = pgTable(
+  "crew_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    categoryId: uuid("category_id").references(() => crewCategories.id, {
+      onDelete: "restrict",
+    }),
+    nationality: text("nationality"),
+    dateOfBirth: date("date_of_birth"),
+    vesselId: uuid("vessel_id").references(() => vessels.id, {
+      onDelete: "restrict",
+    }),
+    status: text("status", { enum: crewStatusEnum })
+      .notNull()
+      .default("active"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("crew_members_vessel_id_idx").on(t.vesselId),
+    index("crew_members_status_idx").on(t.status),
+    index("crew_members_category_id_idx").on(t.categoryId),
+  ],
+);
+
+/** A row as read from {@link crewMembers}. */
+export type CrewMemberRow = typeof crewMembers.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link crewMembers}. */
+export type CrewMemberInsert = typeof crewMembers.$inferInsert;
+
+/**
+ * Personal / professional documents on a crew member (passport, STCW, ENG1).
+ * Expiry uses the shared engine with a fixed 30d offset rule (§3).
+ * Document numbers/dates are PII — in scope for `scrubCrewMemberPii`.
+ */
+export const crewCertificates = pgTable(
+  "crew_certificates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    crewMemberId: uuid("crew_member_id")
+      .notNull()
+      .references(() => crewMembers.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    documentNumber: text("document_number"),
+    issuingAuthority: text("issuing_authority"),
+    endorsementTypeId: uuid("endorsement_type_id").references(
+      () => endorsementTypes.id,
+      { onDelete: "restrict" },
+    ),
+    issueDate: date("issue_date"),
+    expiryDate: date("expiry_date"),
+    cachedStatus: text("cached_status"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("crew_certificates_crew_member_id_idx").on(t.crewMemberId),
+    index("crew_certificates_expiry_date_idx").on(t.expiryDate),
+  ],
+);
+
+/** A row as read from {@link crewCertificates}. */
+export type CrewCertificateRow = typeof crewCertificates.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link crewCertificates}. */
+export type CrewCertificateInsert = typeof crewCertificates.$inferInsert;
+
+/**
+ * Scans for a crew certificate (passport photo page, visa, etc.).
+ * Same on-disk / serve conventions as other `*_attachments` tables.
+ * Scrub-PII must remove these files, not only parent text fields.
+ */
+export const crewCertificateAttachments = pgTable(
+  "crew_certificate_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    crewCertificateId: uuid("crew_certificate_id")
+      .notNull()
+      .references(() => crewCertificates.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+/** A row as read from {@link crewCertificateAttachments}. */
+export type CrewCertificateAttachmentRow =
+  typeof crewCertificateAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link crewCertificateAttachments}. */
+export type CrewCertificateAttachmentInsert =
+  typeof crewCertificateAttachments.$inferInsert;

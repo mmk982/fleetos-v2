@@ -29,6 +29,13 @@
       "when": 1789374715600,
       "tag": "0003_deficiencies_module",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789376016840,
+      "tag": "0004_jittery_kronos",
+      "breakpoints": true
     }
   ]
 }

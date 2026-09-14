@@ -4,6 +4,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import * as schema from "../src/db/schema";
 import { seedCertificateReferenceData } from "../src/db/seed/certificates";
+import { seedCrewReferenceData } from "../src/db/seed/crew";
 
 const defaultDatabaseUrl = "postgres://fleetos:fleetos@localhost:5433/fleetos";
 
@@ -16,9 +17,14 @@ async function main() {
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
     console.log("Migrations applied.");
 
-    const result = await seedCertificateReferenceData(db);
+    const certResult = await seedCertificateReferenceData(db);
     console.log(
-      `Certificate seed: up to ${result.authorities} authorities, ${result.types} types (idempotent).`,
+      `Certificate seed: up to ${certResult.authorities} authorities, ${certResult.types} types (idempotent).`,
+    );
+
+    const crewResult = await seedCrewReferenceData(db);
+    console.log(
+      `Crew seed: up to ${crewResult.categories} categories, ${crewResult.endorsementTypes} endorsement types (idempotent).`,
     );
   } finally {
     await pool.end();
