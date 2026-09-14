@@ -13,6 +13,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 
 export class VesselNoteNotFoundError extends Error {
@@ -69,6 +70,7 @@ export async function createVesselNote(
     throw new VesselNoteConflictError("Vessel reference is invalid.");
   }
 
+  let row: VesselNoteRow;
   try {
     const inserted = await db
       .insert(vesselNotes)
@@ -78,9 +80,9 @@ export async function createVesselNote(
         authorId: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Vessel note insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Vessel note insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new VesselNoteConflictError("Vessel reference is invalid.");
@@ -88,6 +90,16 @@ export async function createVesselNote(
     logError("VESSEL_NOTE_CREATE_FAILED", { error, vesselId });
     throw error;
   }
+  const preview =
+    row.body.length > 80 ? `${row.body.slice(0, 77)}...` : row.body;
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "particulars",
+    recordId: row.id,
+    description: `Added vessel note: ${preview}`,
+  });
+  return row;
 }
 
 export async function deleteVesselNote(

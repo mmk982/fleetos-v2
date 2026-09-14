@@ -27,6 +27,7 @@ import {
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import { deriveMonthlyFormDisplayStatus } from "./monthly-form-status";
 import type { MonthlyFormListItem } from "./monthlyForm.model";
@@ -280,6 +281,7 @@ export async function createMonthlyForm(
     throw new MonthlyFormConflictError("Form name is required.");
   }
 
+  let row: MonthlyExecutedFormRow;
   try {
     const inserted = await db
       .insert(monthlyExecutedForms)
@@ -294,9 +296,9 @@ export async function createMonthlyForm(
         remarks: input.remarks ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Monthly form insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Monthly form insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       throw new MonthlyFormConflictError(
@@ -311,6 +313,14 @@ export async function createMonthlyForm(
     logError("MONTHLY_FORM_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "monthly_form",
+    recordId: row.id,
+    description: `Added monthly form: ${row.formName} (${row.month}/${row.year})`,
+  });
+  return row;
 }
 
 /**
@@ -405,8 +415,9 @@ export async function submitMonthlyForm(
   const isFirstSubmission =
     form.status === "pending" && form.uploadedAt === null;
 
+  let row: MonthlyExecutedFormRow;
   try {
-    return await db.transaction(async (tx) => {
+    row = await db.transaction(async (tx) => {
       await tx.insert(monthlyExecutedFormAttachments).values({
         id: stored.id,
         executedFormId: id,
@@ -428,9 +439,9 @@ export async function submitMonthlyForm(
           })
           .where(eq(monthlyExecutedForms.id, id))
           .returning();
-        const row = updated[0];
-        if (!row) throw new MonthlyFormNotFoundError(id);
-        return row;
+        const updatedRow = updated[0];
+        if (!updatedRow) throw new MonthlyFormNotFoundError(id);
+        return updatedRow;
       }
 
       const touched = await tx
@@ -446,6 +457,14 @@ export async function submitMonthlyForm(
     logError("MONTHLY_FORM_SUBMIT_FAILED", { error, executedFormId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "submitted",
+    moduleName: "monthly_form",
+    recordId: row.id,
+    description: `Submitted monthly form: ${row.formName} (${row.month}/${row.year})`,
+  });
+  return row;
 }
 
 export async function deleteMonthlyForm(
@@ -454,6 +473,16 @@ export async function deleteMonthlyForm(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({
+      formName: monthlyExecutedForms.formName,
+      month: monthlyExecutedForms.month,
+      year: monthlyExecutedForms.year,
+    })
+    .from(monthlyExecutedForms)
+    .where(eq(monthlyExecutedForms.id, id))
+    .limit(1);
+  const formMeta = existing[0];
   try {
     const atts = await db
       .select()
@@ -472,6 +501,15 @@ export async function deleteMonthlyForm(
     logError("MONTHLY_FORM_DELETE_FAILED", { error, executedFormId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "monthly_form",
+    recordId: id,
+    description: formMeta
+      ? `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`
+      : "Deleted monthly form",
+  });
 }
 
 export async function listMonthlyFormAttachments(

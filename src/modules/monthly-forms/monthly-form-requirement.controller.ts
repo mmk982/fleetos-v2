@@ -18,6 +18,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type { MonthlyFormRequirementListItem } from "./monthlyForm.model";
 import type {
@@ -135,6 +136,7 @@ export async function createMonthlyFormRequirement(
 ): Promise<MonthlyFormRequirementRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: MonthlyFormRequirementRow;
   try {
     const inserted = await db
       .insert(monthlyFormRequirements)
@@ -145,9 +147,9 @@ export async function createMonthlyFormRequirement(
         activeStatus: input.activeStatus,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Requirement insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Requirement insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       throw new MonthlyFormRequirementConflictError(
@@ -162,6 +164,14 @@ export async function createMonthlyFormRequirement(
     logError("MONTHLY_FORM_REQUIREMENT_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "monthly_form",
+    recordId: row.id,
+    description: `Added monthly form requirement (${row.frequency})`,
+  });
+  return row;
 }
 
 export async function updateMonthlyFormRequirement(
@@ -189,15 +199,16 @@ export async function updateMonthlyFormRequirement(
   if (input.frequency !== undefined) patch.frequency = input.frequency;
   if (input.activeStatus !== undefined) patch.activeStatus = input.activeStatus;
 
+  let row: MonthlyFormRequirementRow;
   try {
     const updated = await db
       .update(monthlyFormRequirements)
       .set(patch)
       .where(eq(monthlyFormRequirements.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new MonthlyFormRequirementNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new MonthlyFormRequirementNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof MonthlyFormRequirementNotFoundError) throw error;
     if (isPgUniqueViolation(error)) {
@@ -216,6 +227,14 @@ export async function updateMonthlyFormRequirement(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "monthly_form",
+    recordId: row.id,
+    description: `Updated monthly form requirement (${row.frequency})`,
+  });
+  return row;
 }
 
 export async function deleteMonthlyFormRequirement(
@@ -240,4 +259,11 @@ export async function deleteMonthlyFormRequirement(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "monthly_form",
+    recordId: id,
+    description: "Deleted monthly form requirement",
+  });
 }

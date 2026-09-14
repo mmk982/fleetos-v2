@@ -23,6 +23,7 @@ import {
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type {
   ParticularsCurrentDetail,
@@ -346,9 +347,10 @@ export async function createParticulars(
     isCurrent: makeCurrent,
   };
 
+  let row: VesselParticularsRow;
   try {
     if (makeCurrent) {
-      return await db.transaction(async (tx) => {
+      row = await db.transaction(async (tx) => {
         await tx
           .update(vesselParticulars)
           .set({ isCurrent: false, updatedAt: new Date() })
@@ -358,16 +360,16 @@ export async function createParticulars(
           .insert(vesselParticulars)
           .values(values)
           .returning();
-        const row = inserted[0];
-        if (!row) throw new Error("Particulars insert did not return a row");
-        return row;
+        const insertedRow = inserted[0];
+        if (!insertedRow) throw new Error("Particulars insert did not return a row");
+        return insertedRow;
       });
+    } else {
+      const inserted = await db.insert(vesselParticulars).values(values).returning();
+      const insertedRow = inserted[0];
+      if (!insertedRow) throw new Error("Particulars insert did not return a row");
+      row = insertedRow;
     }
-
-    const inserted = await db.insert(vesselParticulars).values(values).returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Particulars insert did not return a row");
-    return row;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new ParticularsConflictError("Vessel reference is invalid.");
@@ -375,6 +377,17 @@ export async function createParticulars(
     logError("PARTICULARS_CREATE_FAILED", { error });
     throw error;
   }
+  const descParts = ["Added ship particulars"];
+  if (row.effectiveDate) descParts.push(`effective ${row.effectiveDate}`);
+  if (row.owner) descParts.push(`owner ${row.owner}`);
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "particulars",
+    recordId: row.id,
+    description: descParts.join(" — "),
+  });
+  return row;
 }
 
 export async function updateParticulars(
@@ -400,9 +413,10 @@ export async function updateParticulars(
   const vesselId = input.vesselId ?? current.vesselId;
   const makeCurrent = input.isCurrent === true;
 
+  let row: VesselParticularsRow;
   try {
     if (makeCurrent) {
-      return await db.transaction(async (tx) => {
+      row = await db.transaction(async (tx) => {
         await tx
           .update(vesselParticulars)
           .set({ isCurrent: false, updatedAt: new Date() })
@@ -413,20 +427,20 @@ export async function updateParticulars(
           .set({ ...patch, vesselId, isCurrent: true })
           .where(eq(vesselParticulars.id, id))
           .returning();
-        const row = updated[0];
-        if (!row) throw new ParticularsNotFoundError(id);
-        return row;
+        const updatedRow = updated[0];
+        if (!updatedRow) throw new ParticularsNotFoundError(id);
+        return updatedRow;
       });
+    } else {
+      const updated = await db
+        .update(vesselParticulars)
+        .set(patch)
+        .where(eq(vesselParticulars.id, id))
+        .returning();
+      const updatedRow = updated[0];
+      if (!updatedRow) throw new ParticularsNotFoundError(id);
+      row = updatedRow;
     }
-
-    const updated = await db
-      .update(vesselParticulars)
-      .set(patch)
-      .where(eq(vesselParticulars.id, id))
-      .returning();
-    const row = updated[0];
-    if (!row) throw new ParticularsNotFoundError(id);
-    return row;
   } catch (error) {
     if (error instanceof ParticularsNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -435,6 +449,16 @@ export async function updateParticulars(
     logError("PARTICULARS_UPDATE_FAILED", { error, particularsId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "particulars",
+    recordId: row.id,
+    description: row.effectiveDate
+      ? `Updated ship particulars (effective ${row.effectiveDate})`
+      : "Updated ship particulars",
+  });
+  return row;
 }
 
 export async function deleteParticulars(
@@ -443,6 +467,15 @@ export async function deleteParticulars(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({
+      effectiveDate: vesselParticulars.effectiveDate,
+      owner: vesselParticulars.owner,
+    })
+    .from(vesselParticulars)
+    .where(eq(vesselParticulars.id, id))
+    .limit(1);
+  const meta = existing[0];
   try {
     const atts = await db
       .select()
@@ -461,6 +494,15 @@ export async function deleteParticulars(
     logError("PARTICULARS_DELETE_FAILED", { error, particularsId: id });
     throw error;
   }
+  const descParts = ["Deleted ship particulars"];
+  if (meta?.effectiveDate) descParts.push(`effective ${meta.effectiveDate}`);
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "particulars",
+    recordId: id,
+    description: descParts.join(" — "),
+  });
 }
 
 export async function listParticularsAttachments(
@@ -494,6 +536,7 @@ export async function uploadParticularsAttachment(
   }
 
   const db = getDb();
+  let row: VesselParticularsAttachmentRow;
   try {
     const parent = await db
       .select({ id: vesselParticulars.id })
@@ -521,12 +564,12 @@ export async function uploadParticularsAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof ParticularsNotFoundError ||
@@ -540,6 +583,14 @@ export async function uploadParticularsAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "particulars",
+    recordId: particularsId,
+    description: `Uploaded attachment to ship particulars: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteParticularsAttachment(

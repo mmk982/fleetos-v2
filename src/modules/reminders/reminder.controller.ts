@@ -20,6 +20,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type { ReminderListItem } from "./reminder.model";
 import type { ReminderCreateInput, ReminderUpdateInput } from "./validation";
@@ -121,6 +122,7 @@ export async function createReminder(
   input: ReminderCreateInput,
 ): Promise<ReminderRow> {
   assertAuthenticatedAccess(ctx);
+  let row: ReminderRow;
   try {
     const inserted = await getDb()
       .insert(reminders)
@@ -136,9 +138,9 @@ export async function createReminder(
         status: "pending",
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Reminder insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Reminder insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new ReminderConflictError("Vessel reference is invalid.");
@@ -146,6 +148,14 @@ export async function createReminder(
     logError("REMINDER_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "reminder",
+    recordId: row.id,
+    description: `Added reminder: ${row.title}`,
+  });
+  return row;
 }
 
 export async function updateReminder(
@@ -180,15 +190,16 @@ export async function updateReminder(
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.status !== undefined) patch.status = input.status;
 
+  let row: ReminderRow;
   try {
     const updated = await db
       .update(reminders)
       .set(patch)
       .where(eq(reminders.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new ReminderNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new ReminderNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof ReminderNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -197,6 +208,24 @@ export async function updateReminder(
     logError("REMINDER_UPDATE_FAILED", { error, reminderId: id });
     throw error;
   }
+
+  let actionType = "updated";
+  let description = `Updated reminder: ${row.title}`;
+  if (input.status === "dismissed") {
+    actionType = "dismissed";
+    description = `Dismissed reminder: ${row.title}`;
+  } else if (input.status === "done") {
+    actionType = "completed";
+    description = `Completed reminder: ${row.title}`;
+  }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType,
+    moduleName: "reminder",
+    recordId: row.id,
+    description,
+  });
+  return row;
 }
 
 export async function deleteReminder(
@@ -204,6 +233,12 @@ export async function deleteReminder(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  const existing = await getDb()
+    .select({ title: reminders.title })
+    .from(reminders)
+    .where(eq(reminders.id, id))
+    .limit(1);
+  const title = existing[0]?.title;
   try {
     const deleted = await getDb()
       .delete(reminders)
@@ -215,6 +250,13 @@ export async function deleteReminder(
     logError("REMINDER_DELETE_FAILED", { error, reminderId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "reminder",
+    recordId: id,
+    description: title ? `Deleted reminder: ${title}` : "Deleted reminder",
+  });
 }
 
 export async function dismissReminder(
