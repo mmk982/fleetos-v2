@@ -24,6 +24,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
 import { logError } from "@/lib/logging";
 import type { ManualDetail, ManualListItem } from "./manual.model";
@@ -245,8 +246,9 @@ export async function createManualWithFirstRevision(
   const stored = await storeAttachmentFile(file);
   const db = getDb();
 
+  let manual: ManualRow;
   try {
-    return await db.transaction(async (tx) => {
+    manual = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(manuals)
         .values({
@@ -257,12 +259,12 @@ export async function createManualWithFirstRevision(
           notes: input.notes ?? null,
         })
         .returning();
-      const manual = inserted[0];
-      if (!manual) throw new Error("Manual insert did not return a row");
+      const insertedManual = inserted[0];
+      if (!insertedManual) throw new Error("Manual insert did not return a row");
 
       await tx.insert(manualRevisions).values({
         id: stored.id,
-        manualId: manual.id,
+        manualId: insertedManual.id,
         revisionNumber: firstRevision.revisionNumber ?? null,
         revisionDate: firstRevision.revisionDate ?? null,
         fileName: stored.fileName,
@@ -271,7 +273,7 @@ export async function createManualWithFirstRevision(
         isCurrentVersion: true,
       });
 
-      return manual;
+      return insertedManual;
     });
   } catch (error) {
     await removeStoredAttachmentFile(stored.relativePath);
@@ -281,6 +283,14 @@ export async function createManualWithFirstRevision(
     logError("MANUAL_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "manual",
+    recordId: manual.id,
+    description: `Added manual: ${manual.title}`,
+  });
+  return manual;
 }
 
 /**
@@ -298,16 +308,18 @@ export async function addManualRevision(
 
   const db = getDb();
   const parent = await db
-    .select({ id: manuals.id })
+    .select({ id: manuals.id, title: manuals.title })
     .from(manuals)
     .where(eq(manuals.id, manualId))
     .limit(1);
   if (!parent[0]) throw new ManualNotFoundError(manualId);
+  const manualTitle = parent[0].title;
 
   const stored = await storeAttachmentFile(file);
 
+  let row: ManualRevisionRow;
   try {
-    return await db.transaction(async (tx) => {
+    row = await db.transaction(async (tx) => {
       await tx
         .update(manualRevisions)
         .set({ isCurrentVersion: false })
@@ -326,15 +338,15 @@ export async function addManualRevision(
           isCurrentVersion: true,
         })
         .returning();
-      const row = inserted[0];
-      if (!row) throw new Error("Revision insert did not return a row");
+      const insertedRow = inserted[0];
+      if (!insertedRow) throw new Error("Revision insert did not return a row");
 
       await tx
         .update(manuals)
         .set({ updatedAt: new Date() })
         .where(eq(manuals.id, manualId));
 
-      return row;
+      return insertedRow;
     });
   } catch (error) {
     await removeStoredAttachmentFile(stored.relativePath);
@@ -342,6 +354,15 @@ export async function addManualRevision(
     logError("MANUAL_REVISION_ADD_FAILED", { error, manualId });
     throw error;
   }
+  const revisionLabel = row.revisionNumber ?? row.fileName;
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "manual",
+    recordId: manualId,
+    description: `Uploaded manual revision: ${manualTitle} ${revisionLabel}`,
+  });
+  return row;
 }
 
 export async function updateManual(
@@ -368,15 +389,16 @@ export async function updateManual(
   if (input.department !== undefined) patch.department = input.department;
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: ManualRow;
   try {
     const updated = await db
       .update(manuals)
       .set(patch)
       .where(eq(manuals.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new ManualNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new ManualNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof ManualNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -385,6 +407,14 @@ export async function updateManual(
     logError("MANUAL_UPDATE_FAILED", { error, manualId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "manual",
+    recordId: row.id,
+    description: `Updated manual: ${row.title}`,
+  });
+  return row;
 }
 
 /**
@@ -399,8 +429,16 @@ export async function setCurrentRevision(
   assertAuthenticatedAccess(ctx, manualId);
   const db = getDb();
 
+  const parent = await db
+    .select({ title: manuals.title })
+    .from(manuals)
+    .where(eq(manuals.id, manualId))
+    .limit(1);
+  const manualTitle = parent[0]?.title;
+
+  let row: ManualRevisionRow;
   try {
-    return await db.transaction(async (tx) => {
+    row = await db.transaction(async (tx) => {
       const target = await tx
         .select()
         .from(manualRevisions)
@@ -423,15 +461,15 @@ export async function setCurrentRevision(
         .set({ isCurrentVersion: true })
         .where(eq(manualRevisions.id, revisionId))
         .returning();
-      const row = updated[0];
-      if (!row) throw new ManualRevisionNotFoundError(revisionId);
+      const updatedRow = updated[0];
+      if (!updatedRow) throw new ManualRevisionNotFoundError(revisionId);
 
       await tx
         .update(manuals)
         .set({ updatedAt: new Date() })
         .where(eq(manuals.id, manualId));
 
-      return row;
+      return updatedRow;
     });
   } catch (error) {
     if (error instanceof ManualRevisionNotFoundError) throw error;
@@ -442,6 +480,17 @@ export async function setCurrentRevision(
     });
     throw error;
   }
+  const revisionLabel = row.revisionNumber ?? row.fileName;
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "manual",
+    recordId: manualId,
+    description: manualTitle
+      ? `Set current revision on manual: ${manualTitle} ${revisionLabel}`
+      : `Updated manual revision: ${revisionLabel}`,
+  });
+  return row;
 }
 
 export async function deleteManual(
@@ -450,6 +499,12 @@ export async function deleteManual(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({ title: manuals.title })
+    .from(manuals)
+    .where(eq(manuals.id, id))
+    .limit(1);
+  const title = existing[0]?.title;
   try {
     const atts = await db
       .select()
@@ -468,6 +523,13 @@ export async function deleteManual(
     logError("MANUAL_DELETE_FAILED", { error, manualId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "manual",
+    recordId: id,
+    description: title ? `Deleted manual: ${title}` : "Deleted manual",
+  });
 }
 
 /**

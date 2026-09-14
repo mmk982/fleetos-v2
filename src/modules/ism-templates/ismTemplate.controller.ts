@@ -24,6 +24,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
 import { logError } from "@/lib/logging";
 import type { IsmTemplateListItem } from "./ismTemplate.model";
@@ -291,6 +292,7 @@ export async function createIsmTemplate(
 ): Promise<IsmTemplateRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: IsmTemplateRow;
   try {
     const inserted = await db
       .insert(ismTemplates)
@@ -302,9 +304,9 @@ export async function createIsmTemplate(
         status: input.status,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("ISM template insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("ISM template insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       throw new IsmTemplateConflictError(
@@ -317,6 +319,14 @@ export async function createIsmTemplate(
     logError("ISM_TEMPLATE_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "ism_template",
+    recordId: row.id,
+    description: `Added ISM template: ${row.formName}`,
+  });
+  return row;
 }
 
 export async function updateIsmTemplate(
@@ -343,15 +353,16 @@ export async function updateIsmTemplate(
   if (input.revision !== undefined) patch.revision = input.revision;
   if (input.status !== undefined) patch.status = input.status;
 
+  let row: IsmTemplateRow;
   try {
     const updated = await db
       .update(ismTemplates)
       .set(patch)
       .where(eq(ismTemplates.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new IsmTemplateNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new IsmTemplateNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof IsmTemplateNotFoundError) throw error;
     if (isPgUniqueViolation(error)) {
@@ -365,6 +376,14 @@ export async function updateIsmTemplate(
     logError("ISM_TEMPLATE_UPDATE_FAILED", { error, ismTemplateId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "ism_template",
+    recordId: row.id,
+    description: `Updated ISM template: ${row.formName}`,
+  });
+  return row;
 }
 
 /** Hard-delete; removes on-disk attachment files first. */
@@ -374,6 +393,12 @@ export async function deleteIsmTemplate(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({ formName: ismTemplates.formName })
+    .from(ismTemplates)
+    .where(eq(ismTemplates.id, id))
+    .limit(1);
+  const formName = existing[0]?.formName;
   try {
     const atts = await db
       .select()
@@ -392,6 +417,15 @@ export async function deleteIsmTemplate(
     logError("ISM_TEMPLATE_DELETE_FAILED", { error, ismTemplateId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "ism_template",
+    recordId: id,
+    description: formName
+      ? `Deleted ISM template: ${formName}`
+      : "Deleted ISM template",
+  });
 }
 
 export async function listIsmTemplateAttachments(
@@ -432,6 +466,7 @@ export async function uploadIsmTemplateAttachment(
   }
 
   const db = getDb();
+  let row: IsmTemplateAttachmentRow;
   try {
     const parent = await db
       .select({ id: ismTemplates.id })
@@ -459,12 +494,12 @@ export async function uploadIsmTemplateAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof IsmTemplateNotFoundError ||
@@ -478,6 +513,14 @@ export async function uploadIsmTemplateAttachment(
     });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "ism_template",
+    recordId: ismTemplateId,
+    description: `Uploaded attachment to ISM template: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteIsmTemplateAttachment(

@@ -25,6 +25,7 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import { writeActivityLog } from "@/lib/activity-log/write";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
 import { logError } from "@/lib/logging";
 import type { DrawingListItem } from "./drawing.model";
@@ -306,6 +307,7 @@ export async function createDrawing(
 ): Promise<DrawingRow> {
   assertAuthenticatedAccess(ctx);
   const db = getDb();
+  let row: DrawingRow;
   try {
     const inserted = await db
       .insert(drawings)
@@ -318,9 +320,9 @@ export async function createDrawing(
         notes: input.notes ?? null,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) throw new Error("Drawing insert did not return a row");
-    return row;
+    const insertedRow = inserted[0];
+    if (!insertedRow) throw new Error("Drawing insert did not return a row");
+    row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
       throw new DrawingConflictError(
@@ -330,6 +332,14 @@ export async function createDrawing(
     logError("DRAWING_CREATE_FAILED", { error });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "created",
+    moduleName: "drawing",
+    recordId: row.id,
+    description: `Added drawing: ${row.drawingName}`,
+  });
+  return row;
 }
 
 export async function updateDrawing(
@@ -359,15 +369,16 @@ export async function updateDrawing(
   if (input.revision !== undefined) patch.revision = input.revision;
   if (input.notes !== undefined) patch.notes = input.notes;
 
+  let row: DrawingRow;
   try {
     const updated = await db
       .update(drawings)
       .set(patch)
       .where(eq(drawings.id, id))
       .returning();
-    const row = updated[0];
-    if (!row) throw new DrawingNotFoundError(id);
-    return row;
+    const updatedRow = updated[0];
+    if (!updatedRow) throw new DrawingNotFoundError(id);
+    row = updatedRow;
   } catch (error) {
     if (error instanceof DrawingNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
@@ -378,6 +389,14 @@ export async function updateDrawing(
     logError("DRAWING_UPDATE_FAILED", { error, drawingId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "updated",
+    moduleName: "drawing",
+    recordId: row.id,
+    description: `Updated drawing: ${row.drawingName}`,
+  });
+  return row;
 }
 
 /** Hard-delete; removes on-disk attachment files first. */
@@ -387,6 +406,12 @@ export async function deleteDrawing(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
   const db = getDb();
+  const existing = await db
+    .select({ drawingName: drawings.drawingName })
+    .from(drawings)
+    .where(eq(drawings.id, id))
+    .limit(1);
+  const drawingName = existing[0]?.drawingName;
   try {
     const atts = await db
       .select()
@@ -405,6 +430,15 @@ export async function deleteDrawing(
     logError("DRAWING_DELETE_FAILED", { error, drawingId: id });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "deleted",
+    moduleName: "drawing",
+    recordId: id,
+    description: drawingName
+      ? `Deleted drawing: ${drawingName}`
+      : "Deleted drawing",
+  });
 }
 
 export async function listDrawingAttachments(
@@ -438,6 +472,7 @@ export async function uploadDrawingAttachment(
   }
 
   const db = getDb();
+  let row: DrawingAttachmentRow;
   try {
     const parent = await db
       .select({ id: drawings.id })
@@ -465,12 +500,12 @@ export async function uploadDrawingAttachment(
         uploadedBy: ctx.userId,
       })
       .returning();
-    const row = inserted[0];
-    if (!row) {
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
       await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
-    return row;
+    row = insertedRow;
   } catch (error) {
     if (
       error instanceof DrawingNotFoundError ||
@@ -481,6 +516,14 @@ export async function uploadDrawingAttachment(
     logError("DRAWING_ATTACHMENT_UPLOAD_FAILED", { error, drawingId });
     throw error;
   }
+  await writeActivityLog({
+    userId: ctx.userId,
+    actionType: "uploaded",
+    moduleName: "drawing",
+    recordId: drawingId,
+    description: `Uploaded attachment to drawing: ${row.fileName}`,
+  });
+  return row;
 }
 
 export async function deleteDrawingAttachment(
