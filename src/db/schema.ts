@@ -1201,3 +1201,71 @@ export const vesselNotes = pgTable(
 export type VesselNoteRow = typeof vesselNotes.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link vesselNotes}. */
 export type VesselNoteInsert = typeof vesselNotes.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Reminders (PROJECT_PLAN.md §12) — user-set, distinct from Alerts
+// ---------------------------------------------------------------------------
+
+/** What the reminder is about (loosely mirrors source-doc examples). */
+export const reminderTypeEnum = [
+  "certificate",
+  "insurance",
+  "manual",
+  "deficiency",
+  "custom",
+] as const;
+/** Union of {@link reminderTypeEnum} literals. */
+export type ReminderType = (typeof reminderTypeEnum)[number];
+
+/** Urgency of a reminder. */
+export const reminderPriorityEnum = ["low", "medium", "high"] as const;
+/** Union of {@link reminderPriorityEnum} literals. */
+export type ReminderPriority = (typeof reminderPriorityEnum)[number];
+
+/** Lifecycle of a user reminder (pending → done / dismissed). */
+export const reminderStatusEnum = ["pending", "done", "dismissed"] as const;
+/** Union of {@link reminderStatusEnum} literals. */
+export type ReminderStatus = (typeof reminderStatusEnum)[number];
+
+/**
+ * Manually created reminders. `relatedItemKind` / `relatedItemId` are a
+ * polymorphic soft reference (no DB FK) — orphaned links are allowed.
+ */
+export const reminders = pgTable(
+  "reminders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id").references(() => vessels.id, {
+      onDelete: "restrict",
+    }),
+    title: text("title").notNull(),
+    type: text("type", { enum: reminderTypeEnum }).notNull(),
+    relatedItemKind: text("related_item_kind"),
+    relatedItemId: uuid("related_item_id"),
+    priority: text("priority", { enum: reminderPriorityEnum })
+      .notNull()
+      .default("medium"),
+    reminderDate: date("reminder_date").notNull(),
+    status: text("status", { enum: reminderStatusEnum })
+      .notNull()
+      .default("pending"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("reminders_vessel_id_idx").on(t.vesselId),
+    index("reminders_status_idx").on(t.status),
+    index("reminders_reminder_date_idx").on(t.reminderDate),
+    index("reminders_type_idx").on(t.type),
+  ],
+);
+
+/** A row as read from {@link reminders}. */
+export type ReminderRow = typeof reminders.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link reminders}. */
+export type ReminderInsert = typeof reminders.$inferInsert;
