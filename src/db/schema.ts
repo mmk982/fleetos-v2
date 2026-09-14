@@ -312,3 +312,107 @@ export type CertificateAttachmentRow = typeof certificateAttachments.$inferSelec
 /** Shape accepted by Drizzle's `.insert()` for {@link certificateAttachments}. */
 export type CertificateAttachmentInsert =
   typeof certificateAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Deficiencies module (PROJECT_PLAN.md §2) — two tables
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a deficiency was raised. Fixed set from the requirements doc —
+ * not user-extensible (unlike certificate_types).
+ */
+export const deficiencySourceEnum = [
+  "psc",
+  "class",
+  "flag",
+  "internal",
+  "other",
+] as const;
+/** Union of {@link deficiencySourceEnum} literals. */
+export type DeficiencySource = (typeof deficiencySourceEnum)[number];
+
+/**
+ * Stored lifecycle status for a deficiency — authoritative for the module
+ * (unlike certificate compliance, which is date-derived). Non-`closed`
+ * rows with a `dueDate` feed the alerts aggregator (§0.7).
+ */
+export const deficiencyStatusEnum = [
+  "open",
+  "in_progress",
+  "closed",
+  "monitoring",
+] as const;
+/** Union of {@link deficiencyStatusEnum} literals. */
+export type DeficiencyStatus = (typeof deficiencyStatusEnum)[number];
+
+/**
+ * Vessel findings / non-conformities. `status` is a real stored column,
+ * not an engine cache. Vessel FK is `ON DELETE RESTRICT`.
+ */
+export const deficiencies = pgTable(
+  "deficiencies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    deficiencyNumber: text("deficiency_number"),
+    title: text("title").notNull(),
+    description: text("description"),
+    category: text("category"),
+    source: text("source", { enum: deficiencySourceEnum }).notNull(),
+    status: text("status", { enum: deficiencyStatusEnum })
+      .notNull()
+      .default("open"),
+    reference: text("reference"),
+    identifiedDate: date("identified_date"),
+    dueDate: date("due_date"),
+    closedDate: date("closed_date"),
+    correctiveAction: text("corrective_action"),
+    responsiblePerson: text("responsible_person"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("deficiencies_vessel_id_idx").on(t.vesselId),
+    index("deficiencies_status_idx").on(t.status),
+    index("deficiencies_due_date_idx").on(t.dueDate),
+  ],
+);
+
+/** A row as read from {@link deficiencies}. */
+export type DeficiencyRow = typeof deficiencies.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link deficiencies}. */
+export type DeficiencyInsert = typeof deficiencies.$inferInsert;
+
+/**
+ * Files attached to a deficiency. Same on-disk / serve conventions as
+ * {@link certificateAttachments}. `uploadedBy` is `users.id` (SET NULL) —
+ * §2 originally said free-text pending Phase 3; Auth already shipped, so
+ * we match Certificates rather than regress to free text.
+ */
+export const deficiencyAttachments = pgTable("deficiency_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  deficiencyId: uuid("deficiency_id")
+    .notNull()
+    .references(() => deficiencies.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link deficiencyAttachments}. */
+export type DeficiencyAttachmentRow = typeof deficiencyAttachments.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link deficiencyAttachments}. */
+export type DeficiencyAttachmentInsert =
+  typeof deficiencyAttachments.$inferInsert;

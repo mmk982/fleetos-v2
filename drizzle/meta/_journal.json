@@ -22,6 +22,13 @@
       "when": 1789128322640,
       "tag": "0002_certificates_module",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789374715600,
+      "tag": "0003_deficiencies_module",
+      "breakpoints": true
     }
   ]
 }
