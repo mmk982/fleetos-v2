@@ -19,6 +19,7 @@ import {
   createParticulars,
   deleteParticulars,
   deleteParticularsAttachment,
+  getParticularsById,
   ParticularsConflictError,
   ParticularsNotFoundError,
   updateParticulars,
@@ -173,13 +174,14 @@ export async function deleteParticularsFormAction(
   const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
   const id = formData.get("id");
-  const vesselId = formData.get("vesselId");
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("Missing particulars id");
   }
+  const existing = await getParticularsById(access, id);
+  const vesselId = existing?.vesselId;
   await deleteParticulars(access, id);
   revalidatePath(particularsPath);
-  if (typeof vesselId === "string" && vesselId.length > 0) {
+  if (vesselId) {
     revalidatePath(`${particularsPath}/${vesselId}`);
     redirect(`${particularsPath}/${vesselId}`);
   }

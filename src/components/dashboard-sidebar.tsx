@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/monthly-forms", label: "Monthly Executed Forms" },
   { href: "/dashboard/manuals", label: "Manuals" },
   { href: "/dashboard/drawings", label: "Drawings" },
+  { href: "/dashboard/particulars", label: "Particulars" },
   { href: "/dashboard/settings", label: "Settings" },
 ] as const;
 
