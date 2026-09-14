@@ -5,21 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const assertAuthenticatedAccess = vi.fn();
-vi.mock("@/lib/auth/access", () => ({
-  assertAuthenticatedAccess: (...args: unknown[]) =>
-    assertAuthenticatedAccess(...args),
-}));
-
-const removeStoredAttachmentFile = vi.fn(async () => undefined);
+const removeStoredAttachmentFile = vi.fn(async (_path: string) => undefined);
 vi.mock("@/lib/attachments/stream", () => ({
-  removeStoredAttachmentFile: (...args: unknown[]) =>
-    removeStoredAttachmentFile(...args),
+  removeStoredAttachmentFile: (filePath: string) =>
+    removeStoredAttachmentFile(filePath),
 }));
 
 const logError = vi.fn();
 vi.mock("@/lib/logging", () => ({
-  logError: (...args: unknown[]) => logError(...args),
+  logError: (...args: [string, Record<string, unknown>?]) => logError(...args),
 }));
 
 const getDb = vi.fn();
@@ -27,6 +21,12 @@ vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
 }));
 
+const assertAuthenticatedAccess = vi.fn();
+vi.mock("@/lib/auth/access", () => ({
+  assertAuthenticatedAccess: (
+    ...args: [unknown, string?]
+  ) => assertAuthenticatedAccess(...args),
+}));
 import {
   crewCertificateAttachments,
   crewCertificates,
