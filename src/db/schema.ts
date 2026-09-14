@@ -574,3 +574,40 @@ export type CrewCertificateAttachmentRow =
 /** Shape accepted by Drizzle's `.insert()` for {@link crewCertificateAttachments}. */
 export type CrewCertificateAttachmentInsert =
   typeof crewCertificateAttachments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// GDPR access log (PROJECT_PLAN.md §6) — Crew personal-data reads only
+// ---------------------------------------------------------------------------
+
+/**
+ * Access kinds logged against Crew PII. Not a general page-view log —
+ * list pages that show only names/status do not write here.
+ */
+export const accessLogTypeEnum = [
+  "view",
+  "download_attachment",
+  "export",
+] as const;
+/** Union of {@link accessLogTypeEnum} literals. */
+export type AccessLogType = (typeof accessLogTypeEnum)[number];
+
+/**
+ * Append-only log of who accessed Crew personal data (`MASTER_PLAN.md`
+ * Phase 4 / `PROJECT_PLAN.md` §6). Scoped to `crew_members` /
+ * `crew_certificates` / `crew_certificate_attachments` only.
+ */
+export const accessLogs = pgTable("access_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  moduleName: text("module_name").notNull(),
+  recordId: uuid("record_id").notNull(),
+  accessType: text("access_type", { enum: accessLogTypeEnum }).notNull(),
+  accessedAt: timestamp("accessed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link accessLogs}. */
+export type AccessLogRow = typeof accessLogs.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link accessLogs}. */
+export type AccessLogInsert = typeof accessLogs.$inferInsert;
