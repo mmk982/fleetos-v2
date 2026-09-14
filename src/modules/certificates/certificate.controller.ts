@@ -10,8 +10,7 @@
  */
 import "server-only";
 
-import { createReadStream } from "node:fs";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, type SQL } from "drizzle-orm";
@@ -34,6 +33,10 @@ import {
   assertAuthenticatedAccess,
   type AccessContext,
 } from "@/lib/auth/access";
+import {
+  openStoredAttachmentStream,
+  removeStoredAttachmentFile,
+} from "@/lib/attachments/stream";
 import {
   deriveComplianceStatus,
   type ComplianceResult,
@@ -523,7 +526,7 @@ export async function deleteCertificate(
       .from(certificateAttachments)
       .where(eq(certificateAttachments.certificateId, id));
     for (const att of existing) {
-      await removeAttachmentFile(att.filePath);
+      await removeStoredAttachmentFile(att.filePath);
     }
     const deleted = await db
       .delete(certificates)
@@ -620,16 +623,7 @@ function extensionForMime(mime: string): string {
 }
 
 async function removeAttachmentFile(relativePath: string): Promise<void> {
-  const absolute = path.join(process.cwd(), relativePath);
-  const root = path.join(process.cwd(), "data", "attachments");
-  if (!absolute.startsWith(root)) {
-    return;
-  }
-  try {
-    await unlink(absolute);
-  } catch {
-    // File may already be gone — ignore.
-  }
+  await removeStoredAttachmentFile(relativePath);
 }
 
 /**
@@ -682,7 +676,7 @@ export async function uploadCertificateAttachment(
       .returning();
     const row = inserted[0];
     if (!row) {
-      await unlink(absolute).catch(() => undefined);
+      await removeStoredAttachmentFile(relativePath);
       throw new Error("Attachment insert did not return a row");
     }
     return row;
@@ -753,7 +747,8 @@ export async function getCertificateAttachmentById(
 
 /**
  * Opens a read stream for an attachment after validating the stored path
- * stays under `data/attachments/`.
+ * stays under `data/attachments/`. Prefer the generic `/api/attachments/[id]`
+ * resolver for new call sites.
  */
 export async function openAttachmentStream(
   ctx: AccessContext,
@@ -763,11 +758,10 @@ export async function openAttachmentStream(
   if (!row) {
     throw new AttachmentNotFoundError(attachmentId);
   }
-  const absolute = path.resolve(process.cwd(), row.filePath);
-  const root = path.resolve(process.cwd(), "data", "attachments");
-  if (!absolute.startsWith(root + path.sep) && absolute !== root) {
-    logError("ATTACHMENT_PATH_ESCAPE", { attachmentId, filePath: row.filePath });
+  try {
+    const { stream } = openStoredAttachmentStream(row.filePath);
+    return { row, stream };
+  } catch {
     throw new AttachmentNotFoundError(attachmentId);
   }
-  return { row, stream: createReadStream(absolute) };
 }

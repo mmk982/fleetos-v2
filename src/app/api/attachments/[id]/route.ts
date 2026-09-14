@@ -1,28 +1,22 @@
 /**
  * Authenticated attachment download (SECURITY_PLAN.md §6).
  *
- * Looks up the attachment row by id, streams the file from the path stored
- * in the database — never from anything user-supplied. Reference route for
- * every later module's attachments (currently certificate_attachments).
+ * Generic across modules: looks up `certificate_attachments`, then
+ * `deficiency_attachments` (see `src/lib/attachments/resolve.ts` for why
+ * this stays one route rather than per-module URLs). Path is taken only
+ * from the DB row — never from the request.
  */
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
-import { validateSession } from "@/lib/auth/session";
 import {
   AttachmentNotFoundError,
-  openAttachmentStream,
-} from "@/modules/certificates/certificate.controller";
+  resolveAttachmentStream,
+} from "@/lib/attachments/resolve";
+import { contentTypeForAttachment } from "@/lib/attachments/stream";
+import { validateSession } from "@/lib/auth/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function contentTypeForPath(filePath: string, fileName: string): string {
-  const lower = (filePath || fileName).toLowerCase();
-  if (lower.endsWith(".pdf")) return "application/pdf";
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  return "application/octet-stream";
-}
 
 export async function GET(_request: Request, context: RouteContext) {
   const session = await validateSession();
@@ -32,7 +26,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   try {
-    const { row, stream } = await openAttachmentStream(
+    const { fileName, filePath, stream } = await resolveAttachmentStream(
       toAccessContext(session),
       id,
     );
@@ -43,8 +37,8 @@ export async function GET(_request: Request, context: RouteContext) {
     return new NextResponse(webStream, {
       status: 200,
       headers: {
-        "Content-Type": contentTypeForPath(row.filePath, row.fileName),
-        "Content-Disposition": `inline; filename="${row.fileName.replace(/"/g, "")}"`,
+        "Content-Type": contentTypeForAttachment(filePath, fileName),
+        "Content-Disposition": `inline; filename="${fileName.replace(/"/g, "")}"`,
         "Cache-Control": "private, no-store",
       },
     });
@@ -54,6 +48,10 @@ export async function GET(_request: Request, context: RouteContext) {
     }
     if (error instanceof AttachmentNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    // Path-escape from openStoredAttachmentStream surfaces as generic Error.
+    if (error instanceof Error && error.message === "Attachment path rejected") {
+      return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
     }
     throw error;
   }
