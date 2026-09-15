@@ -297,6 +297,7 @@ erDiagram
     USERS ||--o{ ACTIVITY_LOGS : "SET NULL"
     USERS ||--o{ EMAIL_DELIVERIES : "SET NULL"
     USERS ||--o{ ACCESS_LOGS : "SET NULL"
+    VESSELS ||--o{ USERS : "RESTRICT (nullable, vessel-scoped roles only - Phase 6)"
     VESSELS ||--o{ NOTIFICATIONS : "RESTRICT (nullable)"
 
     NOTIFICATIONS {
@@ -315,13 +316,14 @@ erDiagram
         timestamptz sentAt
     }
 
-    %% ===================== AUTH (Phase 3, not yet built) =====================
+    %% ===================== AUTH (Phase 3, shipped) =====================
     USERS {
         uuid id PK
         text name
         text email UK
         text passwordHash
-        text role "5-role RBAC, Phase 6"
+        text role "admin|management_user|superintendent|vessel_user|read_only - mapping resolved, Phase 6 not yet built"
+        uuid vesselId FK "nullable - RESTRICT, only set for management_user/vessel_user (vessel-scoped roles); null for the 3 office roles"
         text preferredLocale "en|ar"
         text preferredTheme "light|dark"
     }

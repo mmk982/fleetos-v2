@@ -280,13 +280,67 @@ Full design in `PROJECT_PLAN.md` §12b. Reviewed independently by Cursor before 
 
 ## Phase 6 — RBAC layer
 
-**Blocked, not guessed.** `PROJECT_PLAN.md`'s own Status section (open item #3) and `MASTER_PLAN.md`'s "Open items" both flag that the full 5-role × 3-tier (Full control / Limited upload / View only) permission mapping is undefined by either source document — the roles (Admin, Management User, Superintendent, Vessel User, Read Only) are named, but which role gets which tier for which module is not. Do not invent this mapping to unblock the phase; get it from Eng.MHD or the source requirements doc first.
+**Previously blocked; mapping now provided by Eng.MHD (this session).** The
+originally-assumed 5-role × 3-tier (Full control / Limited upload / View
+only) model is **not** what was actually wanted — the real design is
+**binary allow/deny per module**, no "limited" tier. Eng.MHD also confirmed
+a real structural detail neither source doc stated explicitly: users split
+into two classes, **office-based** (Admin, Superintendent, Read Only —
+fleet-wide, no vessel scoping) and **vessel-based** (Management User,
+Vessel User — each tied to exactly one vessel). This is provided as a
+starting mapping, not a final frozen spec — Eng.MHD will give corrections
+and additions as they come up; re-confirm before this phase ships if it's
+been a while since the mapping was last touched.
 
-Once the mapping exists:
+### Schema addition this phase requires
 
-- [ ] Add a `WRITE_ROLES`-style table/config read by both server-side enforcement and UI gating (per `MASTER_PLAN.md` Phase 6).
-- [ ] Add role checks to every Server Action across every module built in Phase 5 — this is a cross-cutting retrofit pass, not a new module, so budget it as touching every `actions.ts` in the repo.
-- [ ] Add the RLS policies deferred from Phase 4 now that role/vessel-scoping data exists.
+- `users.role` — currently untyped `text("role")` (`src/db/schema.ts`,
+  comment: "Phase 6 fills this in and enforces it; until then it is stored
+  but unused"). Convert to
+  `text("role", { enum: userRoleEnum })` where
+  `userRoleEnum = ["admin", "management_user", "superintendent", "vessel_user", "read_only"] as const`.
+- `users.vesselId` — **new** nullable FK → `vessels.id`, `ON DELETE
+  RESTRICT`. Populated only for `management_user` and `vessel_user` rows;
+  null for the three office roles. One vessel per vessel-scoped user (not
+  a join table — confirmed as a single-vessel relationship).
+- Diagram already updated: `diagrams/erd-full-schema.mermaid`'s `USERS`
+  block and the new `VESSELS ||--o{ USERS` edge reflect this.
+
+### Resolved permission table (binary R/W per module)
+
+| Module | Admin | Superintendent | Management User (own vessel only) | Vessel User (own vessel only) | Read Only |
+|---|---|---|---|---|---|
+| Certificates | R/W | R/W | R | R | R |
+| Deficiencies | R/W | R/W | R/W (log & update) | R | R |
+| Crew | R/W | R/W | R | R | R |
+| Insurance | R/W | R/W *(inferred)* | R | R | R |
+| Manuals | R/W | R/W *(inferred)* | R | R | R |
+| Drawings | R/W | R/W *(inferred)* | R | R | R |
+| ISM Templates (fleet-wide, no vessel scoping applies) | R/W | R/W *(inferred)* | R | R | R |
+| Monthly Executed Forms | R/W | R/W *(inferred)* | R/W (submit) | Submit only | R, no upload |
+| Ship Particulars | R/W | R/W *(inferred)* | R | R | R |
+| Reminders | R/W | R/W *(inferred)* | R *(inferred)* | R *(inferred)* | R |
+| Alerts / Notifications / Dashboard | R/W | R *(inferred)* | R *(inferred)* | R *(inferred)* | R |
+| Vessel registry (add/remove) | R/W | ✗ | ✗ | ✗ | ✗ |
+| Settings — Users & Roles | R/W | ✗ | ✗ | ✗ | ✗ |
+| Settings — General / Company Profile / System Lists | R/W | ✗ *(inferred)* | ✗ | ✗ | ✗ |
+| Export | Y | Y *(inferred)* | Own-vessel data only *(inferred)* | ✗ *(inferred)* | ✗ |
+
+Cells marked *(inferred)* were not explicitly given by Eng.MHD — they're
+extrapolated from the confirmed cells' pattern (office roles get the
+compliance modules; vessel roles get narrow, vessel-scoped, mostly-read
+access) and should be re-confirmed with Eng.MHD before this phase's build
+prompt is finalized, not treated as equally authoritative to the
+confirmed cells.
+
+Once the mapping is re-confirmed:
+
+- [ ] Add `userRoleEnum` and `users.vesselId` to `schema.ts` per above; migrate.
+- [ ] Add a `WRITE_ROLES`-style table/config read by both server-side enforcement and UI gating (per `MASTER_PLAN.md` Phase 6) — binary per-module, not 3-tier.
+- [ ] Add a vessel-scoping check alongside the role check for `management_user`/`vessel_user` — every read/write in a vessel-scoped module must also verify the record's `vesselId` matches the caller's `users.vesselId`, not just that the role permits the module. This is a materially bigger check than a flat role gate (row-level, not just action-level).
+- [ ] Add role (+ vessel-scope) checks to every Server Action across every module built in Phase 5 — this is a cross-cutting retrofit pass, not a new module, so budget it as touching every `actions.ts` in the repo.
+- [ ] Add the RLS policies deferred from Phase 4 now that role/vessel-scoping data exists — RLS shape is now confirmed "role-and-row-based" (`SECURITY_PLAN.md` §4's open question is resolved: vessel-level scoping is a real requirement).
+- [ ] Resolve the sidebar-visibility question (`PLAN_REVIEW.md` finding #6) — hide, disable, or visible-but-403 for a nav item the caller's role/vessel-scope can't reach.
 - [ ] **Tool:** Claude Code — this is the same "must be consistent across every file" class of work as the Postgres migration, just wider (every module instead of one schema file).
 
 ---

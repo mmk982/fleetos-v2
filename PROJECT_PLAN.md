@@ -1399,9 +1399,21 @@ which reads write to it. It existed only as a name. This closes that gap.
   Read Only** (renamed from the earlier Administrator/Superintendent/
   VesselCaptain/VesselUser/ReadOnly list — this requirements doc is now
   authoritative). Full CRUD deferred to `MASTER_PLAN.md` Phase 6 (RBAC layer)
-  since it depends on the Phase 3 auth `users` table existing first; the
-  full 5-role × 3-tier permission mapping (§16) is not yet defined by the
-  source doc and needs a decision when Phase 6 is built.
+  since it depends on the Phase 3 auth `users` table existing first.
+- **Role × module permission mapping — resolved (Eng.MHD, this session,
+  superseding the earlier "not yet defined, needs a decision" note).**
+  Binary allow/deny per module (**not** the originally-proposed 3-tier
+  Full-control/Limited-upload/View-only model — dropped, since the real
+  design has no "limited" tier). Full table and enforcement plan live in
+  `MASTER_IMPLEMENTATION_PLAN.md`'s Phase 6 section; summary: Admin has
+  full access everywhere including Users & Roles and the vessel registry;
+  Superintendent and Read Only are office-based, fleet-wide (no vessel
+  scoping); **Management User and Vessel User are vessel-scoped** — each
+  such user is tied to exactly one vessel via a new nullable `users.vesselId`
+  FK (`ON DELETE RESTRICT`, populated only for these two roles), and their
+  access is limited to that vessel's records. Subject to updates — Eng.MHD
+  will provide corrections/additions as they come up, not a final frozen
+  spec.
 - Full page: `src/app/dashboard/settings/` with the settings form (starts
   with just `criticalDays`, grows without schema changes) + the
   certificate-types and issuing-authorities tables now; user/role

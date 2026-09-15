@@ -67,13 +67,22 @@ This is `MASTER_PLAN.md` Phase 3's 3-layer defense (edge redirect → Server Act
 
 ## 4. Authorization / RBAC security
 
-Builds on `MASTER_PLAN.md` Phase 6, which is **explicitly blocked** on the 5-role × 3-tier permission mapping — this plan doesn't invent that mapping (see `PLAN_REVIEW.md` finding #2 on why guessing it would be worse than waiting). What this section adds is the enforcement *shape*, independent of what the exact mapping ends up being:
+Builds on `MASTER_PLAN.md` Phase 6. The permission mapping was previously
+**explicitly blocked** — this plan didn't invent it (see `PLAN_REVIEW.md`
+finding #2 on why guessing it would be worse than waiting). **Eng.MHD has
+since provided a starting mapping** (this session; full table in
+`MASTER_IMPLEMENTATION_PLAN.md`'s Phase 6 section) — treat it as
+resolved-for-now but not frozen; several cells are marked as inferred
+extrapolations pending Eng.MHD's confirmation, and he'll supply
+corrections/additions as they come up. What this section adds is the
+enforcement *shape*:
 
 - **Deny by default.** A role with no explicit grant for a module gets no access to it — never structure the check as "allow unless denied."
 - **Enforce at the Server Action / API layer, not just the UI.** Hiding a button for a role that shouldn't see it is a UX nicety, not a security control — every `actions.ts` function and API route must independently check the caller's role against `WRITE_ROLES` before doing anything, exactly as the session check does. A role-gated nav item that's hidden in the sidebar but still reachable by directly POSTing to the Server Action is not actually gated.
+- **Binary allow/deny per module, not 3-tier.** The originally-assumed "Full control / Limited upload / View only" tiering is superseded — the real design has no "limited" tier, just R/W or not per module.
 - **Postgres RLS as a second, independent layer** (Phase 4/6, already planned) — the point of RLS here isn't "instead of" the app-layer check, it's a backstop for the specific failure mode where an app-layer check gets missed in one code path; the two layers should enforce the *same* rule, not different ones.
 - **The sidebar-visibility question flagged in `PLAN_REVIEW.md` finding #6** (does a restricted nav item hide, disable, or stay visible-but-403 once a role can't access it) needs resolving before Phase 6 ships, since it's a real product decision, not something to improvise per-page.
-- **Vessel-level scoping**, if the eventual role mapping includes a "Vessel User" restricted to specific vessels (plausible given the role name) — confirm whether that's a real requirement before Phase 6, since it changes the RLS policy shape from "role-based" to "role-and-row-based," which is a materially bigger implementation than a flat role check.
+- **Vessel-level scoping is confirmed real, not hypothetical.** Users split into two classes: office-based (Admin, Superintendent, Read Only — fleet-wide) and vessel-based (Management User, Vessel User — each tied to exactly one vessel via a new nullable `users.vesselId` FK, `ON DELETE RESTRICT`). This makes the RLS/app-layer check **row-level** for vessel-scoped roles (role check **and** `record.vesselId === caller.vesselId`), not just a flat per-module role check — the materially bigger implementation this bullet used to flag as an open question is now the confirmed design.
 
 ---
 
@@ -101,7 +110,7 @@ Every module's attachment table (`certificate_attachments`, `deficiency_attachme
 `PROJECT_PLAN.md`'s Export to Excel/PDF utility (build-order step 15) had no security treatment in any document until now — worth naming plainly: an export is the one feature in this plan whose entire purpose is to produce a file that leaves the app's access-control model entirely. Every attachment is served through an authenticated route (§6 above); an exported spreadsheet or PDF, once downloaded, is a plain file on someone's machine with none of that — no session check, no re-auth, no way to revoke access to a copy that already left.
 
 - **Audit trail on every export, not just Crew.** Per `PROJECT_PLAN.md` §15's export note: an export whose source rows are `crew_members`/`crew_certificates` writes an `access_logs` row (§6b below) — this is the GDPR-relevant case, since crew PII is what's leaving the app. An export of any other module (Certificates, Deficiencies, Insurance, etc.) writes a plain `activity_logs` entry (`actionType: "exported"`) — not a compliance requirement, but cheap insurance so "who exported what, when" is answerable if it's ever asked, rather than genuinely unknowable.
-- **No role gating in v1 — a known, accepted limitation, not an oversight.** Until Phase 6's RBAC mapping exists, "logged in" is the only export gate, the same limitation that already applies to viewing the underlying data. Once Phase 6 lands, Crew and Insurance exports are the two most likely candidates for restricting to a higher permission tier than "View only" — flagged here as a decision point for that phase, not decided now.
+- **No role gating in v1 — a known, accepted limitation, not an oversight.** Until Phase 6's RBAC ships, "logged in" is the only export gate, the same limitation that already applies to viewing the underlying data. Per the mapping Eng.MHD provided (`MASTER_IMPLEMENTATION_PLAN.md` Phase 6, table row "Export" — currently marked *inferred*, pending confirmation), Vessel User is expected to lose export access entirely and Management User's export is expected to be scoped to their own vessel's data only — the specifics are still provisional, but "export gets restricted for at least some roles" is no longer an open question, just an unconfirmed detail.
 - **Not solved by this plan, and worth being upfront about:** once a file is exported, this plan has no mechanism to prevent it from being re-shared, and no watermarking/DRM is in scope for v1. The audit-log entry answers "did an export happen and who triggered it," not "where did the file end up." Treat this the same as any other outside-the-system risk (e.g., someone photographing a screen) — mitigated by knowing it happened, not by technically preventing downstream copying.
 
 ### 6b. GDPR access log (new — was referenced as decided, was actually just a name)
