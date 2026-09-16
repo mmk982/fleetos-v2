@@ -48,16 +48,21 @@ describe("vessel-notes.controller", () => {
     getDb.mockReturnValue({
       select: () => ({
         from: () => ({
-          where: () =>
-            thenable([
-              {
-                id: NOTE_ID,
-                vesselId: VESSEL_ID,
-                body: "Hello",
-                authorId: CTX.userId,
-                createdAt: new Date(),
-              },
-            ]),
+          leftJoin: () => ({
+            where: () =>
+              thenable([
+                {
+                  note: {
+                    id: NOTE_ID,
+                    vesselId: VESSEL_ID,
+                    body: "Hello",
+                    authorId: CTX.userId,
+                    createdAt: new Date(),
+                  },
+                  authorName: "Ada",
+                },
+              ]),
+          }),
         }),
       }),
     });
@@ -65,6 +70,7 @@ describe("vessel-notes.controller", () => {
     const rows = await listVesselNotes(CTX, VESSEL_ID);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.body).toBe("Hello");
+    expect(rows[0]?.authorName).toBe("Ada");
   });
 
   it("createVesselNote inserts with authorId", async () => {
@@ -114,5 +120,19 @@ describe("vessel-notes.controller", () => {
     await expect(deleteVesselNote(CTX, NOTE_ID)).rejects.toBeInstanceOf(
       VesselNoteNotFoundError,
     );
+  });
+
+  it("deleteVesselNote returns vesselId when deleted", async () => {
+    getDb.mockReturnValue({
+      delete: () => ({
+        where: () => ({
+          returning: async () => [{ id: NOTE_ID, vesselId: VESSEL_ID }],
+        }),
+      }),
+    });
+
+    await expect(deleteVesselNote(CTX, NOTE_ID)).resolves.toEqual({
+      vesselId: VESSEL_ID,
+    });
   });
 });

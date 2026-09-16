@@ -2,13 +2,17 @@
  * Vessel notes data-access (`PROJECT_PLAN.md` §13).
  *
  * Append-only log — create, list, delete only (no update).
- * UI deferred to the vessel-detail integration pass.
  */
 import "server-only";
 
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { vesselNotes, vessels, type VesselNoteRow } from "@/db/schema";
+import {
+  users,
+  vesselNotes,
+  vessels,
+  type VesselNoteRow,
+} from "@/db/schema";
 import {
   assertAuthenticatedAccess,
   type AccessContext,
@@ -32,6 +36,11 @@ export class VesselNoteConflictError extends Error {
   }
 }
 
+/** List row with author display name (`null` when system / deleted user). */
+export type VesselNoteListItem = VesselNoteRow & {
+  authorName: string | null;
+};
+
 function isPgForeignKeyViolation(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -44,13 +53,22 @@ function isPgForeignKeyViolation(error: unknown): boolean {
 export async function listVesselNotes(
   ctx: AccessContext,
   vesselId: string,
-): Promise<VesselNoteRow[]> {
+): Promise<VesselNoteListItem[]> {
   assertAuthenticatedAccess(ctx, vesselId);
-  return getDb()
-    .select()
+  const rows = await getDb()
+    .select({
+      note: vesselNotes,
+      authorName: users.name,
+    })
     .from(vesselNotes)
+    .leftJoin(users, eq(vesselNotes.authorId, users.id))
     .where(eq(vesselNotes.vesselId, vesselId))
     .orderBy(desc(vesselNotes.createdAt));
+
+  return rows.map((r) => ({
+    ...r.note,
+    authorName: r.authorName,
+  }));
 }
 
 export async function createVesselNote(
@@ -105,14 +123,20 @@ export async function createVesselNote(
 export async function deleteVesselNote(
   ctx: AccessContext,
   id: string,
-): Promise<void> {
+): Promise<{ vesselId: string }> {
   assertAuthenticatedAccess(ctx, id);
   try {
     const deleted = await getDb()
       .delete(vesselNotes)
       .where(eq(vesselNotes.id, id))
-      .returning({ id: vesselNotes.id });
-    if (deleted.length === 0) throw new VesselNoteNotFoundError(id);
+      .returning({
+        id: vesselNotes.id,
+        vesselId: vesselNotes.vesselId,
+      });
+    if (deleted.length === 0 || !deleted[0]) {
+      throw new VesselNoteNotFoundError(id);
+    }
+    return { vesselId: deleted[0].vesselId };
   } catch (error) {
     if (error instanceof VesselNoteNotFoundError) throw error;
     logError("VESSEL_NOTE_DELETE_FAILED", { error, noteId: id });

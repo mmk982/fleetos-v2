@@ -274,6 +274,7 @@ export async function createVesselNoteAction(
 
   try {
     await createVesselNote(access, parsed.data.vesselId, parsed.data.body);
+    revalidatePath(`/dashboard/vessels/${parsed.data.vesselId}`);
     return { ok: true, message: "Note added." };
   } catch (error) {
     if (error instanceof VesselNoteConflictError) {
@@ -294,7 +295,8 @@ export async function deleteVesselNoteFormAction(
     throw new Error("Missing note id");
   }
   try {
-    await deleteVesselNote(access, id);
+    const { vesselId } = await deleteVesselNote(access, id);
+    revalidatePath(`/dashboard/vessels/${vesselId}`);
   } catch (error) {
     if (error instanceof VesselNoteNotFoundError) throw error;
     throw error;
