@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { DeficiencyForm } from "@/components/deficiency-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   DEFICIENCY_SOURCES,
@@ -142,6 +143,17 @@ export function DeficienciesList({
     </>
   );
 
+  const exportQuery = (format: "xlsx" | "pdf") =>
+    buildExportQuery(
+      {
+        vesselId: filters.vesselId || undefined,
+        status: filters.status || undefined,
+        source: filters.source || undefined,
+        category: filters.category || undefined,
+      },
+      format,
+    );
+
   return (
     <div className="mt-6 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -150,7 +162,22 @@ export function DeficienciesList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/deficiencies?${exportQuery("xlsx")}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/deficiencies?${exportQuery("pdf")}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search title, vessel, number…"
           />
         </div>
