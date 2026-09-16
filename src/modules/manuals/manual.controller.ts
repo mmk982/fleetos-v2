@@ -136,6 +136,13 @@ export type ManualListFilters = {
   department?: string;
 };
 
+/** Unfiltered manuals count for Dashboard summary cards. */
+export async function getManualCount(ctx: AccessContext): Promise<number> {
+  assertAuthenticatedAccess(ctx);
+  const rows = await getDb().select({ n: count() }).from(manuals);
+  return rows[0]?.n ?? 0;
+}
+
 export async function listManuals(
   ctx: AccessContext,
   filters: ManualListFilters = {},

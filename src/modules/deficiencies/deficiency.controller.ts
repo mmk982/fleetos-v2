@@ -13,7 +13,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { and, asc, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   deficiencies,
@@ -226,6 +226,23 @@ export type DeficiencyDetail = DeficiencyListItem & {
   attachments: DeficiencyAttachmentRow[];
   vessel: VesselRow;
 };
+
+/**
+ * Non-closed deficiencies (`open` / `in_progress` / `monitoring`) — same
+ * set the Alerts aggregator uses for deficiency rows.
+ */
+export async function getOpenDeficienciesCount(
+  ctx: AccessContext,
+): Promise<number> {
+  assertAuthenticatedAccess(ctx);
+  const rows = await getDb()
+    .select({ n: count() })
+    .from(deficiencies)
+    .where(
+      inArray(deficiencies.status, ["open", "in_progress", "monitoring"]),
+    );
+  return rows[0]?.n ?? 0;
+}
 
 /** Lists deficiencies with vessel name, optional filters. */
 export async function listDeficiencies(

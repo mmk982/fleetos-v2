@@ -18,7 +18,7 @@
  */
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
 import {
@@ -65,6 +65,13 @@ function isPgUniqueViolation(error: unknown): boolean {
 export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
   assertAuthenticatedAccess(ctx);
   return getDb().select().from(vessels).orderBy(asc(vessels.name));
+}
+
+/** Fleet size — unfiltered vessel count for Dashboard summary cards. */
+export async function getVesselCount(ctx: AccessContext): Promise<number> {
+  assertAuthenticatedAccess(ctx);
+  const rows = await getDb().select({ n: count() }).from(vessels);
+  return rows[0]?.n ?? 0;
 }
 
 /**
