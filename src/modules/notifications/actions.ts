@@ -25,7 +25,7 @@ export async function markNotificationReadAction(id: string): Promise<void> {
     if (error instanceof NotificationNotFoundError) throw error;
     throw error;
   }
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath(notificationsPath);
 }
 
@@ -34,6 +34,6 @@ export async function markAllReadAction(userId: string): Promise<void> {
   const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
   await markAllNotificationsRead(access, userId);
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath(notificationsPath);
 }
