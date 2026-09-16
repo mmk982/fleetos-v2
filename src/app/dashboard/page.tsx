@@ -26,6 +26,7 @@ import {
   monthlyFormDisplayStatusTone,
   type MonthlyFormListItem,
 } from "@/modules/monthly-forms/monthlyForm.model";
+import { syncNotifications } from "@/modules/notifications/notifications.controller";
 import { getVesselCount } from "@/modules/vessels/vessel.controller";
 
 export const dynamic = "force-dynamic";
@@ -71,6 +72,8 @@ export default async function DashboardPage() {
     getOpenDeficienciesCount(access),
     getManualCount(access),
     getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
+    // Lazy notification sweep — runs in parallel; errors are logged inside.
+    syncNotifications(access),
   ]);
 
   let validCertificates = 0;
