@@ -8,7 +8,7 @@
  * - moduleName: vessel | certificate | deficiency | insurance | crew |
  *   ism_template | manual | drawing | monthly_form | particulars |
  *   reminder | user
- * - actionType: created | updated | deleted | uploaded (+ closed /
+ * - actionType: created | updated | deleted | uploaded | exported (+ closed /
  *   submitted / dismissed / completed where specified per module)
  */
 import "server-only";

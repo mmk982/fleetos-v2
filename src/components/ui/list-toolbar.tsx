@@ -3,9 +3,7 @@
  *
  * Desktop: search + filters + export in one row. Mobile: filters/export
  * collapse behind a toggle (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 5 /
- * DESIGN_HANDOFF.md §3). Token class names from Task 1 are substituted with
- * the zinc/`dark:` classes already used in Vessels/Certificates until the
- * token layer lands.
+ * DESIGN_HANDOFF.md §3).
  */
 "use client";
 
@@ -21,15 +19,27 @@ export function ListToolbar({
   onSearchChange,
   filters,
   onExport,
+  exportSlot,
   searchPlaceholder = "Search…",
 }: {
   searchValue: string;
   onSearchChange: (value: string) => void;
   filters: ReactNode;
-  onExport: () => void;
+  /** Legacy single Export button — ignored when {@link exportSlot} is set. */
+  onExport?: () => void;
+  /** Preferred: Excel/PDF links (or any custom export controls). */
+  exportSlot?: ReactNode;
   searchPlaceholder?: string;
 }) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const exportControls =
+    exportSlot ??
+    (onExport ? (
+      <button type="button" onClick={onExport} className={buttonClass}>
+        Export
+      </button>
+    ) : null);
 
   return (
     <div className="flex flex-col gap-3">
@@ -41,10 +51,9 @@ export function ListToolbar({
           placeholder={searchPlaceholder}
           className={`${controlClass} w-full md:flex-1`}
         />
-        <div className="hidden items-center gap-2 md:flex">{filters}
-          <button type="button" onClick={onExport} className={buttonClass}>
-            Export
-          </button>
+        <div className="hidden items-center gap-2 md:flex">
+          {filters}
+          {exportControls}
         </div>
         <button
           type="button"
@@ -57,11 +66,14 @@ export function ListToolbar({
       {mobileFiltersOpen ? (
         <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-3 md:hidden dark:border-zinc-800 dark:bg-zinc-950">
           {filters}
-          <button type="button" onClick={onExport} className={`h-11 ${buttonClass}`}>
-            Export
-          </button>
+          {exportControls ? (
+            <div className="flex flex-wrap gap-2">{exportControls}</div>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
 }
+
+export const listToolbarExportLinkClass =
+  "inline-flex h-10 items-center justify-center rounded-md border border-zinc-200 bg-transparent px-4 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900";

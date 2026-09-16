@@ -9,7 +9,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CertificateQuickView } from "@/components/certificate-quick-view";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   CERTIFICATE_AUTHORITIES,
@@ -140,15 +141,39 @@ export function CertificatesList({
     </>
   );
 
+  const exportQuery = (format: "xlsx" | "pdf") =>
+    buildExportQuery(
+      {
+        vesselId: filters.vesselId || undefined,
+        authority: filters.authority || undefined,
+        issuingAuthorityId: filters.issuingAuthorityId || undefined,
+        status: filters.status || undefined,
+      },
+      format,
+    );
+
   return (
     <div className="mt-6 space-y-6">
       <ListToolbar
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         filters={filterControls}
-        onExport={() => {
-          // Export utility is build-order step 15 — toolbar slot is wired now.
-        }}
+        exportSlot={
+          <>
+            <a
+              href={`/api/export/certificates?${exportQuery("xlsx")}`}
+              className={listToolbarExportLinkClass}
+            >
+              Excel
+            </a>
+            <a
+              href={`/api/export/certificates?${exportQuery("pdf")}`}
+              className={listToolbarExportLinkClass}
+            >
+              PDF
+            </a>
+          </>
+        }
         searchPlaceholder="Search vessel, type, number…"
       />
 
