@@ -3,7 +3,8 @@
  *
  * Only file in this module allowed to import drizzle-orm query builders.
  * Every public method takes {@link AccessContext} and calls
- * {@link assertAuthenticatedAccess}. Live status always comes from
+ * {@link assertAuthenticatedAccess}, then {@link assertModuleAccess} /
+ * {@link assertVesselScope} as needed. Live status always comes from
  * `deriveComplianceStatus` — `cachedStatus` is a non-authoritative write-side cache.
  *
  * Spec: PROJECT_PLAN.md §1.
@@ -33,6 +34,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -200,6 +203,7 @@ export async function listCertificateTypes(
   ctx: AccessContext,
 ): Promise<CertificateTypeRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "certificates", "read");
   return getDb()
     .select()
     .from(certificateTypes)
@@ -211,6 +215,7 @@ export async function listIssuingAuthorities(
   ctx: AccessContext,
 ): Promise<IssuingAuthorityRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "certificates", "read");
   return getDb()
     .select()
     .from(issuingAuthorities)
@@ -222,6 +227,7 @@ export async function createIssuingAuthority(
   input: { name: string },
 ): Promise<IssuingAuthorityRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CertificateConflictError("Name is required.");
@@ -252,6 +258,7 @@ export async function updateIssuingAuthority(
   input: { name: string },
 ): Promise<IssuingAuthorityRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CertificateConflictError("Name is required.");
@@ -293,6 +300,7 @@ export async function deleteIssuingAuthority(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -325,6 +333,7 @@ export async function createCertificateType(
   },
 ): Promise<CertificateTypeRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CertificateConflictError("Name is required.");
@@ -366,6 +375,7 @@ export async function updateCertificateType(
   },
 ): Promise<CertificateTypeRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   const existing = await db
     .select({ id: certificateTypes.id })
@@ -415,6 +425,7 @@ export async function deleteCertificateType(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -447,11 +458,17 @@ export async function listCertificates(
   filters: CertificateListFilters = {},
 ): Promise<CertificateListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "certificates", "read");
   const db = getDb();
 
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
+
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(certificates.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(certificates.vesselId, scopedVesselId));
   }
   if (filters.authority) {
     conditions.push(
@@ -516,6 +533,7 @@ export async function getCertificateById(
   id: string,
 ): Promise<CertificateDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "certificates", "read");
   const db = getDb();
 
   const rows = await db
@@ -542,6 +560,7 @@ export async function getCertificateById(
   if (!row) {
     return undefined;
   }
+  assertVesselScope(ctx, row.certificate.vesselId);
 
   const [events, attachments] = await Promise.all([
     db
@@ -598,6 +617,8 @@ export async function createCertificate(
   input: CertificateCreateInput,
 ): Promise<CertificateRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "certificates", "write");
+  assertVesselScope(ctx, input.vesselId);
   const type = await loadType(ctx, input.certificateTypeId);
   const db = getDb();
   let result: CertificateRow;
@@ -673,6 +694,7 @@ export async function updateCertificate(
   input: CertificateUpdateInput,
 ): Promise<CertificateRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "certificates", "write");
   const db = getDb();
   const existing = await db
     .select()
@@ -682,6 +704,7 @@ export async function updateCertificate(
   if (!existing[0]) {
     throw new CertificateNotFoundError(id);
   }
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof certificates.$inferInsert> = {
     updatedAt: new Date(),
@@ -774,9 +797,11 @@ export async function deleteCertificate(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "certificates", "write");
   const db = getDb();
   const existingRows = await db
     .select({
+      vesselId: certificates.vesselId,
       certificateNumber: certificates.certificateNumber,
       typeName: certificateTypes.name,
     })
@@ -788,6 +813,9 @@ export async function deleteCertificate(
     .where(eq(certificates.id, id))
     .limit(1);
   const existing = existingRows[0];
+  if (existing) {
+    assertVesselScope(ctx, existing.vesselId);
+  }
   const label =
     existing?.typeName || existing?.certificateNumber || "certificate";
   try {
@@ -830,6 +858,7 @@ export async function addCertificateEvent(
   input: CertificateEventCreateInput,
 ): Promise<CertificateEventRow> {
   assertAuthenticatedAccess(ctx, input.certificateId);
+  assertModuleAccess(ctx, "certificates", "write");
   const db = getDb();
 
   try {
@@ -842,6 +871,7 @@ export async function addCertificateEvent(
     if (!cert) {
       throw new CertificateNotFoundError(input.certificateId);
     }
+    assertVesselScope(ctx, cert.vesselId);
 
     const inserted = await db
       .insert(certificateEvents)
@@ -913,6 +943,7 @@ export async function uploadCertificateAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<CertificateAttachmentRow> {
   assertAuthenticatedAccess(ctx, certificateId);
+  assertModuleAccess(ctx, "certificates", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -927,13 +958,14 @@ export async function uploadCertificateAttachment(
   let row: CertificateAttachmentRow;
   try {
     const cert = await db
-      .select({ id: certificates.id })
+      .select({ id: certificates.id, vesselId: certificates.vesselId })
       .from(certificates)
       .where(eq(certificates.id, certificateId))
       .limit(1);
     if (!cert[0]) {
       throw new CertificateNotFoundError(certificateId);
     }
+    assertVesselScope(ctx, cert[0].vesselId);
 
     await mkdir(ATTACHMENTS_DIR, { recursive: true });
     const id = randomUUID();
@@ -987,21 +1019,30 @@ export async function deleteCertificateAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "certificates", "write");
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({
+        attachment: certificateAttachments,
+        vesselId: certificates.vesselId,
+      })
       .from(certificateAttachments)
+      .innerJoin(
+        certificates,
+        eq(certificateAttachments.certificateId, certificates.id),
+      )
       .where(eq(certificateAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
     if (!row) {
       throw new AttachmentNotFoundError(attachmentId);
     }
+    assertVesselScope(ctx, row.vesselId);
     await db
       .delete(certificateAttachments)
       .where(eq(certificateAttachments.id, attachmentId));
-    await removeAttachmentFile(row.filePath);
+    await removeAttachmentFile(row.attachment.filePath);
   } catch (error) {
     if (error instanceof AttachmentNotFoundError) {
       throw error;
@@ -1023,12 +1064,25 @@ export async function getCertificateAttachmentById(
   attachmentId: string,
 ): Promise<CertificateAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "certificates", "read");
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: certificateAttachments,
+      vesselId: certificates.vesselId,
+    })
     .from(certificateAttachments)
+    .innerJoin(
+      certificates,
+      eq(certificateAttachments.certificateId, certificates.id),
+    )
     .where(eq(certificateAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) {
+    return undefined;
+  }
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }
 
 /**
