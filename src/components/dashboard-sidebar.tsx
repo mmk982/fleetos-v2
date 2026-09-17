@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { UserRole } from "@/db/schema";
+import {
+  getModuleAccess,
+  type ModuleKey,
+} from "@/lib/auth/permissions";
 
-type NavLeaf = { href: string; label: string };
+type NavLeaf = {
+  href: string;
+  label: string;
+  moduleKey?: ModuleKey;
+};
 type NavGroup = { label: string; children: readonly NavLeaf[] };
 type NavEntry = NavLeaf | NavGroup;
 
@@ -13,28 +22,72 @@ function isGroup(item: NavEntry): item is NavGroup {
 
 const NAV: readonly NavEntry[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/alerts", label: "Alerts" },
-  { href: "/dashboard/vessels", label: "Vessels" },
-  { href: "/dashboard/certificates", label: "Certificates" },
-  { href: "/dashboard/deficiencies", label: "Deficiencies" },
-  { href: "/dashboard/crew", label: "Crew" },
-  { href: "/dashboard/insurance", label: "Insurance" },
-  { href: "/dashboard/ism-templates", label: "ISM Templates" },
-  { href: "/dashboard/monthly-forms", label: "Monthly Executed Forms" },
-  { href: "/dashboard/manuals", label: "Manuals" },
-  { href: "/dashboard/drawings", label: "Drawings" },
-  { href: "/dashboard/particulars", label: "Particulars" },
-  { href: "/dashboard/reminders", label: "Reminders" },
+  { href: "/dashboard/alerts", label: "Alerts", moduleKey: "alerts" },
+  { href: "/dashboard/vessels", label: "Vessels", moduleKey: "vessels" },
+  {
+    href: "/dashboard/certificates",
+    label: "Certificates",
+    moduleKey: "certificates",
+  },
+  {
+    href: "/dashboard/deficiencies",
+    label: "Deficiencies",
+    moduleKey: "deficiencies",
+  },
+  { href: "/dashboard/crew", label: "Crew", moduleKey: "crew" },
+  {
+    href: "/dashboard/insurance",
+    label: "Insurance",
+    moduleKey: "insurance",
+  },
+  {
+    href: "/dashboard/ism-templates",
+    label: "ISM Templates",
+    moduleKey: "ism_templates",
+  },
+  {
+    href: "/dashboard/monthly-forms",
+    label: "Monthly Executed Forms",
+    moduleKey: "monthly_forms",
+  },
+  { href: "/dashboard/manuals", label: "Manuals", moduleKey: "manuals" },
+  { href: "/dashboard/drawings", label: "Drawings", moduleKey: "drawings" },
+  {
+    href: "/dashboard/particulars",
+    label: "Particulars",
+    moduleKey: "particulars",
+  },
+  {
+    href: "/dashboard/reminders",
+    label: "Reminders",
+    moduleKey: "reminders",
+  },
   {
     label: "Settings",
     children: [
-      { href: "/dashboard/settings", label: "General" },
-      { href: "/dashboard/settings/system-lists", label: "System Lists" },
-      { href: "/dashboard/settings/company-profile", label: "Company Profile" },
-      { href: "/dashboard/settings/users", label: "Users & Roles" },
+      {
+        href: "/dashboard/settings",
+        label: "General",
+        moduleKey: "settings_general",
+      },
+      {
+        href: "/dashboard/settings/system-lists",
+        label: "System Lists",
+        moduleKey: "settings_general",
+      },
+      {
+        href: "/dashboard/settings/company-profile",
+        label: "Company Profile",
+        moduleKey: "settings_general",
+      },
+      {
+        href: "/dashboard/settings/users",
+        label: "Users & Roles",
+        moduleKey: "settings_users",
+      },
     ],
   },
-] as const;
+];
 
 function leafIsActive(pathname: string, href: string, exact?: boolean) {
   if (href === "/dashboard") {
@@ -52,8 +105,29 @@ function groupIsActive(pathname: string, children: readonly NavLeaf[]) {
   );
 }
 
-export function DashboardSidebar() {
+function leafVisible(role: UserRole | null, leaf: NavLeaf): boolean {
+  if (!leaf.moduleKey) return true;
+  return getModuleAccess(role, leaf.moduleKey) !== "none";
+}
+
+function visibleNav(role: UserRole | null): NavEntry[] {
+  const out: NavEntry[] = [];
+  for (const item of NAV) {
+    if (!isGroup(item)) {
+      if (leafVisible(role, item)) out.push(item);
+      continue;
+    }
+    const children = item.children.filter((c) => leafVisible(role, c));
+    if (children.length > 0) {
+      out.push({ label: item.label, children });
+    }
+  }
+  return out;
+}
+
+export function DashboardSidebar({ role }: { role: UserRole | null }) {
   const pathname = usePathname();
+  const entries = visibleNav(role);
 
   return (
     <aside
@@ -69,7 +143,7 @@ export function DashboardSidebar() {
         </Link>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-        {NAV.map((item) => {
+        {entries.map((item) => {
           if (!isGroup(item)) {
             const active = leafIsActive(pathname, item.href);
             return (

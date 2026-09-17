@@ -333,6 +333,10 @@ access) and should be re-confirmed with Eng.MHD before this phase's build
 prompt is finalized, not treated as equally authoritative to the
 confirmed cells.
 
+**Confirmed by Eng.MHD (2026-09-17):** all *(inferred)* cells in the table
+above accepted as-written — the table is now fully authoritative, no cell
+remains provisional. Phase 6 build prompts may proceed against it directly.
+
 Once the mapping is re-confirmed:
 
 - [ ] Add `userRoleEnum` and `users.vesselId` to `schema.ts` per above; migrate.

@@ -32,7 +32,7 @@ import {
 
 const CATEGORY_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const TEMPLATE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 function thenable<T>(value: T) {
   return {

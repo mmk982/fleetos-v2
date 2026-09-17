@@ -138,7 +138,7 @@ describe("scrubCrewMemberPii", () => {
     getDb.mockReturnValue(db);
 
     await expect(
-      scrubCrewMemberPii({ userId: "user-1", role: null }, MEMBER_ID),
+      scrubCrewMemberPii({ userId: "user-1", role: null, vesselId: null }, MEMBER_ID),
     ).rejects.toThrow("forced member update failure");
 
     expect(committed).not.toContain("update-certs");
@@ -157,7 +157,7 @@ describe("scrubCrewMemberPii", () => {
     getDb.mockReturnValue(db);
 
     const result = await scrubCrewMemberPii(
-      { userId: "user-1", role: null },
+      { userId: "user-1", role: null, vesselId: null },
       MEMBER_ID,
     );
 

@@ -28,7 +28,7 @@ import {
 
 const REMINDER_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const VESSEL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 function thenable<T>(value: T) {
   return {

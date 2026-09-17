@@ -33,7 +33,7 @@ import {
 
 const VESSEL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const POLICY_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 function expectedStatus(expiryDate: string | null) {
   return deriveComplianceStatus({

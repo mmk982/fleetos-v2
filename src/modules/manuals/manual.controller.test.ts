@@ -37,7 +37,7 @@ import {
 
 const VESSEL_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const MANUAL_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 const SAMPLE_FILE = {
   name: "manual.pdf",

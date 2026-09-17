@@ -32,7 +32,7 @@ import {
 const VESSEL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const ROW_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const OLD_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 describe("particulars.controller isCurrent transactions", () => {
   beforeEach(() => {

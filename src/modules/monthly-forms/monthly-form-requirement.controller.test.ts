@@ -28,7 +28,7 @@ import {
 const VESSEL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const TEMPLATE_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const REQ_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const CTX = { userId: "user-1", role: null };
+const CTX = { userId: "user-1", role: null, vesselId: null };
 
 describe("monthly-form-requirement.controller", () => {
   beforeEach(() => {

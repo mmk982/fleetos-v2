@@ -70,6 +70,7 @@ export async function runEmailDigest(): Promise<{
   const ctx: AccessContext = {
     userId: firstAdmin.id,
     role: firstAdmin.role,
+    vesselId: null,
   };
   const alerts = await getAlerts(ctx);
   const digestDate = todayIsoDate();
