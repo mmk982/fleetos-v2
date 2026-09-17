@@ -13,8 +13,9 @@
  * (Phase 2 SQLite → Postgres migration — previously sync via better-sqlite3).
  *
  * Every public method takes {@link AccessContext} and calls
- * {@link assertAuthenticatedAccess} first — the interim third defense layer
- * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3). Phase 6 RBAC attaches here.
+ * {@link assertAuthenticatedAccess} then {@link assertModuleAccess}
+ * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3 / Phase 6). No vessel-scope gate —
+ * vessel CRUD is office-role only via the vessels module matrix.
  */
 import "server-only";
 
@@ -23,6 +24,7 @@ import { getDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -64,12 +66,14 @@ function isPgUniqueViolation(error: unknown): boolean {
  */
 export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "vessels", "read");
   return getDb().select().from(vessels).orderBy(asc(vessels.name));
 }
 
 /** Fleet size — unfiltered vessel count for Dashboard summary cards. */
 export async function getVesselCount(ctx: AccessContext): Promise<number> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "vessels", "read");
   const rows = await getDb().select({ n: count() }).from(vessels);
   return rows[0]?.n ?? 0;
 }
@@ -86,6 +90,7 @@ export async function getVesselById(
   id: string,
 ): Promise<VesselRow | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "vessels", "read");
   const rows = await getDb().select().from(vessels).where(eq(vessels.id, id)).limit(1);
   return rows[0];
 }
@@ -117,6 +122,7 @@ export async function createVessel(
   input: VesselCreateInput,
 ): Promise<VesselRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "vessels", "write");
   const db = getDb();
   let row: VesselRow;
   try {
@@ -173,6 +179,7 @@ export async function updateVessel(
   input: VesselUpdateInput,
 ): Promise<VesselRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "vessels", "write");
   const db = getDb();
   const existing = await getVesselById(ctx, id);
   if (!existing) {
@@ -260,6 +267,7 @@ export async function updateVessel(
  */
 export async function deleteVessel(ctx: AccessContext, id: string): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "vessels", "write");
   const db = getDb();
   const existing = await getVesselById(ctx, id);
   const name = existing?.name;
