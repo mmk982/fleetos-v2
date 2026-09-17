@@ -15,6 +15,9 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -55,6 +58,8 @@ export async function listVesselNotes(
   vesselId: string,
 ): Promise<VesselNoteListItem[]> {
   assertAuthenticatedAccess(ctx, vesselId);
+  assertModuleAccess(ctx, "particulars", "read");
+  assertVesselScope(ctx, vesselId);
   const rows = await getDb()
     .select({
       note: vesselNotes,
@@ -77,6 +82,8 @@ export async function createVesselNote(
   body: string,
 ): Promise<VesselNoteRow> {
   assertAuthenticatedAccess(ctx, vesselId);
+  assertModuleAccess(ctx, "particulars", "write");
+  assertVesselScope(ctx, vesselId);
   const db = getDb();
 
   const vessel = await db
@@ -125,7 +132,20 @@ export async function deleteVesselNote(
   id: string,
 ): Promise<{ vesselId: string }> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "particulars", "write");
   try {
+    const existing = await getDb()
+      .select({
+        id: vesselNotes.id,
+        vesselId: vesselNotes.vesselId,
+      })
+      .from(vesselNotes)
+      .where(eq(vesselNotes.id, id))
+      .limit(1);
+    const note = existing[0];
+    if (!note) throw new VesselNoteNotFoundError(id);
+    assertVesselScope(ctx, note.vesselId);
+
     const deleted = await getDb()
       .delete(vesselNotes)
       .where(eq(vesselNotes.id, id))
@@ -138,7 +158,12 @@ export async function deleteVesselNote(
     }
     return { vesselId: deleted[0].vesselId };
   } catch (error) {
-    if (error instanceof VesselNoteNotFoundError) throw error;
+    if (
+      error instanceof VesselNoteNotFoundError ||
+      error instanceof ForbiddenError
+    ) {
+      throw error;
+    }
     logError("VESSEL_NOTE_DELETE_FAILED", { error, noteId: id });
     throw error;
   }

@@ -20,6 +20,9 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
@@ -157,6 +160,7 @@ export async function listVesselParticularsSummary(
   ctx: AccessContext,
 ): Promise<ParticularsSummaryItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "particulars", "read");
   const db = getDb();
 
   const vesselRows = await db
@@ -195,9 +199,14 @@ export async function listParticulars(
   filters: ParticularsListFilters = {},
 ): Promise<VesselParticularsRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "particulars", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(vesselParticulars.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(vesselParticulars.vesselId, scopedVesselId));
   }
   if (filters.isCurrent !== undefined) {
     conditions.push(eq(vesselParticulars.isCurrent, filters.isCurrent));
@@ -220,6 +229,7 @@ export async function getParticularsById(
   | undefined
 > {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "particulars", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -232,6 +242,7 @@ export async function getParticularsById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.particulars.vesselId);
   const attachments = await db
     .select()
     .from(vesselParticularsAttachments)
@@ -249,6 +260,8 @@ export async function getCurrentParticulars(
   vesselId: string,
 ): Promise<ParticularsCurrentDetail | undefined> {
   assertAuthenticatedAccess(ctx, vesselId);
+  assertModuleAccess(ctx, "particulars", "read");
+  assertVesselScope(ctx, vesselId);
   const db = getDb();
   const vesselRows = await db
     .select({ id: vessels.id, name: vessels.name })
@@ -290,6 +303,8 @@ export async function listParticularsHistory(
   vesselId: string,
 ): Promise<VesselParticularsRow[]> {
   assertAuthenticatedAccess(ctx, vesselId);
+  assertModuleAccess(ctx, "particulars", "read");
+  assertVesselScope(ctx, vesselId);
   return getDb()
     .select()
     .from(vesselParticulars)
@@ -302,6 +317,8 @@ export async function getParticularsForVessel(
   vesselId: string,
 ): Promise<ParticularsVesselDetail | undefined> {
   assertAuthenticatedAccess(ctx, vesselId);
+  assertModuleAccess(ctx, "particulars", "read");
+  assertVesselScope(ctx, vesselId);
   const db = getDb();
   const vesselRows = await db
     .select({ id: vessels.id, name: vessels.name })
@@ -339,6 +356,8 @@ export async function createParticulars(
   input: ParticularsCreateInput,
 ): Promise<VesselParticularsRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "particulars", "write");
+  assertVesselScope(ctx, input.vesselId);
   const db = getDb();
   const makeCurrent = input.isCurrent !== false;
   const values = {
@@ -396,6 +415,7 @@ export async function updateParticulars(
   input: ParticularsUpdateInput,
 ): Promise<VesselParticularsRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "particulars", "write");
   const db = getDb();
 
   const existing = await db
@@ -405,6 +425,7 @@ export async function updateParticulars(
     .limit(1);
   const current = existing[0];
   if (!current) throw new ParticularsNotFoundError(id);
+  assertVesselScope(ctx, current.vesselId);
 
   const patch = {
     ...valuesFromInput(input),
@@ -466,9 +487,11 @@ export async function deleteParticulars(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "particulars", "write");
   const db = getDb();
   const existing = await db
     .select({
+      vesselId: vesselParticulars.vesselId,
       effectiveDate: vesselParticulars.effectiveDate,
       owner: vesselParticulars.owner,
     })
@@ -476,6 +499,8 @@ export async function deleteParticulars(
     .where(eq(vesselParticulars.id, id))
     .limit(1);
   const meta = existing[0];
+  if (!meta) throw new ParticularsNotFoundError(id);
+  assertVesselScope(ctx, meta.vesselId);
   try {
     const atts = await db
       .select()
@@ -510,6 +535,14 @@ export async function listParticularsAttachments(
   particularsId: string,
 ): Promise<VesselParticularsAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, particularsId);
+  assertModuleAccess(ctx, "particulars", "read");
+  const parent = await getDb()
+    .select({ vesselId: vesselParticulars.vesselId })
+    .from(vesselParticulars)
+    .where(eq(vesselParticulars.id, particularsId))
+    .limit(1);
+  if (!parent[0]) throw new ParticularsNotFoundError(particularsId);
+  assertVesselScope(ctx, parent[0].vesselId);
   return getDb()
     .select()
     .from(vesselParticularsAttachments)
@@ -523,6 +556,7 @@ export async function uploadParticularsAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<VesselParticularsAttachmentRow> {
   assertAuthenticatedAccess(ctx, particularsId);
+  assertModuleAccess(ctx, "particulars", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -539,11 +573,15 @@ export async function uploadParticularsAttachment(
   let row: VesselParticularsAttachmentRow;
   try {
     const parent = await db
-      .select({ id: vesselParticulars.id })
+      .select({
+        id: vesselParticulars.id,
+        vesselId: vesselParticulars.vesselId,
+      })
       .from(vesselParticulars)
       .where(eq(vesselParticulars.id, particularsId))
       .limit(1);
     if (!parent[0]) throw new ParticularsNotFoundError(particularsId);
+    assertVesselScope(ctx, parent[0].vesselId);
 
     await mkdir(ATTACHMENTS_DIR, { recursive: true });
     const id = randomUUID();
@@ -573,7 +611,8 @@ export async function uploadParticularsAttachment(
   } catch (error) {
     if (
       error instanceof ParticularsNotFoundError ||
-      error instanceof AttachmentValidationError
+      error instanceof AttachmentValidationError ||
+      error instanceof ForbiddenError
     ) {
       throw error;
     }
@@ -598,21 +637,35 @@ export async function deleteParticularsAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "particulars", "write");
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({
+        attachment: vesselParticularsAttachments,
+        vesselId: vesselParticulars.vesselId,
+      })
       .from(vesselParticularsAttachments)
+      .innerJoin(
+        vesselParticulars,
+        eq(vesselParticularsAttachments.particularsId, vesselParticulars.id),
+      )
       .where(eq(vesselParticularsAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
     if (!row) throw new AttachmentNotFoundError(attachmentId);
+    assertVesselScope(ctx, row.vesselId);
     await db
       .delete(vesselParticularsAttachments)
       .where(eq(vesselParticularsAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
+    await removeStoredAttachmentFile(row.attachment.filePath);
   } catch (error) {
-    if (error instanceof AttachmentNotFoundError) throw error;
+    if (
+      error instanceof AttachmentNotFoundError ||
+      error instanceof ForbiddenError
+    ) {
+      throw error;
+    }
     logError("PARTICULARS_ATTACHMENT_DELETE_FAILED", {
       error,
       attachmentId,
@@ -631,10 +684,21 @@ export async function getParticularsAttachmentById(
   attachmentId: string,
 ): Promise<VesselParticularsAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "particulars", "read");
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: vesselParticularsAttachments,
+      vesselId: vesselParticulars.vesselId,
+    })
     .from(vesselParticularsAttachments)
+    .innerJoin(
+      vesselParticulars,
+      eq(vesselParticularsAttachments.particularsId, vesselParticulars.id),
+    )
     .where(eq(vesselParticularsAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }

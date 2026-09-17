@@ -7,6 +7,8 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertModuleAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
 }));
 
 vi.mock("@/lib/logging", () => ({
@@ -110,9 +112,11 @@ describe("vessel-notes.controller", () => {
 
   it("deleteVesselNote throws when missing", async () => {
     getDb.mockReturnValue({
-      delete: () => ({
-        where: () => ({
-          returning: async () => [],
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => [],
+          }),
         }),
       }),
     });
@@ -124,6 +128,13 @@ describe("vessel-notes.controller", () => {
 
   it("deleteVesselNote returns vesselId when deleted", async () => {
     getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => [{ id: NOTE_ID, vesselId: VESSEL_ID }],
+          }),
+        }),
+      }),
       delete: () => ({
         where: () => ({
           returning: async () => [{ id: NOTE_ID, vesselId: VESSEL_ID }],
