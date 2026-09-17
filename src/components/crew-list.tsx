@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { CrewForm } from "@/components/crew-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   CREW_STATUSES,
@@ -129,7 +130,36 @@ export function CrewList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/crew?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      status: filters.status || undefined,
+                      categoryId: filters.categoryId || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/crew?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      status: filters.status || undefined,
+                      categoryId: filters.categoryId || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search name, vessel, nationality…"
           />
         </div>

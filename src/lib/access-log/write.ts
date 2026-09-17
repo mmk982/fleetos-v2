@@ -3,7 +3,7 @@
  *
  * Narrow scope: only Crew personal-data reads (`moduleName: "crew"`).
  * Call sites: member/certificate detail view, attachment download, and
- * (when built) Crew export — never the Crew list page.
+ * Crew list export (`accessType: "export"` once per exported member).
  */
 import "server-only";
 
@@ -45,13 +45,3 @@ export async function writeAccessLog(input: WriteAccessLogInput): Promise<void> 
     });
   }
 }
-
-/**
- * TODO(export): when `exportToExcel` / `exportToPdf` gains a Crew path
- * (`PROJECT_PLAN.md` §15), call `writeAccessLog` with
- * `accessType: "export"` for each exported crew member (or one row per
- * export batch with a documented `recordId` convention). Do not ship
- * Crew export without this — it is a GDPR disclosure event.
- */
-export const CREW_EXPORT_ACCESS_LOG_TODO =
-  "Wire writeAccessLog({ accessType: 'export' }) when Crew export ships";
