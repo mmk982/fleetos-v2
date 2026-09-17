@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState, useEffect } from "react";
 import {
   submitMonthlyFormAction,
@@ -9,7 +10,7 @@ import {
 const labelClass =
   "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   executedFormId: string;
@@ -31,7 +32,7 @@ export function MonthlyFormSubmit({ executedFormId, onSuccess }: Props) {
       <input type="hidden" name="executedFormId" value={executedFormId} />
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           {state.message}
@@ -67,13 +68,10 @@ export function MonthlyFormSubmit({ executedFormId, onSuccess }: Props) {
         </p>
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
-      >
+      <Button variant="primary" type="submit"
+        disabled={pending}>
         {pending ? "Submitting…" : "Submit form"}
-      </button>
+      </Button>
     </form>
   );
 }

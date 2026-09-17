@@ -88,7 +88,7 @@ export default async function ParticularsVesselPage(props: PageProps) {
       </div>
 
       {!current ? (
-        <p className="mt-8 rounded-lg border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="mt-8 rounded-none border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
           No current particulars for this vessel yet.
         </p>
       ) : (
@@ -132,7 +132,7 @@ export default async function ParticularsVesselPage(props: PageProps) {
         {history.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">No historical records.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="mt-4 overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
                 <tr>

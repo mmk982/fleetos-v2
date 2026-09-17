@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -22,9 +23,6 @@ import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
-
-const transitionBtn =
-  "inline-flex h-9 items-center rounded-md border border-zinc-200 px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900";
 
 export default async function DeficiencyDetailPage(props: PageProps) {
   const session = await requireSession();
@@ -82,7 +80,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/deficiencies/${row.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>
@@ -99,32 +97,32 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         {row.status !== "in_progress" ? (
           <form action={startProgressDeficiencyFormAction}>
             <input type="hidden" name="id" value={row.id} />
-            <button type="submit" className={transitionBtn}>
+            <Button variant="secondary" type="submit">
               Start progress
-            </button>
+            </Button>
           </form>
         ) : null}
         {row.status !== "monitoring" ? (
           <form action={setMonitoringDeficiencyFormAction}>
             <input type="hidden" name="id" value={row.id} />
-            <button type="submit" className={transitionBtn}>
+            <Button variant="secondary" type="submit">
               Set monitoring
-            </button>
+            </Button>
           </form>
         ) : null}
         {row.status !== "closed" ? (
           <form action={closeDeficiencyFormAction}>
             <input type="hidden" name="id" value={row.id} />
-            <button type="submit" className={transitionBtn}>
+            <Button variant="secondary" type="submit">
               Close
-            </button>
+            </Button>
           </form>
         ) : (
           <form action={reopenDeficiencyFormAction}>
             <input type="hidden" name="id" value={row.id} />
-            <button type="submit" className={transitionBtn}>
+            <Button variant="secondary" type="submit">
               Reopen
-            </button>
+            </Button>
           </form>
         )}
       </section>
@@ -133,7 +131,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         {fields.map((f) => (
           <div
             key={f.label}
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-none border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               {f.label}
@@ -150,7 +148,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Description
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.description}
           </p>
         </section>
@@ -161,7 +159,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Corrective action
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.correctiveAction}
           </p>
         </section>
@@ -172,7 +170,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Notes
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.notes}
           </p>
         </section>

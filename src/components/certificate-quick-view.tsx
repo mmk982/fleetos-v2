@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { Drawer } from "@/components/ui/drawer";
@@ -16,13 +17,10 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
-      >
+      <Button variant="secondary" type="button"
+        onClick={() => setOpen(true)}>
         View
-      </button>
+      </Button>
       <Drawer open={open} onClose={() => setOpen(false)} title={row.typeName}>
         <div className="space-y-4 text-sm">
           <StatusPill status={row.compliance.status} />
@@ -40,7 +38,7 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
                 Number
               </dt>
               <dd className="mt-1 font-mono text-[var(--text-primary)]">
-                <Identifier>{row.certificateNumber ?? "—"}</Identifier>
+                <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
               </dd>
             </div>
             <div>
@@ -56,7 +54,7 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
           </dl>
           <Link
             href={`/dashboard/certificates/${row.id}`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
             onClick={() => setOpen(false)}
           >
             Open detail

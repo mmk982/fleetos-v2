@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ManualRevisionUpload } from "@/components/manual-revision-upload";
@@ -30,16 +31,13 @@ export function ManualRevisionHistory({
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Revision history
         </h2>
-        <button
-          type="button"
-          onClick={() => setUploadOpen(true)}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setUploadOpen(true)}>
           Upload new revision
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+      <div className="overflow-x-auto rounded-none border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
@@ -103,12 +101,9 @@ export function ManualRevisionHistory({
                           name="revisionId"
                           value={r.id}
                         />
-                        <button
-                          type="submit"
-                          className="text-xs font-medium text-[#378ADD] underline-offset-2 hover:underline"
-                        >
+                        <Button variant="secondary" size="sm" type="submit">
                           Set current
-                        </button>
+                        </Button>
                       </form>
                     ) : null}
                   </td>

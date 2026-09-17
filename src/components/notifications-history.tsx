@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { Button } from "@/components/ui/button";
 import {
   markAllReadAction,
   markNotificationReadAction,
@@ -34,7 +35,7 @@ export function NotificationsHistory({
 
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
         No notifications yet. Visit the Dashboard to refresh the alert sweep.
       </p>
     );
@@ -44,18 +45,18 @@ export function NotificationsHistory({
     <div className="space-y-3">
       {items.some((i) => !i.isRead) ? (
         <div className="flex justify-end">
-          <button
+          <Button
+            variant="ghost"
             type="button"
             disabled={pending}
             onClick={markAll}
-            className="text-sm font-medium text-[#378ADD] hover:underline disabled:opacity-50"
           >
             Mark all read
-          </button>
+          </Button>
         </div>
       ) : null}
 
-      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
         {items.map((item) => (
           <li
             key={item.id}
@@ -78,14 +79,16 @@ export function NotificationsHistory({
               </p>
             </div>
             {!item.isRead ? (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 type="button"
                 disabled={pending}
                 onClick={() => markOne(item.id)}
-                className="shrink-0 text-sm font-medium text-[#378ADD] hover:underline disabled:opacity-50"
+                className="shrink-0"
               >
                 Mark read
-              </button>
+              </Button>
             ) : (
               <span className="shrink-0 text-xs text-[var(--text-tertiary)]">Read</span>
             )}

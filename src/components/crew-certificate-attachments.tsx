@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import { Identifier } from "@/components/ui/identifier";
 import {
@@ -10,7 +11,7 @@ import {
 import type { CrewCertificateAttachmentRow } from "@/db/schema";
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   crewMemberId: string;
@@ -33,7 +34,7 @@ export function CrewCertificateAttachments({
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
         Attachments
       </p>
-      <ul className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
         {attachments.length === 0 ? (
           <li className="px-3 py-3 text-center text-xs text-[var(--text-tertiary)]">
             No files yet.
@@ -55,12 +56,9 @@ export function CrewCertificateAttachments({
               <form action={deleteCrewCertificateAttachmentAction}>
                 <input type="hidden" name="id" value={a.id} />
                 <input type="hidden" name="crewMemberId" value={crewMemberId} />
-                <button
-                  type="submit"
-                  className="text-xs font-medium text-red-700 underline-offset-2 hover:underline dark:text-red-300"
-                >
+                <Button variant="destructive" size="sm" type="submit">
                   Remove
-                </button>
+                </Button>
               </form>
             </li>
           ))
@@ -84,13 +82,10 @@ export function CrewCertificateAttachments({
             required
             className={`${inputClass} max-w-xs`}
           />
-          <button
-            type="submit"
-            disabled={pending}
-            className="h-10 rounded-md border border-[var(--border)] px-3 text-sm font-medium text-[var(--text-primary)] disabled:opacity-60"
-          >
+          <Button variant="secondary" type="submit"
+            disabled={pending}>
             {pending ? "Uploading…" : "Upload"}
-          </button>
+          </Button>
         </div>
         <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>
       </form>

@@ -3,6 +3,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -37,7 +38,7 @@ const ROLE_LEGEND: { role: UserRole; blurb: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 function formatLastLogin(d: Date | string | null): string {
   if (!d) return "Never";
@@ -64,22 +65,19 @@ export function UsersRolesPanel({
   return (
     <div className="mt-6 space-y-6">
       {flash ? (
-        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+        <div className="rounded-none border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
           {flash}
         </div>
       ) : null}
 
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setDialog({ kind: "create" })}
-          className="inline-flex h-10 items-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setDialog({ kind: "create" })}>
           Add User
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+      <div className="overflow-x-auto rounded-none border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
@@ -110,7 +108,7 @@ export function UsersRolesPanel({
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-[11px] ${
+                    className={`inline-flex rounded-none px-2 py-0.5 text-[11px] ${
                       u.isActive
                         ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
                         : "bg-[var(--bg-page)] text-[var(--text-secondary)]  "
@@ -123,38 +121,40 @@ export function UsersRolesPanel({
                   {formatLastLogin(u.lastLoginAt)}
                 </td>
                 <td className="relative px-4 py-3 text-right">
-                  <button
+                  <Button
+                    variant="ghost"
                     type="button"
-                    className="rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
                     aria-label={`Actions for ${u.name}`}
                     onClick={() =>
                       setMenuId((cur) => (cur === u.id ? null : u.id))
                     }
                   >
                     ⋮
-                  </button>
+                  </Button>
                   {menuId === u.id ? (
-                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--bg-card)] py-1 text-start shadow-md">
-                      <button
+                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-none border border-[var(--border)] bg-[var(--bg-card)] py-1 text-start shadow-md">
+                      <Button
+                        variant="ghost"
                         type="button"
-                        className="block w-full px-3 py-2 text-sm hover:bg-[var(--bg-page)]"
                         onClick={() => {
                           setMenuId(null);
                           setDialog({ kind: "edit", user: u });
                         }}
+                        className="w-full justify-start"
                       >
                         Edit User
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
                         type="button"
-                        className="block w-full px-3 py-2 text-sm hover:bg-[var(--bg-page)]"
                         onClick={() => {
                           setMenuId(null);
                           setDialog({ kind: "password", user: u });
                         }}
+                        className="w-full justify-start"
                       >
                         Change Password
-                      </button>
+                      </Button>
                       <form
                         action={async (fd) => {
                           const result = await setUserActiveAction(fd);
@@ -173,12 +173,13 @@ export function UsersRolesPanel({
                           name="isActive"
                           value={u.isActive ? "false" : "true"}
                         />
-                        <button
+                        <Button
+                          variant={u.isActive ? "destructive" : "ghost"}
                           type="submit"
-                          className="block w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-page)]"
+                          className="w-full justify-start"
                         >
                           {u.isActive ? "Deactivate" : "Activate"}
-                        </button>
+                        </Button>
                       </form>
                     </div>
                   ) : null}
@@ -189,7 +190,7 @@ export function UsersRolesPanel({
         </table>
       </div>
 
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-5">
+      <section className="rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-5">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">
           Role reference
         </h2>
@@ -360,20 +361,14 @@ function UserDialog({
           <input type="hidden" name="vesselId" value="" />
         )}
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          >
+          <Button variant="secondary" type="button"
+            onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-[#378ADD] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
+          </Button>
+          <Button variant="primary" type="submit"
+            disabled={pending}>
             {pending ? "Saving…" : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>
@@ -425,20 +420,14 @@ function PasswordDialog({
           />
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          >
+          <Button variant="secondary" type="button"
+            onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-[#378ADD] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
+          </Button>
+          <Button variant="primary" type="submit"
+            disabled={pending}>
             {pending ? "Saving…" : "Update password"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>
@@ -460,7 +449,7 @@ function ModalShell({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-5 shadow-lg"
+        className="relative w-full max-w-md rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-5 shadow-lg"
       >
         <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
           {title}

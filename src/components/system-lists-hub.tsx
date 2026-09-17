@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -139,7 +140,7 @@ const DELETE: Record<
 };
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 export function SystemListsHub({
   lists,
@@ -153,14 +154,15 @@ export function SystemListsHub({
     <div className="mt-6 space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {LIST_META.map((meta) => (
-          <button
+          <Button
+            variant="secondary"
             key={meta.key}
             type="button"
             onClick={() => {
               setActive(meta.key);
               setOpen(true);
             }}
-            className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 text-start transition-colors hover:border-[#378ADD]"
+            className="h-auto w-full flex-col items-stretch p-4 text-start hover:border-[#378ADD]"
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-medium text-[var(--text-primary)]">
@@ -173,7 +175,7 @@ export function SystemListsHub({
             <p className="mt-1 text-sm text-[var(--text-tertiary)]">
               {meta.description}
             </p>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -226,7 +228,7 @@ function SystemListsModal({
         role="dialog"
         aria-modal="true"
         aria-label="Manage System Lists"
-        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
+        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
       >
         <aside className="hidden w-56 shrink-0 flex-col border-e border-[var(--border)] bg-[var(--bg-page)] sm:flex">
           <div className="border-b border-[var(--border)] px-3 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
@@ -234,21 +236,22 @@ function SystemListsModal({
           </div>
           <nav className="flex-1 overflow-y-auto p-2">
             {LIST_META.map((item) => (
-              <button
+              <Button
+                variant="ghost"
                 key={item.key}
                 type="button"
                 onClick={() => onActiveChange(item.key)}
-                className={`mb-0.5 w-full rounded-md px-2 py-2 text-start text-sm ${
+                className={`mb-0.5 h-auto w-full justify-start px-2 py-2 text-start ${
                   active === item.key
-                    ? "bg-[#0D2B45] text-white"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-page)]  "
+                    ? "bg-[#0D2B45] text-white hover:bg-[#0D2B45]"
+                    : ""
                 }`}
               >
                 {item.label}
                 <span className="ms-1 opacity-70">
                   ({lists[item.key].length})
                 </span>
-              </button>
+              </Button>
             ))}
           </nav>
         </aside>
@@ -261,13 +264,10 @@ function SystemListsModal({
               </h2>
               <p className="text-sm text-[var(--text-tertiary)]">{meta.description}</p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md px-2 py-1 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
-            >
+            <Button variant="ghost" type="button"
+              onClick={onClose}>
               Close
-            </button>
+            </Button>
           </div>
 
           <div className="border-b border-[var(--border)] px-4 py-2 sm:hidden">
@@ -379,7 +379,7 @@ function SystemListPane({
     <>
       {banner ? (
         <div
-          className={`mx-4 mt-3 rounded-md px-3 py-2 text-sm ${
+          className={`mx-4 mt-3 rounded-none px-3 py-2 text-sm ${
             banner.ok
               ? "border border-green-200 bg-green-50 text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
               : "border border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
@@ -429,21 +429,19 @@ function SystemListPane({
                       ) : null}
                     </div>
                     <div className="flex shrink-0 gap-2">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         type="button"
-                        className="text-sm font-medium text-[#378ADD] hover:underline"
                         onClick={() => setEditingId(row.id)}
                       >
                         Edit
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button variant="destructive" type="button"
                         disabled={pendingDelete}
-                        className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
-                        onClick={() => onDelete(row.id)}
-                      >
+                        onClick={() => onDelete(row.id)}>
                         Remove
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -497,13 +495,10 @@ function AddRowForm({
         />
         <input type="hidden" name="ruleKind" value="expiry_offset" />
         <input type="hidden" name="offsetDays" value="30" />
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-3 text-sm font-medium text-white disabled:opacity-60"
-        >
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending ? "Adding…" : "Add"}
-        </button>
+        </Button>
       </form>
     );
   }
@@ -516,13 +511,10 @@ function AddRowForm({
         placeholder="Add new item"
         className={inputClass}
       />
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
-      >
+      <Button variant="primary" type="submit"
+        disabled={pending} className="shrink-0">
         {pending ? "Adding…" : "Add"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -581,20 +573,14 @@ function EditRowForm({
           className={inputClass}
         />
         <div className="flex gap-2 sm:col-span-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-[#378ADD] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
+          <Button variant="primary" type="submit"
+            disabled={pending}>
             {pending ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          >
+          </Button>
+          <Button variant="secondary" type="button"
+            onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     );
@@ -609,20 +595,14 @@ function EditRowForm({
         defaultValue={row.name}
         className={`${inputClass} min-w-[12rem] flex-1`}
       />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-[#378ADD] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-      >
+      <Button variant="primary" type="submit"
+        disabled={pending}>
         {pending ? "Saving…" : "Save"}
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-      >
+      </Button>
+      <Button variant="secondary" type="button"
+        onClick={onCancel}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }

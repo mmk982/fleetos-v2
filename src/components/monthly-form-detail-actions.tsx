@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MonthlyFormSubmit } from "@/components/monthly-form-submit";
@@ -29,16 +30,13 @@ export function MonthlyFormDetailActions({
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Attachments
         </h2>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setOpen(true)}>
           Submit / upload
-        </button>
+        </Button>
       </div>
 
-      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
         {attachments.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">
             No files yet.
@@ -64,12 +62,9 @@ export function MonthlyFormDetailActions({
                   name="executedFormId"
                   value={executedFormId}
                 />
-                <button
-                  type="submit"
-                  className="text-xs font-medium text-red-700 underline-offset-2 hover:underline dark:text-red-300"
-                >
+                <Button variant="destructive" size="sm" type="submit">
                   Remove
-                </button>
+                </Button>
               </form>
             </li>
           ))

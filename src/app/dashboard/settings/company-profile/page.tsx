@@ -22,7 +22,7 @@ export default async function CompanyProfilePage() {
 
       <SettingsSubnav />
 
-      <div className="mt-6 max-w-2xl rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="mt-6 max-w-2xl rounded-none border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
           Company Profile
         </h2>

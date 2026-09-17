@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import {
   clearCompanyLogoAction,
@@ -12,7 +13,7 @@ import type { CompanyProfileRow } from "@/db/schema";
 const labelClass =
   "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 export function CompanyProfileForm({
   profile,
@@ -39,14 +40,14 @@ export function CompanyProfileForm({
       <form action={formAction} className="space-y-4">
         {state && !state.ok ? (
           <div
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+            className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
             role="alert"
           >
             {state.message}
           </div>
         ) : null}
         {state?.ok ? (
-          <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+          <div className="rounded-none border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
             {state.message ?? "Saved."}
           </div>
         ) : null}
@@ -135,13 +136,10 @@ export function CompanyProfileForm({
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
-        >
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending ? "Saving…" : "Save profile"}
-        </button>
+        </Button>
       </form>
 
       <section className="border-t border-[var(--border)] pt-6">
@@ -161,12 +159,9 @@ export function CompanyProfileForm({
               className="h-16 w-auto max-w-[12rem] object-contain"
             />
             <form action={clearCompanyLogoAction}>
-              <button
-                type="submit"
-                className="text-sm font-medium text-red-600 hover:underline dark:text-red-400"
-              >
+              <Button variant="destructive" type="submit">
                 Remove logo
-              </button>
+              </Button>
             </form>
           </div>
         ) : null}
@@ -193,13 +188,10 @@ export function CompanyProfileForm({
               className="block text-sm"
             />
           </div>
-          <button
-            type="submit"
-            disabled={logoPending}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium disabled:opacity-60"
-          >
+          <Button variant="secondary" type="submit"
+            disabled={logoPending}>
             {logoPending ? "Uploading…" : "Upload"}
-          </button>
+          </Button>
         </form>
       </section>
     </div>

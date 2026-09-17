@@ -6,6 +6,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -32,7 +33,7 @@ import type { IsmTemplateListItem } from "@/modules/ism-templates/ismTemplate.mo
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type ReqDrawer =
   | { kind: "closed" }
@@ -226,17 +227,14 @@ export function MonthlyFormsList({
             {filters.year ? (
               <input type="hidden" name="year" value={filters.year} />
             ) : null}
-            <button
-              type="submit"
-              disabled={genPending}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-primary)] disabled:opacity-60"
-            >
+            <Button variant="primary" type="submit"
+              disabled={genPending}>
               {genPending ? "Generating…" : "Generate this month's checklist"}
-            </button>
+            </Button>
           </form>
           <Link
             href="/dashboard/monthly-forms/new"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
           >
             Add ad-hoc form
           </Link>
@@ -245,7 +243,7 @@ export function MonthlyFormsList({
 
       {genState?.ok ? (
         <p
-          className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
+          className="rounded-none border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
           role="status"
         >
           {genState.message}
@@ -258,11 +256,11 @@ export function MonthlyFormsList({
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No executed forms match. Generate a checklist or add an ad-hoc form.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+        <div className="overflow-x-auto rounded-none border border-[var(--border)]">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
               <tr>
@@ -308,29 +306,23 @@ export function MonthlyFormsList({
         </div>
       )}
 
-      <section className="rounded-lg border border-[var(--border)]">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]"
+      <section className="rounded-none border border-[var(--border)]">
+        <Button variant="ghost" type="button"
           onClick={() => setReqOpen((o) => !o)}
-          aria-expanded={reqOpen}
-        >
+          aria-expanded={reqOpen} className="w-full justify-between text-left">
           {/* Move to Settings / vessel profile once those exist (§10). */}
           Requirements (per vessel / template)
           <span className="font-normal text-[var(--text-tertiary)]">
             {reqOpen ? "Hide" : "Show"}
           </span>
-        </button>
+        </Button>
         {reqOpen ? (
           <div className="space-y-4 border-t border-[var(--border)] p-4">
             <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setReqDrawer({ kind: "create" })}
-                className="inline-flex h-9 items-center rounded-md bg-[#378ADD] px-3 text-sm font-medium text-white"
-              >
+              <Button variant="primary" type="button"
+                onClick={() => setReqDrawer({ kind: "create" })}>
                 Add requirement
-              </button>
+              </Button>
             </div>
             {requirements.length === 0 ? (
               <p className="text-sm text-[var(--text-tertiary)]">
@@ -369,24 +361,23 @@ export function MonthlyFormsList({
                           {r.activeStatus ? "Yes" : "No"}
                         </td>
                         <td className="px-2 py-2 text-right">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             type="button"
-                            className="me-3 text-sm font-medium text-[#378ADD]"
                             onClick={() => setReqDrawer({ kind: "edit", row: r })}
+                            className="me-3"
                           >
                             Edit
-                          </button>
+                          </Button>
                           <form
                             action={deleteMonthlyFormRequirementFormAction}
                             className="inline"
                           >
                             <input type="hidden" name="id" value={r.id} />
-                            <button
-                              type="submit"
-                              className="text-sm font-medium text-red-700 dark:text-red-300"
-                            >
+                            <Button variant="destructive" size="sm" type="submit">
                               Delete
-                            </button>
+                            </Button>
                           </form>
                         </td>
                       </tr>

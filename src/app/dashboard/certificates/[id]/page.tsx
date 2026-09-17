@@ -94,7 +94,7 @@ export default async function CertificateDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/certificates/${cert.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>
@@ -111,7 +111,7 @@ export default async function CertificateDetailPage(props: PageProps) {
         {rows.map((row) => (
           <div
             key={row.label}
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-none border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               {row.label}
@@ -124,7 +124,7 @@ export default async function CertificateDetailPage(props: PageProps) {
       {cert.remarks ? (
         <section className="mt-8 max-w-4xl">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Remarks</h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {cert.remarks}
           </p>
         </section>
@@ -138,7 +138,7 @@ export default async function CertificateDetailPage(props: PageProps) {
           ) : (
             cert.events.map((ev) => (
               <li key={ev.id} className="relative">
-                <span className="absolute -start-[1.625rem] mt-1.5 h-2.5 w-2.5 rounded-full bg-[#378ADD]" />
+                <span className="absolute -start-[1.625rem] mt-1.5 h-2.5 w-2.5 rounded-none bg-[#378ADD]" />
                 <p className="text-sm font-medium capitalize text-zinc-900 dark:text-zinc-100">
                   {ev.eventType}
                   <span className="ms-2 font-normal text-zinc-500">{ev.eventDate}</span>

@@ -21,7 +21,7 @@ export default async function VesselsPage() {
   if (!vessels) {
     return (
       <main className="flex flex-1 flex-col p-8" dir="auto">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="rounded-none border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
           <p className="font-medium">Admin access required</p>
           <p className="mt-1">
             Only Admin users can manage the vessel registry.{" "}
@@ -50,14 +50,14 @@ export default async function VesselsPage() {
         </div>
         <Link
           href="/dashboard/vessels/new"
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#0D2B45] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 items-center justify-center rounded-none bg-[#0D2B45] px-4 text-sm font-medium text-white"
         >
           Add vessel
         </Link>
       </div>
 
       {vessels.length === 0 ? (
-        <div className="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mt-8 overflow-hidden rounded-none border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
             No vessels yet.{" "}
             <Link

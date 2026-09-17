@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useActionState } from "react";
 import { Identifier } from "@/components/ui/identifier";
@@ -13,7 +14,7 @@ import type { VesselRow } from "@/db/schema";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 type VesselFormProps =
@@ -41,7 +42,7 @@ export function VesselForm(props: VesselFormProps) {
     <form action={formAction} className="mx-auto max-w-2xl space-y-6">
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           {state.message}
@@ -73,7 +74,7 @@ export function VesselForm(props: VesselFormProps) {
           <label htmlFor="imoNumber" className={labelClass}>
             IMO number
           </label>
-          <Identifier>
+          <Identifier mono>
             <input
               id="imoNumber"
               name="imoNumber"
@@ -220,13 +221,10 @@ export function VesselForm(props: VesselFormProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-6">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#0D2B45] px-4 text-sm font-medium text-white transition-opacity disabled:opacity-60"
-        >
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending ? "Saving…" : props.mode === "create" ? "Create vessel" : "Save changes"}
-        </button>
+        </Button>
         <Link
           href={props.mode === "create" ? "/dashboard/vessels" : `/dashboard/vessels/${props.vesselId}`}
           className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"

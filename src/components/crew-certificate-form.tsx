@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import {
   createCrewCertificateAction,
@@ -10,10 +11,11 @@ import type {
   CrewCertificateRow,
   EndorsementTypeRow,
 } from "@/db/schema";
+import { Identifier } from "@/components/ui/identifier";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 type Props = {
@@ -53,7 +55,7 @@ export function CrewCertificateForm(props: Props) {
       <input type="hidden" name="crewMemberId" value={props.crewMemberId} />
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           {state.message}
@@ -83,12 +85,14 @@ export function CrewCertificateForm(props: Props) {
           <label htmlFor="documentNumber" className={labelClass}>
             Document number
           </label>
-          <input
-            id="documentNumber"
-            name="documentNumber"
-            defaultValue={d?.documentNumber ?? ""}
-            className={inputClass}
-          />
+          <Identifier mono>
+            <input
+              id="documentNumber"
+              name="documentNumber"
+              defaultValue={d?.documentNumber ?? ""}
+              className={inputClass}
+            />
+          </Identifier>
         </div>
         <div>
           <label htmlFor="issuingAuthority" className={labelClass}>
@@ -161,20 +165,14 @@ export function CrewCertificateForm(props: Props) {
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          onClick={props.onCancel}
-          className="h-10 rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-secondary)]"
-        >
+        <Button variant="secondary" type="button"
+          onClick={props.onCancel}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={pending}
-          className="h-10 rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
-        >
+        </Button>
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending ? "Saving…" : props.mode === "create" ? "Add document" : "Save"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -3,6 +3,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +16,7 @@ import type { ManualListItem } from "@/modules/manuals/manual.model";
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type DrawerMode =
   | { kind: "closed" }
@@ -160,29 +161,23 @@ export function ManualsList({
             searchPlaceholder="Search title, vessel, type…"
           />
         </div>
-        <button
-          type="button"
-          onClick={() => setDrawer({ kind: "create" })}
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setDrawer({ kind: "create" })} className="shrink-0">
           Add manual
-        </button>
+        </Button>
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No manuals match.{" "}
-          <button
-            type="button"
-            className="font-medium text-[#378ADD] underline-offset-2 hover:underline"
-            onClick={() => setDrawer({ kind: "create" })}
-          >
+          <Button variant="ghost" type="button"
+            onClick={() => setDrawer({ kind: "create" })} className="underline-offset-2">
             Add one
-          </button>
+          </Button>
         </p>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-lg border border-[var(--border)] md:block">
+          <div className="hidden overflow-x-auto rounded-none border border-[var(--border)] md:block">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
                 <tr>
@@ -223,13 +218,10 @@ export function ManualsList({
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        className="text-sm font-medium text-[#378ADD] underline-offset-2 hover:underline"
-                        onClick={() => setDrawer({ kind: "edit", row })}
-                      >
+                      <Button variant="ghost" size="sm" type="button"
+                        onClick={() => setDrawer({ kind: "edit", row })}>
                         Edit
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -241,7 +233,7 @@ export function ManualsList({
             {visible.map((row) => (
               <li
                 key={row.id}
-                className="rounded-lg border border-[var(--border)] p-4"
+                className="rounded-none border border-[var(--border)] p-4"
               >
                 <Link
                   href={`/dashboard/manuals/${row.id}`}
@@ -261,13 +253,10 @@ export function ManualsList({
                       : ""}
                   </p>
                 ) : null}
-                <button
-                  type="button"
-                  className="mt-3 text-sm font-medium text-[#378ADD]"
-                  onClick={() => setDrawer({ kind: "edit", row })}
-                >
+                <Button variant="ghost" size="sm" type="button"
+                  onClick={() => setDrawer({ kind: "edit", row })} className="mt-3">
                   Edit
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

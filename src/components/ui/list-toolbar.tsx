@@ -8,11 +8,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 const controlClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)]";
-const buttonClass =
-  "h-10 rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--text-secondary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)]";
 
 export function ListToolbar({
   searchValue,
@@ -36,9 +35,9 @@ export function ListToolbar({
   const exportControls =
     exportSlot ??
     (onExport ? (
-      <button type="button" onClick={onExport} className={buttonClass}>
+      <Button variant="secondary" type="button" onClick={onExport}>
         Export
-      </button>
+      </Button>
     ) : null);
 
   return (
@@ -55,16 +54,17 @@ export function ListToolbar({
           {filters}
           {exportControls}
         </div>
-        <button
+        <Button
+          variant="secondary"
           type="button"
           onClick={() => setMobileFiltersOpen((v) => !v)}
-          className="flex h-11 items-center justify-center gap-2 rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-secondary)] md:hidden"
+          className="md:hidden"
         >
           Filters
-        </button>
+        </Button>
       </div>
       {mobileFiltersOpen ? (
-        <div className="flex flex-col gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-3 md:hidden">
+        <div className="flex flex-col gap-2 rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-3 md:hidden">
           {filters}
           {exportControls ? (
             <div className="flex flex-wrap gap-2">{exportControls}</div>
@@ -76,4 +76,4 @@ export function ListToolbar({
 }
 
 export const listToolbarExportLinkClass =
-  "inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)]";
+  "inline-flex h-10 items-center justify-center rounded-none border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)]";

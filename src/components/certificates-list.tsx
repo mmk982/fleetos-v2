@@ -21,7 +21,7 @@ import type { IssuingAuthorityRow, VesselRow } from "@/db/schema";
 import { STATUS_LABELS, type ComplianceStatus } from "@/lib/expiry";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 const STATUS_FILTERS: ComplianceStatus[] = [
   "valid",
@@ -177,7 +177,7 @@ export function CertificatesList({
         searchPlaceholder="Search vessel, type, number…"
       />
 
-      <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
+      <div className="overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No certificates match.{" "}
@@ -231,7 +231,7 @@ export function CertificatesList({
                           {row.authority}
                         </td>
                         <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">
-                          <Identifier>{row.certificateNumber ?? "—"}</Identifier>
+                          <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
                         </td>
                         <td className="px-4 py-3 text-[var(--text-secondary)]">
                           {row.issuingAuthorityName ?? "—"}
@@ -279,7 +279,7 @@ export function CertificatesList({
                     </div>
                     <div>
                       <span className="text-[var(--text-tertiary)]">Number · </span>
-                      <Identifier>{row.certificateNumber ?? "—"}</Identifier>
+                      <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
                     </div>
                   </dl>
                 </li>

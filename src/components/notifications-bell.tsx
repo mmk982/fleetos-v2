@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
 import {
   markAllReadAction,
   markNotificationReadAction,
@@ -62,7 +63,8 @@ export function NotificationsBell({
 
   return (
     <div ref={rootRef} className="relative">
-      <button
+      <Button
+        variant="ghost"
         type="button"
         aria-label={
           unreadCount > 0
@@ -72,34 +74,35 @@ export function NotificationsBell({
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
+        className="relative h-9 w-9 px-0"
       >
         <BellIcon className="h-5 w-5" />
         {badge ? (
-          <span className="absolute end-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute end-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-none bg-red-600 px-1 text-[10px] font-semibold text-white">
             {badge}
           </span>
         ) : null}
-      </button>
+      </Button>
 
       {open ? (
         <div
           role="menu"
-          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
+          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
         >
           <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-3 py-2">
             <p className="text-sm font-semibold text-[var(--text-primary)]">
               Notifications
             </p>
             {unreadCount > 0 ? (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 type="button"
                 disabled={pending}
                 onClick={markAll}
-                className="text-xs font-medium text-[#378ADD] hover:underline disabled:opacity-50"
               >
                 Mark all read
-              </button>
+              </Button>
             ) : null}
           </div>
 
@@ -111,30 +114,33 @@ export function NotificationsBell({
             <ul className="max-h-80 overflow-y-auto">
               {items.slice(0, DROPDOWN_LIMIT).map((item) => (
                 <li key={item.id}>
-                  <button
+                  <Button
+                    variant="ghost"
                     type="button"
                     role="menuitem"
                     disabled={pending}
                     onClick={() => {
                       if (!item.isRead) markOne(item.id);
                     }}
-                    className={`block w-full px-3 py-2.5 text-start hover:bg-[var(--bg-page)]  ${
+                    className={`h-auto w-full justify-start px-3 py-2.5 text-start ${
                       item.isRead ? "opacity-70" : ""
                     }`}
                   >
-                    <p className="text-sm font-medium text-[var(--text-primary)]">
-                      {item.title}
-                    </p>
-                    {item.message ? (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-tertiary)]">
-                        {item.message}
+                    <span className="block w-full">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        {item.title}
                       </p>
-                    ) : null}
-                    <p className="mt-1 text-[11px] tabular-nums text-[var(--text-tertiary)]">
-                      {item.createdAt.slice(0, 16).replace("T", " ")}
-                      {!item.isRead ? " · Unread" : ""}
-                    </p>
-                  </button>
+                      {item.message ? (
+                        <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-tertiary)]">
+                          {item.message}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-[11px] tabular-nums text-[var(--text-tertiary)]">
+                        {item.createdAt.slice(0, 16).replace("T", " ")}
+                        {!item.isRead ? " · Unread" : ""}
+                      </p>
+                    </span>
+                  </Button>
                 </li>
               ))}
             </ul>

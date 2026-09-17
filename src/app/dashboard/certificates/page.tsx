@@ -62,7 +62,7 @@ export default async function CertificatesPage(props: {
         </div>
         <Link
           href="/dashboard/certificates/new"
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
         >
           Add certificate
         </Link>

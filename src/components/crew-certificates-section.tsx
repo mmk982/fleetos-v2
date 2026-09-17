@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CrewCertificateAttachments } from "@/components/crew-certificate-attachments";
@@ -42,17 +43,14 @@ export function CrewCertificatesSection({
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Certificates & documents
         </h2>
-        <button
-          type="button"
-          onClick={() => setModal({ kind: "create" })}
-          className="inline-flex h-9 items-center rounded-md bg-[#378ADD] px-3 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setModal({ kind: "create" })}>
           Add document
-        </button>
+        </Button>
       </div>
 
       {certificates.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="mt-4 rounded-none border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
           No documents yet — passport, STCW, medical, visas go here.
         </p>
       ) : (
@@ -60,7 +58,7 @@ export function CrewCertificatesSection({
           {certificates.map((cert) => (
             <li
               key={cert.id}
-              className="rounded-lg border border-[var(--border)] p-4"
+              className="rounded-none border border-[var(--border)] p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -70,7 +68,7 @@ export function CrewCertificatesSection({
                   <p className="mt-1 text-sm text-[var(--text-tertiary)]">
                     {cert.documentNumber ? (
                       <>
-                        <Identifier>{cert.documentNumber}</Identifier>
+                        <Identifier mono>{cert.documentNumber}</Identifier>
                         {" · "}
                       </>
                     ) : null}
@@ -82,13 +80,14 @@ export function CrewCertificatesSection({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill status={cert.compliance.status} />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     type="button"
-                    className="text-sm font-medium text-[#378ADD] underline-offset-2 hover:underline"
                     onClick={() => setModal({ kind: "edit", cert })}
                   >
                     Edit
-                  </button>
+                  </Button>
                   <ConfirmDeleteButton
                     label="Delete"
                     title="Delete document?"

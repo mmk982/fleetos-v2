@@ -20,7 +20,7 @@ export default async function LoginPage() {
 
   return (
     <main className="flex min-h-full flex-1 items-center justify-center bg-[var(--bg-page)] px-4 py-12">
-      <div className="w-full max-w-sm rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-sm">
         <div className="mb-6">
           {profile.logoPath ? (
             // eslint-disable-next-line @next/next/no-img-element

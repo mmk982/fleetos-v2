@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
 import { Identifier } from "@/components/ui/identifier";
 import {
@@ -10,7 +11,7 @@ import {
 import type { IsmTemplateAttachmentRow } from "@/db/schema";
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   ismTemplateId: string;
@@ -28,7 +29,7 @@ export function IsmTemplateAttachments({
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
         {attachments.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">
             No attachments yet.
@@ -50,12 +51,9 @@ export function IsmTemplateAttachments({
               <form action={deleteIsmTemplateAttachmentAction}>
                 <input type="hidden" name="id" value={a.id} />
                 <input type="hidden" name="ismTemplateId" value={ismTemplateId} />
-                <button
-                  type="submit"
-                  className="text-xs font-medium text-red-700 underline-offset-2 hover:underline dark:text-red-300"
-                >
+                <Button variant="destructive" size="sm" type="submit">
                   Remove
-                </button>
+                </Button>
               </form>
             </li>
           ))
@@ -64,7 +62,7 @@ export function IsmTemplateAttachments({
 
       <form
         action={formAction}
-        className="space-y-3 rounded-lg border border-dashed border-[var(--border)] p-4"
+        className="space-y-3 rounded-none border border-dashed border-[var(--border)] p-4"
       >
         <input type="hidden" name="ismTemplateId" value={ismTemplateId} />
         <p className="text-sm font-medium text-[var(--text-primary)]">
@@ -87,13 +85,10 @@ export function IsmTemplateAttachments({
           required
           className={inputClass}
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-10 items-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white disabled:opacity-60"
-        >
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending ? "Uploading…" : "Upload"}
-        </button>
+        </Button>
       </form>
     </div>
   );

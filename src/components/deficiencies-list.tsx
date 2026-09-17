@@ -3,6 +3,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ import {
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type DrawerMode =
   | { kind: "closed" }
@@ -181,26 +182,23 @@ export function DeficienciesList({
             searchPlaceholder="Search title, vessel, number…"
           />
         </div>
-        <button
-          type="button"
-          onClick={() => setDrawer({ kind: "create" })}
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setDrawer({ kind: "create" })} className="shrink-0">
           Add deficiency
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
+      <div className="overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No deficiencies match.{" "}
-            <button
+            <Button
+              variant="ghost"
               type="button"
               onClick={() => setDrawer({ kind: "create" })}
-              className="font-medium text-[#378ADD] underline-offset-4 hover:underline"
             >
               Create one
-            </button>
+            </Button>
             .
           </div>
         ) : (
@@ -229,7 +227,7 @@ export function DeficienciesList({
                         <Identifier>{row.vesselName}</Identifier>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">
-                        <Identifier>{row.deficiencyNumber ?? "—"}</Identifier>
+                        <Identifier mono>{row.deficiencyNumber ?? "—"}</Identifier>
                       </td>
                       <td className="px-4 py-3 font-medium">
                         <Link
@@ -252,13 +250,10 @@ export function DeficienciesList({
                         {row.responsiblePerson ?? "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setDrawer({ kind: "edit", row })}
-                          className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
-                        >
+                        <Button variant="ghost" size="sm" type="button"
+                          onClick={() => setDrawer({ kind: "edit", row })}>
                           Edit
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}

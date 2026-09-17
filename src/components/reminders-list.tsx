@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,7 +31,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 const quietBtn =
   "text-sm font-medium text-[#378ADD] underline-offset-2 hover:underline disabled:opacity-50";
@@ -190,14 +191,14 @@ export function RemindersList({
         </div>
         <Link
           href="/dashboard/reminders/new"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
         >
           Add reminder
         </Link>
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No reminders match.{" "}
           <Link
             href="/dashboard/reminders/new"
@@ -208,7 +209,7 @@ export function RemindersList({
         </p>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-lg border border-[var(--border)] md:block">
+          <div className="hidden overflow-x-auto rounded-none border border-[var(--border)] md:block">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
                 <tr>
@@ -275,7 +276,7 @@ export function RemindersList({
             {visible.map((row) => (
               <li
                 key={row.id}
-                className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4"
+                className="rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <Link
@@ -319,15 +320,15 @@ function RowActions({
         <>
           <form action={completeReminderFormAction}>
             <input type="hidden" name="id" value={id} />
-            <button type="submit" className={quietBtn}>
+            <Button variant="ghost" size="sm" type="submit">
               Complete
-            </button>
+            </Button>
           </form>
           <form action={dismissReminderFormAction}>
             <input type="hidden" name="id" value={id} />
-            <button type="submit" className={quietBtn}>
+            <Button variant="ghost" size="sm" type="submit">
               Dismiss
-            </button>
+            </Button>
           </form>
         </>
       ) : null}
@@ -336,12 +337,9 @@ function RowActions({
       </Link>
       <form action={deleteReminderFormAction}>
         <input type="hidden" name="id" value={id} />
-        <button
-          type="submit"
-          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-        >
+        <Button variant="destructive" size="sm" type="submit">
           Delete
-        </button>
+        </Button>
       </form>
     </div>
   );

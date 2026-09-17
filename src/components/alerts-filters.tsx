@@ -13,7 +13,7 @@ import {
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 /** Statuses offered in the main-list filter (actionable + clear). */
 const STATUS_FILTERS: { value: string; label: string }[] = [

@@ -36,7 +36,7 @@ export function SettingsSubnav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-none px-3 py-2 text-sm font-medium transition-colors ${
               active
                 ? "border-b-2 border-[var(--accent)] text-[var(--accent)]  "
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]  "

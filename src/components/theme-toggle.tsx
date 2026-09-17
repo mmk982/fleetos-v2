@@ -1,21 +1,23 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
 
 /** Sun/moon toggle — client island for the server-rendered top bar. */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       aria-label="Toggle color theme"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-tertiary)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)]"
+      className="h-8 w-8 px-0"
     >
       <MoonIcon className="h-4 w-4 dark:hidden" aria-hidden="true" />
       <SunIcon className="hidden h-4 w-4 dark:block" aria-hidden="true" />
-    </button>
+    </Button>
   );
 }
 

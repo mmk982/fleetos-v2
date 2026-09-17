@@ -10,11 +10,12 @@
  * strings are deferred — this is default-theme English only for this slice.
  */
 import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
 import { loginAction, type LoginActionState } from "@/modules/auth/actions";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 export function LoginForm() {
@@ -32,7 +33,7 @@ export function LoginForm() {
     <form action={formAction} className="space-y-5">
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           {state.message}
@@ -75,13 +76,9 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex h-10 w-full items-center justify-center rounded-md bg-[#0D2B45] px-4 text-sm font-medium text-white disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

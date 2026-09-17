@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useActionState } from "react";
 import {
@@ -21,7 +22,7 @@ import { Identifier } from "@/components/ui/identifier";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 type CertificateFormProps = {
@@ -61,7 +62,7 @@ export function CertificateForm(props: CertificateFormProps) {
     <form action={formAction} className="mx-auto max-w-3xl space-y-6">
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-none border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           {state.message}
@@ -134,12 +135,12 @@ export function CertificateForm(props: CertificateFormProps) {
           <label htmlFor="certificateNumber" className={labelClass}>
             Certificate number
           </label>
-          <Identifier>
+          <Identifier mono>
             <input
               id="certificateNumber"
               name="certificateNumber"
               defaultValue={d?.certificateNumber ?? ""}
-              className={`${inputClass} font-mono`}
+              className={inputClass}
               autoComplete="off"
             />
           </Identifier>
@@ -296,17 +297,14 @@ export function CertificateForm(props: CertificateFormProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-6">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white transition-opacity disabled:opacity-60"
-        >
+        <Button variant="primary" type="submit"
+          disabled={pending}>
           {pending
             ? "Saving…"
             : props.mode === "create"
               ? "Create certificate"
               : "Save changes"}
-        </button>
+        </Button>
         <Link
           href={
             props.mode === "create"

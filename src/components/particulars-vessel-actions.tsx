@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ParticularsForm } from "@/components/particulars-form";
 import { Drawer } from "@/components/ui/drawer";
@@ -24,21 +25,15 @@ export function ParticularsVesselActions({
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setMode({ kind: "create-current" })}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
-        >
+        <Button variant="primary" type="button"
+          onClick={() => setMode({ kind: "create-current" })}>
           {current ? "Add new current record" : "Add particulars"}
-        </button>
+        </Button>
         {current ? (
-          <button
-            type="button"
-            onClick={() => setMode({ kind: "edit-inplace", row: current })}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-primary)]"
-          >
+          <Button variant="secondary" type="button"
+            onClick={() => setMode({ kind: "edit-inplace", row: current })}>
             Edit current in place
-          </button>
+          </Button>
         ) : null}
       </div>
 
