@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -136,10 +138,20 @@ export type ManualListFilters = {
   department?: string;
 };
 
-/** Unfiltered manuals count for Dashboard summary cards. */
+/** Manuals count for Dashboard summary cards (vessel-scoped when applicable). */
 export async function getManualCount(ctx: AccessContext): Promise<number> {
   assertAuthenticatedAccess(ctx);
-  const rows = await getDb().select({ n: count() }).from(manuals);
+  assertModuleAccess(ctx, "manuals", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : undefined;
+  const rows = scopedVesselId
+    ? await getDb()
+        .select({ n: count() })
+        .from(manuals)
+        .where(eq(manuals.vesselId, scopedVesselId))
+    : await getDb().select({ n: count() }).from(manuals);
   return rows[0]?.n ?? 0;
 }
 
@@ -148,10 +160,15 @@ export async function listManuals(
   filters: ManualListFilters = {},
 ): Promise<ManualListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "manuals", "read");
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(manuals.vesselId, filters.vesselId));
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
+  if (scopedVesselId) {
+    conditions.push(eq(manuals.vesselId, scopedVesselId));
   }
   if (filters.manualType) {
     conditions.push(eq(manuals.manualType, filters.manualType));
@@ -203,6 +220,7 @@ export async function getManualById(
   id: string,
 ): Promise<ManualDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "manuals", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -215,6 +233,7 @@ export async function getManualById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.manual.vesselId);
 
   const revisions = await db
     .select()
@@ -248,6 +267,8 @@ export async function createManualWithFirstRevision(
   } = {},
 ): Promise<ManualRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "manuals", "write");
+  assertVesselScope(ctx, input.vesselId);
   assertValidAttachment(file);
 
   const stored = await storeAttachmentFile(file);
@@ -311,15 +332,21 @@ export async function addManualRevision(
   file: UploadFile,
 ): Promise<ManualRevisionRow> {
   assertAuthenticatedAccess(ctx, manualId);
+  assertModuleAccess(ctx, "manuals", "write");
   assertValidAttachment(file);
 
   const db = getDb();
   const parent = await db
-    .select({ id: manuals.id, title: manuals.title })
+    .select({
+      id: manuals.id,
+      title: manuals.title,
+      vesselId: manuals.vesselId,
+    })
     .from(manuals)
     .where(eq(manuals.id, manualId))
     .limit(1);
   if (!parent[0]) throw new ManualNotFoundError(manualId);
+  assertVesselScope(ctx, parent[0].vesselId);
   const manualTitle = parent[0].title;
 
   const stored = await storeAttachmentFile(file);
@@ -378,14 +405,16 @@ export async function updateManual(
   input: ManualUpdateInput,
 ): Promise<ManualRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "manuals", "write");
   const db = getDb();
 
   const existing = await db
-    .select({ id: manuals.id })
+    .select({ id: manuals.id, vesselId: manuals.vesselId })
     .from(manuals)
     .where(eq(manuals.id, id))
     .limit(1);
   if (!existing[0]) throw new ManualNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof manuals.$inferInsert> & { updatedAt: Date } = {
     updatedAt: new Date(),
@@ -434,14 +463,17 @@ export async function setCurrentRevision(
   revisionId: string,
 ): Promise<ManualRevisionRow> {
   assertAuthenticatedAccess(ctx, manualId);
+  assertModuleAccess(ctx, "manuals", "write");
   const db = getDb();
 
   const parent = await db
-    .select({ title: manuals.title })
+    .select({ title: manuals.title, vesselId: manuals.vesselId })
     .from(manuals)
     .where(eq(manuals.id, manualId))
     .limit(1);
-  const manualTitle = parent[0]?.title;
+  if (!parent[0]) throw new ManualNotFoundError(manualId);
+  assertVesselScope(ctx, parent[0].vesselId);
+  const manualTitle = parent[0].title;
 
   let row: ManualRevisionRow;
   try {
@@ -505,13 +537,16 @@ export async function deleteManual(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "manuals", "write");
   const db = getDb();
   const existing = await db
-    .select({ title: manuals.title })
+    .select({ title: manuals.title, vesselId: manuals.vesselId })
     .from(manuals)
     .where(eq(manuals.id, id))
     .limit(1);
-  const title = existing[0]?.title;
+  if (!existing[0]) throw new ManualNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
+  const title = existing[0].title;
   try {
     const atts = await db
       .select()
@@ -552,14 +587,24 @@ export async function getManualRevisionAttachmentById(
   | undefined
 > {
   assertAuthenticatedAccess(ctx, revisionId);
+  assertModuleAccess(ctx, "manuals", "read");
   const rows = await getDb()
     .select({
       fileName: manualRevisions.fileName,
       filePath: manualRevisions.filePath,
       uploadedBy: manualRevisions.uploadedBy,
+      vesselId: manuals.vesselId,
     })
     .from(manualRevisions)
+    .innerJoin(manuals, eq(manualRevisions.manualId, manuals.id))
     .where(eq(manualRevisions.id, revisionId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return {
+    fileName: row.fileName,
+    filePath: row.filePath,
+    uploadedBy: row.uploadedBy,
+  };
 }
