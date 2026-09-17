@@ -7,6 +7,14 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
+  ForbiddenError: class ForbiddenError extends Error {
+    readonly code = "FORBIDDEN" as const;
+    constructor(message = "Forbidden") {
+      super(message);
+      this.name = "ForbiddenError";
+    }
+  },
 }));
 
 vi.mock("@/lib/logging", () => ({
@@ -28,7 +36,7 @@ import {
 const VESSEL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const TEMPLATE_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const REQ_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const CTX = { userId: "user-1", role: null, vesselId: null };
+const CTX = { userId: "user-1", role: "admin", vesselId: null };
 
 describe("monthly-form-requirement.controller", () => {
   beforeEach(() => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { UserRole } from "@/db/schema";
 import {
   getModuleAccess,
+  getMonthlyFormAccess,
   MODULE_PERMISSIONS,
   VESSEL_SCOPED_MODULES,
   type ModuleAccess,
@@ -112,5 +113,16 @@ describe("MODULE_PERMISSIONS matrix", () => {
     expect(VESSEL_SCOPED_MODULES.has("settings_general")).toBe(false);
     expect(VESSEL_SCOPED_MODULES.has("certificates")).toBe(true);
     expect(VESSEL_SCOPED_MODULES.has("export")).toBe(true);
+  });
+});
+
+describe("getMonthlyFormAccess", () => {
+  it("maps roles to Stage 3 monthly-form tiers", () => {
+    expect(getMonthlyFormAccess(null)).toBe("none");
+    expect(getMonthlyFormAccess("admin")).toBe("full");
+    expect(getMonthlyFormAccess("superintendent")).toBe("full");
+    expect(getMonthlyFormAccess("management_user")).toBe("submit");
+    expect(getMonthlyFormAccess("vessel_user")).toBe("submit");
+    expect(getMonthlyFormAccess("read_only")).toBe("read");
   });
 });

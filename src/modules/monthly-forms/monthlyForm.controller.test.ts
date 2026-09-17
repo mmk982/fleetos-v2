@@ -7,6 +7,14 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
+  ForbiddenError: class ForbiddenError extends Error {
+    readonly code = "FORBIDDEN" as const;
+    constructor(message = "Forbidden") {
+      super(message);
+      this.name = "ForbiddenError";
+    }
+  },
 }));
 
 const removeStoredAttachmentFile = vi.fn(async (_path: string) => undefined);
@@ -41,7 +49,7 @@ const TEMPLATE_QUARTERLY = "22222222-2222-2222-2222-222222222222";
 const TEMPLATE_YEARLY = "33333333-3333-3333-3333-333333333333";
 const TEMPLATE_ON_DEMAND = "44444444-4444-4444-4444-444444444444";
 const FORM_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
-const CTX = { userId: "user-1", role: null, vesselId: null };
+const CTX = { userId: "user-1", role: "admin", vesselId: null };
 
 const SAMPLE_FILE = {
   name: "form.pdf",

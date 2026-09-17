@@ -171,3 +171,22 @@ export function accessMeetsRequirement(
 ): boolean {
   return ACCESS_RANK[granted] >= ACCESS_RANK[required];
 }
+
+/**
+ * Stage 3 bespoke access for Monthly Executed Forms.
+ *
+ * - `full` — admin / superintendent (config + CRUD + submit)
+ * - `submit` — management_user / vessel_user (submit own vessel only)
+ * - `read` — read_only
+ * - `none` — null / unknown role
+ */
+export type MonthlyFormAccess = "none" | "read" | "submit" | "full";
+
+export function getMonthlyFormAccess(
+  role: UserRole | null,
+): MonthlyFormAccess {
+  if (role === null) return "none";
+  if (role === "admin" || role === "superintendent") return "full";
+  if (role === "management_user" || role === "vessel_user") return "submit";
+  return "read"; // read_only
+}

@@ -13,11 +13,14 @@ import {
   monthlyFormRequirements,
   vessels,
   type MonthlyFormRequirementRow,
+  type UserRole,
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
+import { getMonthlyFormAccess } from "@/lib/auth/permissions";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
 import type { MonthlyFormRequirementListItem } from "./monthlyForm.model";
@@ -60,6 +63,15 @@ function isPgUniqueViolation(error: unknown): boolean {
   );
 }
 
+function assertFullMonthlyFormAccess(ctx: AccessContext): void {
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly form requirements (need full).",
+    );
+  }
+}
+
 export type MonthlyFormRequirementFilters = {
   vesselId?: string;
 };
@@ -69,6 +81,7 @@ export async function listMonthlyFormRequirements(
   filters: MonthlyFormRequirementFilters = {},
 ): Promise<MonthlyFormRequirementListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertFullMonthlyFormAccess(ctx);
   const db = getDb();
   const conditions: SQL[] = [];
   if (filters.vesselId) {
@@ -105,6 +118,7 @@ export async function getMonthlyFormRequirementById(
   id: string,
 ): Promise<MonthlyFormRequirementListItem | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertFullMonthlyFormAccess(ctx);
   const db = getDb();
   const rows = await db
     .select({
@@ -135,6 +149,7 @@ export async function createMonthlyFormRequirement(
   input: MonthlyFormRequirementCreateInput,
 ): Promise<MonthlyFormRequirementRow> {
   assertAuthenticatedAccess(ctx);
+  assertFullMonthlyFormAccess(ctx);
   const db = getDb();
   let row: MonthlyFormRequirementRow;
   try {
@@ -180,6 +195,7 @@ export async function updateMonthlyFormRequirement(
   input: MonthlyFormRequirementUpdateInput,
 ): Promise<MonthlyFormRequirementRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertFullMonthlyFormAccess(ctx);
   const db = getDb();
 
   const existing = await db
@@ -242,6 +258,7 @@ export async function deleteMonthlyFormRequirement(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertFullMonthlyFormAccess(ctx);
   const db = getDb();
   try {
     const deleted = await db

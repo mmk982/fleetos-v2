@@ -21,11 +21,15 @@ import {
   type MonthlyExecutedFormRow,
   type MonthlyFormFrequency,
   type MonthlyFormStatus,
+  type UserRole,
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertVesselScope,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
+import { getMonthlyFormAccess } from "@/lib/auth/permissions";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import { logError } from "@/lib/logging";
@@ -167,9 +171,16 @@ export async function listMonthlyForms(
   filters: MonthlyFormListFilters = {},
 ): Promise<MonthlyFormListItem[]> {
   assertAuthenticatedAccess(ctx);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access === "none") {
+    throw new ForbiddenError("Insufficient access for monthly forms.");
+  }
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
+  if (access === "submit") {
+    if (!ctx.vesselId) return [];
+    conditions.push(eq(monthlyExecutedForms.vesselId, ctx.vesselId));
+  } else if (filters.vesselId) {
     conditions.push(eq(monthlyExecutedForms.vesselId, filters.vesselId));
   }
   if (filters.month !== undefined) {
@@ -226,6 +237,10 @@ export async function getMonthlyFormById(
   id: string,
 ): Promise<MonthlyFormDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access === "none") {
+    throw new ForbiddenError("Insufficient access for monthly forms.");
+  }
   const db = getDb();
   const rows = await db
     .select({
@@ -238,6 +253,7 @@ export async function getMonthlyFormById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.form.vesselId);
 
   const attachments = await db
     .select()
@@ -263,6 +279,13 @@ export async function createMonthlyForm(
   input: MonthlyFormCreateInput,
 ): Promise<MonthlyExecutedFormRow> {
   assertAuthenticatedAccess(ctx);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly forms (need full).",
+    );
+  }
+  assertVesselScope(ctx, input.vesselId);
   const db = getDb();
 
   let formName = input.formName?.trim() || "";
@@ -332,6 +355,15 @@ export async function generateMonthlyChecklist(
   options: { vesselId?: string; month?: number; year?: number } = {},
 ): Promise<{ created: number }> {
   assertAuthenticatedAccess(ctx);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly forms (need full).",
+    );
+  }
+  if (options.vesselId) {
+    assertVesselScope(ctx, options.vesselId);
+  }
   const now = new Date();
   const month = options.month ?? now.getMonth() + 1;
   const year = options.year ?? now.getFullYear();
@@ -400,6 +432,12 @@ export async function submitMonthlyForm(
   file: UploadFile,
 ): Promise<MonthlyExecutedFormRow> {
   assertAuthenticatedAccess(ctx, id);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "submit" && access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly forms (need submit).",
+    );
+  }
   assertValidAttachment(file);
 
   const db = getDb();
@@ -410,6 +448,7 @@ export async function submitMonthlyForm(
     .limit(1);
   const form = existing[0];
   if (!form) throw new MonthlyFormNotFoundError(id);
+  assertVesselScope(ctx, form.vesselId);
 
   const stored = await storeAttachmentFile(file);
   const isFirstSubmission =
@@ -472,17 +511,26 @@ export async function deleteMonthlyForm(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly forms (need full).",
+    );
+  }
   const db = getDb();
   const existing = await db
     .select({
       formName: monthlyExecutedForms.formName,
       month: monthlyExecutedForms.month,
       year: monthlyExecutedForms.year,
+      vesselId: monthlyExecutedForms.vesselId,
     })
     .from(monthlyExecutedForms)
     .where(eq(monthlyExecutedForms.id, id))
     .limit(1);
   const formMeta = existing[0];
+  if (!formMeta) throw new MonthlyFormNotFoundError(id);
+  assertVesselScope(ctx, formMeta.vesselId);
   try {
     const atts = await db
       .select()
@@ -506,9 +554,7 @@ export async function deleteMonthlyForm(
     actionType: "deleted",
     moduleName: "monthly_form",
     recordId: id,
-    description: formMeta
-      ? `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`
-      : "Deleted monthly form",
+    description: `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`,
   });
 }
 
@@ -517,7 +563,19 @@ export async function listMonthlyFormAttachments(
   executedFormId: string,
 ): Promise<MonthlyExecutedFormAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, executedFormId);
-  return getDb()
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access === "none") {
+    throw new ForbiddenError("Insufficient access for monthly forms.");
+  }
+  const db = getDb();
+  const parent = await db
+    .select({ vesselId: monthlyExecutedForms.vesselId })
+    .from(monthlyExecutedForms)
+    .where(eq(monthlyExecutedForms.id, executedFormId))
+    .limit(1);
+  if (!parent[0]) return [];
+  assertVesselScope(ctx, parent[0].vesselId);
+  return db
     .select()
     .from(monthlyExecutedFormAttachments)
     .where(eq(monthlyExecutedFormAttachments.executedFormId, executedFormId))
@@ -529,21 +587,39 @@ export async function deleteMonthlyFormAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access !== "full") {
+    throw new ForbiddenError(
+      "Insufficient access for monthly forms (need full).",
+    );
+  }
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({
+        attachment: monthlyExecutedFormAttachments,
+        vesselId: monthlyExecutedForms.vesselId,
+      })
       .from(monthlyExecutedFormAttachments)
+      .innerJoin(
+        monthlyExecutedForms,
+        eq(
+          monthlyExecutedFormAttachments.executedFormId,
+          monthlyExecutedForms.id,
+        ),
+      )
       .where(eq(monthlyExecutedFormAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
     if (!row) throw new AttachmentNotFoundError(attachmentId);
+    assertVesselScope(ctx, row.vesselId);
     await db
       .delete(monthlyExecutedFormAttachments)
       .where(eq(monthlyExecutedFormAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
+    await removeStoredAttachmentFile(row.attachment.filePath);
   } catch (error) {
     if (error instanceof AttachmentNotFoundError) throw error;
+    if (error instanceof ForbiddenError) throw error;
     logError("MONTHLY_FORM_ATTACHMENT_DELETE_FAILED", {
       error,
       attachmentId,
@@ -562,10 +638,27 @@ export async function getMonthlyFormAttachmentById(
   attachmentId: string,
 ): Promise<MonthlyExecutedFormAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+  if (access === "none") {
+    throw new ForbiddenError("Insufficient access for monthly forms.");
+  }
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: monthlyExecutedFormAttachments,
+      vesselId: monthlyExecutedForms.vesselId,
+    })
     .from(monthlyExecutedFormAttachments)
+    .innerJoin(
+      monthlyExecutedForms,
+      eq(
+        monthlyExecutedFormAttachments.executedFormId,
+        monthlyExecutedForms.id,
+      ),
+    )
     .where(eq(monthlyExecutedFormAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }
