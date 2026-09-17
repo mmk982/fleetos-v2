@@ -28,6 +28,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -124,6 +126,7 @@ export async function listDeficiencySeverityLevels(
   ctx: AccessContext,
 ): Promise<DeficiencySeverityLevelRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "deficiencies", "read");
   return getDb()
     .select()
     .from(deficiencySeverityLevels)
@@ -135,6 +138,7 @@ export async function createDeficiencySeverityLevel(
   input: { name: string },
 ): Promise<DeficiencySeverityLevelRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new DeficiencyConflictError("Name is required.");
@@ -164,6 +168,7 @@ export async function updateDeficiencySeverityLevel(
   input: { name: string },
 ): Promise<DeficiencySeverityLevelRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new DeficiencyConflictError("Name is required.");
@@ -202,6 +207,7 @@ export async function deleteDeficiencySeverityLevel(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   try {
     const deleted = await getDb()
       .delete(deficiencySeverityLevels)
@@ -235,12 +241,20 @@ export async function getOpenDeficienciesCount(
   ctx: AccessContext,
 ): Promise<number> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "deficiencies", "read");
+  const conditions: SQL[] = [
+    inArray(deficiencies.status, ["open", "in_progress", "monitoring"]),
+  ];
+  if (
+    (ctx.role === "management_user" || ctx.role === "vessel_user") &&
+    ctx.vesselId
+  ) {
+    conditions.push(eq(deficiencies.vesselId, ctx.vesselId));
+  }
   const rows = await getDb()
     .select({ n: count() })
     .from(deficiencies)
-    .where(
-      inArray(deficiencies.status, ["open", "in_progress", "monitoring"]),
-    );
+    .where(and(...conditions));
   return rows[0]?.n ?? 0;
 }
 
@@ -250,9 +264,14 @@ export async function listDeficiencies(
   filters: DeficiencyListFilters = {},
 ): Promise<DeficiencyListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "deficiencies", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(deficiencies.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(deficiencies.vesselId, scopedVesselId));
   }
   if (filters.status) {
     conditions.push(eq(deficiencies.status, filters.status));
@@ -288,6 +307,7 @@ export async function getDeficiencyById(
   id: string,
 ): Promise<DeficiencyDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "deficiencies", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -300,6 +320,7 @@ export async function getDeficiencyById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.deficiency.vesselId);
 
   const attachments = await db
     .select()
@@ -331,6 +352,8 @@ export async function createDeficiency(
   input: DeficiencyCreateInput,
 ): Promise<DeficiencyRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "deficiencies", "write");
+  assertVesselScope(ctx, input.vesselId);
   const db = getDb();
   let row: DeficiencyRow;
   try {
@@ -383,6 +406,7 @@ export async function updateDeficiency(
   input: DeficiencyUpdateInput,
 ): Promise<DeficiencyRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "deficiencies", "write");
   const db = getDb();
   const existing = await db
     .select()
@@ -390,6 +414,7 @@ export async function updateDeficiency(
     .where(eq(deficiencies.id, id))
     .limit(1);
   if (!existing[0]) throw new DeficiencyNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof deficiencies.$inferInsert> = {
     updatedAt: new Date(),
@@ -455,7 +480,15 @@ async function setStatus(
   extras: Partial<typeof deficiencies.$inferInsert> = {},
 ): Promise<DeficiencyRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "deficiencies", "write");
   const db = getDb();
+  const existing = await db
+    .select({ vesselId: deficiencies.vesselId })
+    .from(deficiencies)
+    .where(eq(deficiencies.id, id))
+    .limit(1);
+  if (!existing[0]) throw new DeficiencyNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
   try {
     const updated = await db
       .update(deficiencies)
@@ -550,13 +583,18 @@ export async function deleteDeficiency(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "deficiencies", "write");
   const db = getDb();
   const existingRows = await db
-    .select({ title: deficiencies.title })
+    .select({ title: deficiencies.title, vesselId: deficiencies.vesselId })
     .from(deficiencies)
     .where(eq(deficiencies.id, id))
     .limit(1);
-  const title = existingRows[0]?.title;
+  const existing = existingRows[0];
+  if (existing) {
+    assertVesselScope(ctx, existing.vesselId);
+  }
+  const title = existing?.title;
   try {
     const atts = await db
       .select()
@@ -600,6 +638,7 @@ export async function uploadDeficiencyAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<DeficiencyAttachmentRow> {
   assertAuthenticatedAccess(ctx, deficiencyId);
+  assertModuleAccess(ctx, "deficiencies", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -616,11 +655,12 @@ export async function uploadDeficiencyAttachment(
   let row: DeficiencyAttachmentRow;
   try {
     const parent = await db
-      .select({ id: deficiencies.id })
+      .select({ id: deficiencies.id, vesselId: deficiencies.vesselId })
       .from(deficiencies)
       .where(eq(deficiencies.id, deficiencyId))
       .limit(1);
     if (!parent[0]) throw new DeficiencyNotFoundError(deficiencyId);
+    assertVesselScope(ctx, parent[0].vesselId);
 
     await mkdir(ATTACHMENTS_DIR, { recursive: true });
     const id = randomUUID();
@@ -675,19 +715,28 @@ export async function deleteDeficiencyAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "deficiencies", "write");
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({
+        attachment: deficiencyAttachments,
+        vesselId: deficiencies.vesselId,
+      })
       .from(deficiencyAttachments)
+      .innerJoin(
+        deficiencies,
+        eq(deficiencyAttachments.deficiencyId, deficiencies.id),
+      )
       .where(eq(deficiencyAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
     if (!row) throw new AttachmentNotFoundError(attachmentId);
+    assertVesselScope(ctx, row.vesselId);
     await db
       .delete(deficiencyAttachments)
       .where(eq(deficiencyAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
+    await removeStoredAttachmentFile(row.attachment.filePath);
   } catch (error) {
     if (error instanceof AttachmentNotFoundError) throw error;
     logError("DEFICIENCY_ATTACHMENT_DELETE_FAILED", {
@@ -704,12 +753,23 @@ export async function getDeficiencyAttachmentById(
   attachmentId: string,
 ): Promise<DeficiencyAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "deficiencies", "read");
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: deficiencyAttachments,
+      vesselId: deficiencies.vesselId,
+    })
     .from(deficiencyAttachments)
+    .innerJoin(
+      deficiencies,
+      eq(deficiencyAttachments.deficiencyId, deficiencies.id),
+    )
     .where(eq(deficiencyAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }
 
 /**
