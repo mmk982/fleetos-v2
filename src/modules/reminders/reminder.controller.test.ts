@@ -7,6 +7,8 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertModuleAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
 }));
 
 vi.mock("@/lib/logging", () => ({
@@ -120,7 +122,7 @@ describe("reminder.controller", () => {
       select: () => ({
         from: () => ({
           where: () => ({
-            limit: async () => [{ id: REMINDER_ID }],
+            limit: async () => [{ id: REMINDER_ID, vesselId: null }],
           }),
         }),
       }),
@@ -160,7 +162,7 @@ describe("reminder.controller", () => {
       select: () => ({
         from: () => ({
           where: () => ({
-            limit: async () => [{ id: REMINDER_ID }],
+            limit: async () => [{ id: REMINDER_ID, vesselId: null }],
           }),
         }),
       }),
@@ -200,7 +202,7 @@ describe("reminder.controller", () => {
       select: () => ({
         from: () => ({
           where: () => ({
-            limit: async () => [{ id: REMINDER_ID }],
+            limit: async () => [{ id: REMINDER_ID, vesselId: null }],
           }),
         }),
       }),

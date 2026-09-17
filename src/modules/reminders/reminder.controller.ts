@@ -18,6 +18,9 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -64,10 +67,15 @@ export async function listReminders(
   filters: ReminderListFilters = {},
 ): Promise<ReminderListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "reminders", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(reminders.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(reminders.vesselId, scopedVesselId));
   }
   if (filters.type) {
     conditions.push(eq(reminders.type, filters.type));
@@ -100,6 +108,7 @@ export async function getReminderById(
   id: string,
 ): Promise<ReminderListItem | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "reminders", "read");
   const rows = await getDb()
     .select({
       reminder: reminders,
@@ -111,6 +120,7 @@ export async function getReminderById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.reminder.vesselId);
   return {
     ...row.reminder,
     vesselName: row.vesselName ?? null,
@@ -122,6 +132,8 @@ export async function createReminder(
   input: ReminderCreateInput,
 ): Promise<ReminderRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "reminders", "write");
+  assertVesselScope(ctx, input.vesselId ?? null);
   let row: ReminderRow;
   try {
     const inserted = await getDb()
@@ -164,14 +176,16 @@ export async function updateReminder(
   input: ReminderUpdateInput,
 ): Promise<ReminderRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "reminders", "write");
   const db = getDb();
 
   const existing = await db
-    .select({ id: reminders.id })
+    .select({ id: reminders.id, vesselId: reminders.vesselId })
     .from(reminders)
     .where(eq(reminders.id, id))
     .limit(1);
   if (!existing[0]) throw new ReminderNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof reminders.$inferInsert> & { updatedAt: Date } = {
     updatedAt: new Date(),
@@ -202,7 +216,12 @@ export async function updateReminder(
     if (!updatedRow) throw new ReminderNotFoundError(id);
     row = updatedRow;
   } catch (error) {
-    if (error instanceof ReminderNotFoundError) throw error;
+    if (
+      error instanceof ReminderNotFoundError ||
+      error instanceof ForbiddenError
+    ) {
+      throw error;
+    }
     if (isPgForeignKeyViolation(error)) {
       throw new ReminderConflictError("Vessel reference is invalid.");
     }
@@ -234,12 +253,15 @@ export async function deleteReminder(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "reminders", "write");
   const existing = await getDb()
-    .select({ title: reminders.title })
+    .select({ title: reminders.title, vesselId: reminders.vesselId })
     .from(reminders)
     .where(eq(reminders.id, id))
     .limit(1);
-  const title = existing[0]?.title;
+  if (!existing[0]) throw new ReminderNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
+  const title = existing[0].title;
   try {
     const deleted = await getDb()
       .delete(reminders)
