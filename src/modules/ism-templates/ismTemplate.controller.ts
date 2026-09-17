@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -111,6 +112,7 @@ export async function listIsmTemplateCategories(
   ctx: AccessContext,
 ): Promise<IsmTemplateCategoryRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "ism_templates", "read");
   return getDb()
     .select()
     .from(ismTemplateCategories)
@@ -122,6 +124,7 @@ export async function createIsmTemplateCategory(
   input: { name: string },
 ): Promise<IsmTemplateCategoryRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new IsmTemplateConflictError("Name is required.");
@@ -152,6 +155,7 @@ export async function updateIsmTemplateCategory(
   input: { name: string },
 ): Promise<IsmTemplateCategoryRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new IsmTemplateConflictError("Name is required.");
@@ -193,6 +197,7 @@ export async function deleteIsmTemplateCategory(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -220,6 +225,7 @@ export async function listIsmTemplates(
   filters: IsmTemplateListFilters = {},
 ): Promise<IsmTemplateListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "ism_templates", "read");
   const db = getDb();
   const conditions: SQL[] = [];
   if (filters.categoryId) {
@@ -257,6 +263,7 @@ export async function getIsmTemplateById(
   id: string,
 ): Promise<IsmTemplateDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "ism_templates", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -291,6 +298,7 @@ export async function createIsmTemplate(
   input: IsmTemplateCreateInput,
 ): Promise<IsmTemplateRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "ism_templates", "write");
   const db = getDb();
   let row: IsmTemplateRow;
   try {
@@ -335,6 +343,7 @@ export async function updateIsmTemplate(
   input: IsmTemplateUpdateInput,
 ): Promise<IsmTemplateRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "ism_templates", "write");
   const db = getDb();
 
   const existing = await db
@@ -392,6 +401,7 @@ export async function deleteIsmTemplate(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "ism_templates", "write");
   const db = getDb();
   const existing = await db
     .select({ formName: ismTemplates.formName })
@@ -433,6 +443,7 @@ export async function listIsmTemplateAttachments(
   ismTemplateId: string,
 ): Promise<IsmTemplateAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, ismTemplateId);
+  assertModuleAccess(ctx, "ism_templates", "read");
   return getDb()
     .select()
     .from(ismTemplateAttachments)
@@ -453,6 +464,7 @@ export async function uploadIsmTemplateAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<IsmTemplateAttachmentRow> {
   assertAuthenticatedAccess(ctx, ismTemplateId);
+  assertModuleAccess(ctx, "ism_templates", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -528,6 +540,7 @@ export async function deleteIsmTemplateAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "ism_templates", "write");
   const db = getDb();
   try {
     const rows = await db
@@ -561,6 +574,7 @@ export async function getIsmTemplateAttachmentById(
   attachmentId: string,
 ): Promise<IsmTemplateAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "ism_templates", "read");
   const rows = await getDb()
     .select()
     .from(ismTemplateAttachments)
