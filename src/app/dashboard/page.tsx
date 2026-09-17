@@ -3,6 +3,15 @@
  * Spec: PROJECT_PLAN.md §6.
  */
 import Link from "next/link";
+import {
+  Anchor,
+  AlertCircle,
+  AlertTriangle,
+  Award,
+  Clock,
+  FileText,
+  type LucideIcon,
+} from "lucide-react";
 import { AlertsList } from "@/components/alerts-list";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Identifier } from "@/components/ui/identifier";
@@ -27,6 +36,7 @@ import {
   type MonthlyFormListItem,
 } from "@/modules/monthly-forms/monthlyForm.model";
 import { syncNotifications } from "@/modules/notifications/notifications.controller";
+import { getCompanyProfile } from "@/modules/settings/company-profile.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +71,7 @@ export default async function DashboardPage() {
     openDeficienciesCount,
     manualCount,
     recentActivity,
+    profile,
   ] = await Promise.all([
     getAlerts(access),
     getAlerts(access, {
@@ -76,9 +87,12 @@ export default async function DashboardPage() {
     skipRecentActivity
       ? Promise.resolve([])
       : getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
+    getCompanyProfile(),
     // Lazy notification sweep — runs in parallel; errors are logged inside.
     syncNotifications(access),
   ]);
+
+  const companyLabel = profile.companyName?.trim() || "FleetOS";
 
   let validCertificates = 0;
   let dueSoonCertificates = 0;
@@ -101,35 +115,101 @@ export default async function DashboardPage() {
     ["certificate", "crew_certificate", "insurance", "deficiency"] as const,
   );
 
-  const stats: { label: string; value: number; href?: string }[] = [
-    { label: "Total vessels", value: vesselCount, href: "/dashboard/vessels" },
+  const stats: {
+    label: string;
+    value: number;
+    href?: string;
+    icon: LucideIcon;
+    color: "accent" | "success" | "warning" | "error" | "info";
+    valueColor?: "success" | "warning" | "error";
+  }[] = [
     {
-      label: "Valid certificates",
+      label: "Vessels",
+      value: vesselCount,
+      href: "/dashboard/vessels",
+      icon: Anchor,
+      color: "accent",
+    },
+    {
+      label: "Valid certs",
       value: validCertificates,
       href: "/dashboard/certificates",
+      icon: Award,
+      color: "success",
+      valueColor: "success",
     },
     {
-      label: "Due soon certificates",
-      value: dueSoonCertificates,
-      href: "/dashboard/alerts?kind=certificate",
-    },
-    {
-      label: "Expired certificates",
+      label: "Expired certs",
       value: expiredCertificates,
       href: "/dashboard/alerts?kind=certificate&status=expired",
+      icon: AlertCircle,
+      color: "error",
+      valueColor: "error",
     },
     {
-      label: "Missing monthly forms",
-      value: missingMonthlyForms.length,
-      href: "/dashboard/monthly-forms",
-    },
-    {
-      label: "Open deficiencies",
+      label: "Open defs",
       value: openDeficienciesCount,
       href: "/dashboard/deficiencies",
+      icon: AlertTriangle,
+      color: "warning",
+      valueColor: "error",
     },
-    { label: "Total manuals", value: manualCount, href: "/dashboard/manuals" },
+    {
+      label: "Due certs",
+      value: dueSoonCertificates,
+      href: "/dashboard/alerts?kind=certificate",
+      icon: Clock,
+      color: "warning",
+      valueColor: "warning",
+    },
+    {
+      label: "Pending forms",
+      value: missingMonthlyForms.length,
+      href: "/dashboard/monthly-forms",
+      icon: FileText,
+      color: "info",
+    },
+    {
+      label: "Manuals",
+      value: manualCount,
+      href: "/dashboard/manuals",
+      icon: FileText,
+      color: "info",
+    },
   ];
+
+  const CARD_COLOR = {
+    accent: {
+      label: "text-[var(--accent)]",
+      iconBg: "bg-[var(--accent)]/10",
+      icon: "text-[var(--accent)]",
+    },
+    success: {
+      label: "text-[var(--success)]",
+      iconBg: "bg-[var(--success)]/10",
+      icon: "text-[var(--success)]",
+    },
+    warning: {
+      label: "text-[var(--warning)]",
+      iconBg: "bg-[var(--warning)]/10",
+      icon: "text-[var(--warning)]",
+    },
+    error: {
+      label: "text-[var(--error)]",
+      iconBg: "bg-[var(--error)]/10",
+      icon: "text-[var(--error)]",
+    },
+    info: {
+      label: "text-[var(--text-tertiary)]",
+      iconBg: "bg-[var(--text-tertiary)]/10",
+      icon: "text-[var(--text-tertiary)]",
+    },
+  } as const;
+  const VALUE_COLOR = {
+    success: "text-[var(--success)]",
+    warning: "text-[var(--warning)]",
+    error: "text-[var(--error)]",
+  } as const;
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-5" dir="auto">
@@ -138,7 +218,7 @@ export default async function DashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1 text-[13px] text-[var(--text-tertiary)]">
-          Fleet health overview — live alerts, counts, and recent activity.
+          {companyLabel} — fleet overview
         </p>
       </div>
 
@@ -186,26 +266,39 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-6" aria-label="Summary">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((card) => {
+            const c = CARD_COLOR[card.color];
+            const Icon = card.icon;
             const body = (
               <>
-                <p className="text-[13px] text-[var(--text-tertiary)]">
-                  {card.label}
-                </p>
-                <p className="mt-1 text-[13px] font-medium tabular-nums tracking-tight text-[var(--text-secondary)]">
+                <div className="flex items-start justify-between">
+                  <p
+                    className={`text-[11px] font-semibold uppercase tracking-[0.5px] ${c.label}`}
+                  >
+                    {card.label}
+                  </p>
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${c.iconBg}`}
+                  >
+                    <Icon className={`h-4 w-4 ${c.icon}`} aria-hidden="true" />
+                  </span>
+                </div>
+                <p
+                  className={`mt-3 text-2xl font-bold tabular-nums ${
+                    card.valueColor
+                      ? VALUE_COLOR[card.valueColor]
+                      : "text-[var(--text-primary)]"
+                  }`}
+                >
                   {card.value}
                 </p>
               </>
             );
             const className =
-              "rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-4";
+              "rounded-2xl bg-[var(--bg-card)] p-4 shadow-[1px_1px_2px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[1px_2px_6px_rgba(0,0,0,0.08)]";
             return card.href ? (
-              <Link
-                key={card.label}
-                href={card.href}
-                className={`${className} transition-colors hover:border-[var(--accent)]`}
-              >
+              <Link key={card.label} href={card.href} className={className}>
                 {body}
               </Link>
             ) : (
