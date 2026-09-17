@@ -7,6 +7,8 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertModuleAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
 }));
 
 const removeStoredAttachmentFile = vi.fn(async (_path: string) => undefined);
@@ -224,21 +226,39 @@ describe("drawing.controller", () => {
   });
 
   it("deleteDrawing removes attachment files then deletes the row", async () => {
+    let selectCalls = 0;
     getDb.mockReturnValue({
-      select: () => ({
-        from: () => ({
-          where: async () => [
-            {
-              id: "att-1",
-              drawingId: DRAWING_ID,
-              fileName: "a.pdf",
-              filePath: "data/attachments/a.pdf",
-              uploadedBy: null,
-              uploadedAt: new Date(),
-            },
-          ],
-        }),
-      }),
+      select: () => {
+        selectCalls += 1;
+        if (selectCalls === 1) {
+          return {
+            from: () => ({
+              where: () => ({
+                limit: async () => [
+                  {
+                    drawingName: "GA Plan",
+                    vesselId: VESSEL_ID,
+                  },
+                ],
+              }),
+            }),
+          };
+        }
+        return {
+          from: () => ({
+            where: async () => [
+              {
+                id: "att-1",
+                drawingId: DRAWING_ID,
+                fileName: "a.pdf",
+                filePath: "data/attachments/a.pdf",
+                uploadedBy: null,
+                uploadedAt: new Date(),
+              },
+            ],
+          }),
+        };
+      },
       delete: () => ({
         where: () => ({
           returning: async () => [{ id: DRAWING_ID }],

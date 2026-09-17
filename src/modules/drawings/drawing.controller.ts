@@ -23,6 +23,9 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -119,6 +122,7 @@ export async function listDrawingCategories(
   ctx: AccessContext,
 ): Promise<DrawingCategoryRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "drawings", "read");
   return getDb()
     .select()
     .from(drawingCategories)
@@ -130,6 +134,7 @@ export async function createDrawingCategory(
   input: { name: string },
 ): Promise<DrawingCategoryRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new DrawingConflictError("Name is required.");
@@ -160,6 +165,7 @@ export async function updateDrawingCategory(
   input: { name: string },
 ): Promise<DrawingCategoryRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new DrawingConflictError("Name is required.");
@@ -201,6 +207,7 @@ export async function deleteDrawingCategory(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -233,10 +240,15 @@ export async function listDrawings(
   filters: DrawingListFilters = {},
 ): Promise<DrawingListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "drawings", "read");
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(drawings.vesselId, filters.vesselId));
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
+  if (scopedVesselId) {
+    conditions.push(eq(drawings.vesselId, scopedVesselId));
   }
   if (filters.categoryId) {
     conditions.push(eq(drawings.categoryId, filters.categoryId));
@@ -271,6 +283,7 @@ export async function getDrawingById(
   id: string,
 ): Promise<DrawingDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "drawings", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -288,6 +301,7 @@ export async function getDrawingById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.drawing.vesselId);
 
   const attachments = await db
     .select()
@@ -306,6 +320,8 @@ export async function createDrawing(
   input: DrawingCreateInput,
 ): Promise<DrawingRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "drawings", "write");
+  assertVesselScope(ctx, input.vesselId);
   const db = getDb();
   let row: DrawingRow;
   try {
@@ -348,14 +364,16 @@ export async function updateDrawing(
   input: DrawingUpdateInput,
 ): Promise<DrawingRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "drawings", "write");
   const db = getDb();
 
   const existing = await db
-    .select({ id: drawings.id })
+    .select({ id: drawings.id, vesselId: drawings.vesselId })
     .from(drawings)
     .where(eq(drawings.id, id))
     .limit(1);
   if (!existing[0]) throw new DrawingNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof drawings.$inferInsert> & { updatedAt: Date } = {
     updatedAt: new Date(),
@@ -405,13 +423,19 @@ export async function deleteDrawing(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "drawings", "write");
   const db = getDb();
   const existing = await db
-    .select({ drawingName: drawings.drawingName })
+    .select({
+      drawingName: drawings.drawingName,
+      vesselId: drawings.vesselId,
+    })
     .from(drawings)
     .where(eq(drawings.id, id))
     .limit(1);
-  const drawingName = existing[0]?.drawingName;
+  if (!existing[0]) throw new DrawingNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
+  const drawingName = existing[0].drawingName;
   try {
     const atts = await db
       .select()
@@ -446,7 +470,16 @@ export async function listDrawingAttachments(
   drawingId: string,
 ): Promise<DrawingAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, drawingId);
-  return getDb()
+  assertModuleAccess(ctx, "drawings", "read");
+  const db = getDb();
+  const parent = await db
+    .select({ vesselId: drawings.vesselId })
+    .from(drawings)
+    .where(eq(drawings.id, drawingId))
+    .limit(1);
+  if (!parent[0]) throw new DrawingNotFoundError(drawingId);
+  assertVesselScope(ctx, parent[0].vesselId);
+  return db
     .select()
     .from(drawingAttachments)
     .where(eq(drawingAttachments.drawingId, drawingId))
@@ -459,6 +492,7 @@ export async function uploadDrawingAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<DrawingAttachmentRow> {
   assertAuthenticatedAccess(ctx, drawingId);
+  assertModuleAccess(ctx, "drawings", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -475,11 +509,12 @@ export async function uploadDrawingAttachment(
   let row: DrawingAttachmentRow;
   try {
     const parent = await db
-      .select({ id: drawings.id })
+      .select({ id: drawings.id, vesselId: drawings.vesselId })
       .from(drawings)
       .where(eq(drawings.id, drawingId))
       .limit(1);
     if (!parent[0]) throw new DrawingNotFoundError(drawingId);
+    assertVesselScope(ctx, parent[0].vesselId);
 
     await mkdir(ATTACHMENTS_DIR, { recursive: true });
     const id = randomUUID();
@@ -509,7 +544,8 @@ export async function uploadDrawingAttachment(
   } catch (error) {
     if (
       error instanceof DrawingNotFoundError ||
-      error instanceof AttachmentValidationError
+      error instanceof AttachmentValidationError ||
+      error instanceof ForbiddenError
     ) {
       throw error;
     }
@@ -531,21 +567,32 @@ export async function deleteDrawingAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "drawings", "write");
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({
+        attachment: drawingAttachments,
+        vesselId: drawings.vesselId,
+      })
       .from(drawingAttachments)
+      .innerJoin(drawings, eq(drawingAttachments.drawingId, drawings.id))
       .where(eq(drawingAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
     if (!row) throw new AttachmentNotFoundError(attachmentId);
+    assertVesselScope(ctx, row.vesselId);
     await db
       .delete(drawingAttachments)
       .where(eq(drawingAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
+    await removeStoredAttachmentFile(row.attachment.filePath);
   } catch (error) {
-    if (error instanceof AttachmentNotFoundError) throw error;
+    if (
+      error instanceof AttachmentNotFoundError ||
+      error instanceof ForbiddenError
+    ) {
+      throw error;
+    }
     logError("DRAWING_ATTACHMENT_DELETE_FAILED", { error, attachmentId });
     throw error;
   }
@@ -561,10 +608,18 @@ export async function getDrawingAttachmentById(
   attachmentId: string,
 ): Promise<DrawingAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "drawings", "read");
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: drawingAttachments,
+      vesselId: drawings.vesselId,
+    })
     .from(drawingAttachments)
+    .innerJoin(drawings, eq(drawingAttachments.drawingId, drawings.id))
     .where(eq(drawingAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }
