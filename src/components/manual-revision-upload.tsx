@@ -7,9 +7,9 @@ import {
 } from "@/modules/manuals/actions";
 
 const labelClass =
-  "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+  "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   manualId: string;
@@ -74,7 +74,7 @@ export function ManualRevisionUpload({ manualId, onSuccess }: Props) {
           required
           className={inputClass}
         />
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-[var(--text-tertiary)]">
           PDF, JPEG, or PNG — max 10 MB. Becomes the current version.
         </p>
       </div>

@@ -12,9 +12,9 @@
 import { useActionState } from "react";
 import { loginAction, type LoginActionState } from "@/modules/auth/actions";
 
-const labelClass = "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#0D2B45] focus:ring-1 focus:ring-[#0D2B45] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 export function LoginForm() {

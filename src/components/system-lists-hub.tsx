@@ -139,7 +139,7 @@ const DELETE: Record<
 };
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 export function SystemListsHub({
   lists,
@@ -160,17 +160,17 @@ export function SystemListsHub({
               setActive(meta.key);
               setOpen(true);
             }}
-            className="rounded-lg border border-zinc-200 bg-white p-4 text-start transition-colors hover:border-[#378ADD] dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 text-start transition-colors hover:border-[#378ADD]"
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              <span className="font-medium text-[var(--text-primary)]">
                 {meta.label}
               </span>
-              <span className="text-sm tabular-nums text-zinc-500">
+              <span className="text-sm tabular-nums text-[var(--text-tertiary)]">
                 {lists[meta.key].length}
               </span>
             </div>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
               {meta.description}
             </p>
           </button>
@@ -226,10 +226,10 @@ function SystemListsModal({
         role="dialog"
         aria-modal="true"
         aria-label="Manage System Lists"
-        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
       >
-        <aside className="hidden w-56 shrink-0 flex-col border-e border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/40 sm:flex">
-          <div className="border-b border-zinc-200 px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+        <aside className="hidden w-56 shrink-0 flex-col border-e border-[var(--border)] bg-[var(--bg-page)] sm:flex">
+          <div className="border-b border-[var(--border)] px-3 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
             Lists
           </div>
           <nav className="flex-1 overflow-y-auto p-2">
@@ -241,7 +241,7 @@ function SystemListsModal({
                 className={`mb-0.5 w-full rounded-md px-2 py-2 text-start text-sm ${
                   active === item.key
                     ? "bg-[#0D2B45] text-white"
-                    : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-page)]  "
                 }`}
               >
                 {item.label}
@@ -254,23 +254,23 @@ function SystemListsModal({
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
             <div>
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">
                 {meta.label}
               </h2>
-              <p className="text-sm text-zinc-500">{meta.description}</p>
+              <p className="text-sm text-[var(--text-tertiary)]">{meta.description}</p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="rounded-md px-2 py-1 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
             >
               Close
             </button>
           </div>
 
-          <div className="border-b border-zinc-200 px-4 py-2 sm:hidden dark:border-zinc-800">
+          <div className="border-b border-[var(--border)] px-4 py-2 sm:hidden">
             <select
               className={inputClass}
               value={active}
@@ -391,9 +391,9 @@ function SystemListPane({
       ) : null}
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <ul className="divide-y divide-[var(--border)]">
           {rows.length === 0 ? (
-            <li className="py-8 text-center text-sm text-zinc-500">
+            <li className="py-8 text-center text-sm text-[var(--text-tertiary)]">
               No items yet.
             </li>
           ) : (
@@ -410,11 +410,11 @@ function SystemListPane({
                 ) : (
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                      <p className="font-medium text-[var(--text-primary)]">
                         {row.name}
                       </p>
                       {row.authority ? (
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-[var(--text-tertiary)]">
                           {row.authority}
                           {row.ruleKind ? ` · ${row.ruleKind}` : ""}
                           {row.offsetDays != null
@@ -423,7 +423,7 @@ function SystemListPane({
                         </p>
                       ) : null}
                       {row.isCustom === false ? (
-                        <span className="text-[11px] text-zinc-400">
+                        <span className="text-[11px] text-[var(--text-tertiary)]">
                           Seeded
                         </span>
                       ) : null}
@@ -453,7 +453,7 @@ function SystemListPane({
         </ul>
       </div>
 
-      <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+      <div className="border-t border-[var(--border)] px-4 py-3">
         <AddRowForm
           listKey={listKey}
           action={createAction}
@@ -591,7 +591,7 @@ function EditRowForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700"
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           >
             Cancel
           </button>
@@ -619,7 +619,7 @@ function EditRowForm({
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700"
+        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
       >
         Cancel
       </button>

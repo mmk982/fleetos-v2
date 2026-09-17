@@ -19,7 +19,7 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+        className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
       >
         View
       </button>
@@ -28,26 +28,26 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
           <StatusPill status={row.compliance.status} />
           <dl className="space-y-3">
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
                 Vessel
               </dt>
-              <dd className="mt-1 text-zinc-900 dark:text-zinc-100">
+              <dd className="mt-1 text-[var(--text-primary)]">
                 <Identifier>{row.vesselName}</Identifier>
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
                 Number
               </dt>
-              <dd className="mt-1 font-mono text-zinc-900 dark:text-zinc-100">
+              <dd className="mt-1 font-mono text-[var(--text-primary)]">
                 <Identifier>{row.certificateNumber ?? "—"}</Identifier>
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
                 Expiry / window
               </dt>
-              <dd className="mt-1 text-zinc-900 dark:text-zinc-100">
+              <dd className="mt-1 text-[var(--text-primary)]">
                 {row.ruleKind === "window"
                   ? (row.windowOpenDate ?? "—")
                   : (row.expiryDate ?? "—")}

@@ -27,7 +27,7 @@ export function ManualRevisionHistory({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Revision history
         </h2>
         <button
@@ -39,9 +39,9 @@ export function ManualRevisionHistory({
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
               <th className="px-4 py-3 font-medium">Revision</th>
               <th className="px-4 py-3 font-medium">Date</th>
@@ -51,23 +51,23 @@ export function ManualRevisionHistory({
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <tbody className="divide-y divide-[var(--border)]">
             {revisions.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-8 text-center text-zinc-500"
+                  className="px-4 py-8 text-center text-[var(--text-tertiary)]"
                 >
                   No revisions yet.
                 </td>
               </tr>
             ) : (
               revisions.map((r) => (
-                <tr key={r.id} className="bg-white dark:bg-zinc-950">
-                  <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">
+                <tr key={r.id} className="bg-[var(--bg-card)]">
+                  <td className="px-4 py-3 text-[var(--text-primary)]">
                     {r.revisionNumber ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {r.revisionDate ?? "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -80,7 +80,7 @@ export function ManualRevisionHistory({
                       <Identifier>{r.fileName}</Identifier>
                     </a>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {r.uploadedBy ? (
                       <Identifier>{r.uploadedBy.slice(0, 8)}</Identifier>
                     ) : (

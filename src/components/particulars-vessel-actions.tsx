@@ -35,7 +35,7 @@ export function ParticularsVesselActions({
           <button
             type="button"
             onClick={() => setMode({ kind: "edit-inplace", row: current })}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-200 px-4 text-sm font-medium text-zinc-800 dark:border-zinc-700 dark:text-zinc-200"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-primary)]"
           >
             Edit current in place
           </button>

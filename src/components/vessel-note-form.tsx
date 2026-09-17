@@ -7,7 +7,7 @@ import {
 } from "@/modules/ship-particulars/actions";
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 export function VesselNoteForm({ vesselId }: { vesselId: string }) {
   const [state, formAction, pending] = useActionState(
@@ -35,7 +35,7 @@ export function VesselNoteForm({ vesselId }: { vesselId: string }) {
         </p>
       ) : null}
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <span className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">
           Add note
         </span>
         <textarea

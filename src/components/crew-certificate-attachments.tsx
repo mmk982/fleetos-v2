@@ -10,7 +10,7 @@ import {
 import type { CrewCertificateAttachmentRow } from "@/db/schema";
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   crewMemberId: string;
@@ -30,12 +30,12 @@ export function CrewCertificateAttachments({
 
   return (
     <div className="mt-3 space-y-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">
         Attachments
       </p>
-      <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+      <ul className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
         {attachments.length === 0 ? (
-          <li className="px-3 py-3 text-center text-xs text-zinc-500">
+          <li className="px-3 py-3 text-center text-xs text-[var(--text-tertiary)]">
             No files yet.
           </li>
         ) : (
@@ -87,12 +87,12 @@ export function CrewCertificateAttachments({
           <button
             type="submit"
             disabled={pending}
-            className="h-10 rounded-md border border-zinc-200 px-3 text-sm font-medium text-zinc-800 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-200"
+            className="h-10 rounded-md border border-[var(--border)] px-3 text-sm font-medium text-[var(--text-primary)] disabled:opacity-60"
           >
             {pending ? "Uploading…" : "Upload"}
           </button>
         </div>
-        <p className="text-xs text-zinc-500">PDF, JPEG, or PNG — max 10 MB.</p>
+        <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>
       </form>
     </div>
   );

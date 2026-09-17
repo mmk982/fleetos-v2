@@ -133,9 +133,9 @@ function navLinkClass(active: boolean): string {
   const base =
     "block px-4 py-2 text-sm font-medium transition-colors rounded-none";
   if (active) {
-    return `${base} border-r-2 border-[#85B7EB] bg-white/[0.08] text-white dark:border-r-0 dark:border-l-2 dark:border-[var(--accent)] dark:bg-[var(--bg-card)] dark:text-[var(--text-primary)]`;
+    return `${base} border-r-2 border-[#85B7EB] bg-white/[0.08] text-white dark:border-r-0 dark:border-l-2 dark:border-accent dark:bg-bg-card dark:text-text-primary`;
   }
-  return `${base} text-[#E2E8F0] hover:bg-white/[0.06] dark:text-[var(--text-secondary)] dark:hover:bg-white/[0.04]`;
+  return `${base} text-[#E2E8F0] hover:bg-white/[0.06] dark:text-text-secondary dark:hover:bg-white/[0.04]`;
 }
 
 export function DashboardSidebar({ role }: { role: UserRole | null }) {

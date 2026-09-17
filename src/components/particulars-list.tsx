@@ -52,13 +52,13 @@ export function ParticularsList({ rows }: { rows: ParticularsSummaryItem[] }) {
       />
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No vessels match.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Vessel</th>
                 <th className="px-4 py-3 font-medium">Class society</th>
@@ -67,27 +67,27 @@ export function ParticularsList({ rows }: { rows: ParticularsSummaryItem[] }) {
                 <th className="px-4 py-3 font-medium">Effective</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <tbody className="divide-y divide-[var(--border)]">
               {visible.map((row) => (
-                <tr key={row.vesselId} className="bg-white dark:bg-zinc-950">
+                <tr key={row.vesselId} className="bg-[var(--bg-card)]">
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/particulars/${row.vesselId}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       <Identifier>{row.vesselName}</Identifier>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.classSociety ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.deadweightTonnage ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.lengthOverall ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.effectiveDate ?? "—"}
                   </td>
                 </tr>

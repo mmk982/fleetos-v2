@@ -72,7 +72,7 @@ export function NotificationsBell({
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
       >
         <BellIcon className="h-5 w-5" />
         {badge ? (
@@ -85,10 +85,10 @@ export function NotificationsBell({
       {open ? (
         <div
           role="menu"
-          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
         >
-          <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-3 py-2">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">
               Notifications
             </p>
             {unreadCount > 0 ? (
@@ -104,7 +104,7 @@ export function NotificationsBell({
           </div>
 
           {items.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-zinc-500">
+            <p className="px-3 py-8 text-center text-sm text-[var(--text-tertiary)]">
               No notifications yet.
             </p>
           ) : (
@@ -118,19 +118,19 @@ export function NotificationsBell({
                     onClick={() => {
                       if (!item.isRead) markOne(item.id);
                     }}
-                    className={`block w-full px-3 py-2.5 text-start hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                    className={`block w-full px-3 py-2.5 text-start hover:bg-[var(--bg-page)]  ${
                       item.isRead ? "opacity-70" : ""
                     }`}
                   >
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
                       {item.title}
                     </p>
                     {item.message ? (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                      <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-tertiary)]">
                         {item.message}
                       </p>
                     ) : null}
-                    <p className="mt-1 text-[11px] tabular-nums text-zinc-400">
+                    <p className="mt-1 text-[11px] tabular-nums text-[var(--text-tertiary)]">
                       {item.createdAt.slice(0, 16).replace("T", " ")}
                       {!item.isRead ? " · Unread" : ""}
                     </p>
@@ -140,7 +140,7 @@ export function NotificationsBell({
             </ul>
           )}
 
-          <div className="border-t border-zinc-200 px-3 py-2 dark:border-zinc-800">
+          <div className="border-t border-[var(--border)] px-3 py-2">
             <Link
               href="/dashboard/notifications"
               onClick={() => setOpen(false)}

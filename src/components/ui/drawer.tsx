@@ -53,20 +53,20 @@ export function Drawer({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="absolute inset-y-0 end-0 flex h-full w-full flex-col bg-white md:w-[380px] md:max-w-[90vw] dark:bg-zinc-950">
-        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-200 px-4 md:h-auto md:border-0 md:pt-5 dark:border-zinc-800">
+      <div className="absolute inset-y-0 end-0 flex h-full w-full flex-col bg-[var(--bg-card)] md:w-[380px] md:max-w-[90vw]">
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--border)] px-4 md:h-auto md:border-0 md:pt-5">
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-zinc-500 md:hidden dark:text-zinc-400"
+            className="text-[var(--text-tertiary)] md:hidden"
           >
             ←
           </button>
           <h2
             id={titleId}
-            className="text-base font-medium text-zinc-900 dark:text-zinc-50"
+            className="text-base font-medium text-[var(--text-primary)]"
           >
             {title}
           </h2>
@@ -74,7 +74,7 @@ export function Drawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="ms-auto hidden text-sm text-zinc-500 md:inline dark:text-zinc-400"
+            className="ms-auto hidden text-sm text-[var(--text-tertiary)] md:inline"
           >
             Close
           </button>

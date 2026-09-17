@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class strategy (next-themes attribute="class") — not prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Light mode — DESIGN_HANDOFF.md §1.2 */
 :root {
   --bg-page: #f8fafc;

@@ -37,7 +37,7 @@ const ROLE_LEGEND: { role: UserRole; blurb: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 function formatLastLogin(d: Date | string | null): string {
   if (!d) return "Never";
@@ -79,9 +79,9 @@ export function UsersRolesPanel({
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Username</th>
@@ -91,21 +91,21 @@ export function UsersRolesPanel({
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <tbody className="divide-y divide-[var(--border)]">
             {users.map((u) => (
-              <tr key={u.id} className="bg-white dark:bg-zinc-950">
-                <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50">
+              <tr key={u.id} className="bg-[var(--bg-card)]">
+                <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                   {u.name}
                   {u.vesselName ? (
-                    <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+                    <span className="mt-0.5 block text-xs font-normal text-[var(--text-tertiary)]">
                       {u.vesselName}
                     </span>
                   ) : null}
                 </td>
-                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                <td className="px-4 py-3 text-[var(--text-secondary)]">
                   {u.email}
                 </td>
-                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                <td className="px-4 py-3 text-[var(--text-secondary)]">
                   {USER_ROLE_LABELS[u.role]}
                 </td>
                 <td className="px-4 py-3">
@@ -113,19 +113,19 @@ export function UsersRolesPanel({
                     className={`inline-flex rounded-full px-2 py-0.5 text-[11px] ${
                       u.isActive
                         ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
-                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                        : "bg-[var(--bg-page)] text-[var(--text-secondary)]  "
                     }`}
                   >
                     {u.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                <td className="px-4 py-3 text-[var(--text-secondary)]">
                   {formatLastLogin(u.lastLoginAt)}
                 </td>
                 <td className="relative px-4 py-3 text-right">
                   <button
                     type="button"
-                    className="rounded-md px-2 py-1 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    className="rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
                     aria-label={`Actions for ${u.name}`}
                     onClick={() =>
                       setMenuId((cur) => (cur === u.id ? null : u.id))
@@ -134,10 +134,10 @@ export function UsersRolesPanel({
                     ⋮
                   </button>
                   {menuId === u.id ? (
-                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-md border border-zinc-200 bg-white py-1 text-start shadow-md dark:border-zinc-700 dark:bg-zinc-900">
+                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--bg-card)] py-1 text-start shadow-md">
                       <button
                         type="button"
-                        className="block w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        className="block w-full px-3 py-2 text-sm hover:bg-[var(--bg-page)]"
                         onClick={() => {
                           setMenuId(null);
                           setDialog({ kind: "edit", user: u });
@@ -147,7 +147,7 @@ export function UsersRolesPanel({
                       </button>
                       <button
                         type="button"
-                        className="block w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        className="block w-full px-3 py-2 text-sm hover:bg-[var(--bg-page)]"
                         onClick={() => {
                           setMenuId(null);
                           setDialog({ kind: "password", user: u });
@@ -175,7 +175,7 @@ export function UsersRolesPanel({
                         />
                         <button
                           type="submit"
-                          className="block w-full px-3 py-2 text-start text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                          className="block w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-page)]"
                         >
                           {u.isActive ? "Deactivate" : "Activate"}
                         </button>
@@ -189,21 +189,21 @@ export function UsersRolesPanel({
         </table>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-5">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           Role reference
         </h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-[var(--text-tertiary)]">
           Static legend — permission cells with *(inferred)* remain unconfirmed;
           this page does not enforce the full Phase 6 matrix.
         </p>
         <ul className="mt-4 space-y-2 text-sm">
           {ROLE_LEGEND.map((item) => (
             <li key={item.role}>
-              <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              <span className="font-medium text-[var(--text-primary)]">
                 {USER_ROLE_LABELS[item.role]}
               </span>
-              <span className="text-zinc-600 dark:text-zinc-400">
+              <span className="text-[var(--text-secondary)]">
                 {" — "}
                 {item.blurb}
               </span>
@@ -363,7 +363,7 @@ function UserDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700"
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           >
             Cancel
           </button>
@@ -428,7 +428,7 @@ function PasswordDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700"
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           >
             Cancel
           </button>
@@ -460,9 +460,9 @@ function ModalShell({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+        className="relative w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-5 shadow-lg"
       >
-        <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
           {title}
         </h2>
         {children}

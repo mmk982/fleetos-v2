@@ -26,7 +26,7 @@ export function MonthlyFormDetailActions({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Attachments
         </h2>
         <button
@@ -38,9 +38,9 @@ export function MonthlyFormDetailActions({
         </button>
       </div>
 
-      <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
         {attachments.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">
+          <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">
             No files yet.
           </li>
         ) : (

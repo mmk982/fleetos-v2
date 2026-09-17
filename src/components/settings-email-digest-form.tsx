@@ -42,16 +42,16 @@ export function EmailDigestForm({
           type="checkbox"
           value="true"
           defaultChecked={initialEnabled}
-          className="mt-1 h-4 w-4 rounded border-zinc-300 text-[#378ADD] focus:ring-[#378ADD]"
+          className="mt-1 h-4 w-4 rounded border-[var(--border)] text-[#378ADD] focus:ring-[#378ADD]"
         />
         <div>
           <label
             htmlFor="emailDigestEnabled"
-            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="text-sm font-medium text-[var(--text-secondary)]"
           >
             Daily email digest
           </label>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             When enabled, all active Admin users receive one daily email of
             actionable compliance alerts (same signal as the Alerts page).
           </p>

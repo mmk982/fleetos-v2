@@ -23,7 +23,7 @@ export function SettingsSubnav() {
 
   return (
     <nav
-      className="mt-4 flex flex-wrap gap-1 border-b border-zinc-200 pb-px dark:border-zinc-800"
+      className="mt-4 flex flex-wrap gap-1 border-b border-[var(--border)] pb-px"
       aria-label="Settings sections"
     >
       {ITEMS.map((item) => {
@@ -38,8 +38,8 @@ export function SettingsSubnav() {
             href={item.href}
             className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${
               active
-                ? "border-b-2 border-[#0D2B45] text-[#0D2B45] dark:border-sky-300 dark:text-sky-100"
-                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                ? "border-b-2 border-[var(--accent)] text-[var(--accent)]  "
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]  "
             }`}
             aria-current={active ? "page" : undefined}
           >

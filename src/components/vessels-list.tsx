@@ -18,7 +18,7 @@ import {
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
   const [searchValue, setSearchValue] = useState("");
@@ -77,13 +77,13 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
         searchPlaceholder="Search name, IMO, flag…"
       />
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No vessels match.{" "}
             <Link
               href="/dashboard/vessels/new"
-              className="font-medium text-[#0D2B45] underline-offset-4 hover:underline dark:text-sky-300"
+              className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
             >
               Create a vessel
             </Link>
@@ -92,8 +92,8 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block">
-              <table className="min-w-full divide-y divide-zinc-200 text-left text-sm dark:divide-zinc-800">
-                <thead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
+              <table className="min-w-full divide-y divide-[var(--border)] text-left text-sm">
+                <thead className="bg-[var(--bg-page)] text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                   <tr>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">IMO</th>
@@ -103,27 +103,27 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {visible.map((v) => (
                     <tr
                       key={v.id}
-                      className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40"
+                      className="hover:bg-[var(--bg-page)]"
                     >
-                      <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                         <Link
                           href={`/dashboard/vessels/${v.id}`}
-                          className="text-[#0D2B45] hover:underline dark:text-sky-300"
+                          className="text-[var(--accent)] hover:underline"
                         >
                           <Identifier>{v.name}</Identifier>
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">
                         <Identifier>{formatImo(v.imoNumber)}</Identifier>
                       </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">
                         {v.flagState ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">
                         {v.vesselType ?? "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -134,7 +134,7 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/dashboard/vessels/${v.id}/edit`}
-                          className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+                          className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
                         >
                           Edit
                         </Link>
@@ -145,7 +145,7 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
               </table>
             </div>
 
-            <ul className="divide-y divide-zinc-200 md:hidden dark:divide-zinc-800">
+            <ul className="divide-y divide-[var(--border)] md:hidden">
               {visible.map((v) => (
                 <li key={v.id} className="relative p-4">
                   <div className="absolute end-4 top-4">
@@ -155,17 +155,17 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                   </div>
                   <Link
                     href={`/dashboard/vessels/${v.id}`}
-                    className="block pe-24 text-sm font-medium text-zinc-900 dark:text-zinc-50"
+                    className="block pe-24 text-sm font-medium text-[var(--text-primary)]"
                   >
                     <Identifier>{v.name}</Identifier>
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
-                      <span className="text-zinc-500">IMO · </span>
+                      <span className="text-[var(--text-tertiary)]">IMO · </span>
                       <Identifier>{formatImo(v.imoNumber)}</Identifier>
                     </div>
                     <div>
-                      <span className="text-zinc-500">Flag · </span>
+                      <span className="text-[var(--text-tertiary)]">Flag · </span>
                       {v.flagState ?? "—"}
                     </div>
                   </dl>

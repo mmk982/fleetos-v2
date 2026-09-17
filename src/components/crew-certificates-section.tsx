@@ -39,7 +39,7 @@ export function CrewCertificatesSection({
   return (
     <section className="mt-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Certificates & documents
         </h2>
         <button
@@ -52,7 +52,7 @@ export function CrewCertificatesSection({
       </div>
 
       {certificates.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="mt-4 rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
           No documents yet — passport, STCW, medical, visas go here.
         </p>
       ) : (
@@ -60,14 +60,14 @@ export function CrewCertificatesSection({
           {certificates.map((cert) => (
             <li
               key={cert.id}
-              className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+              className="rounded-lg border border-[var(--border)] p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="font-medium text-[var(--text-primary)]">
                     {cert.name}
                   </p>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm text-[var(--text-tertiary)]">
                     {cert.documentNumber ? (
                       <>
                         <Identifier>{cert.documentNumber}</Identifier>
@@ -119,7 +119,7 @@ export function CrewCertificatesSection({
           modal.kind === "edit" ? "Edit crew document" : "Add crew document"
         }
       >
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           {modal.kind === "edit" ? "Edit document" : "Add document"}
         </h2>
         <div className="mt-4">

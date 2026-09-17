@@ -19,8 +19,8 @@ export default async function LoginPage() {
   const brand = profile.companyName?.trim() || "FleetOS";
 
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <main className="flex min-h-full flex-1 items-center justify-center bg-[var(--bg-page)] px-4 py-12">
+      <div className="w-full max-w-sm rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-sm">
         <div className="mb-6">
           {profile.logoPath ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -30,13 +30,13 @@ export default async function LoginPage() {
               className="mb-4 h-12 w-auto max-w-full object-contain"
             />
           ) : null}
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
             {brand}
           </p>
-          <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-2 text-xl font-semibold tracking-tight text-[var(--text-primary)]">
             Sign in
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Use your fleet-office account to continue.
           </p>
         </div>

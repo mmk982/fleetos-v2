@@ -34,7 +34,7 @@ export function NotificationsHistory({
 
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
         No notifications yet. Visit the Dashboard to refresh the alert sweep.
       </p>
     );
@@ -55,24 +55,24 @@ export function NotificationsHistory({
         </div>
       ) : null}
 
-      <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
         {items.map((item) => (
           <li
             key={item.id}
-            className={`flex flex-col gap-2 bg-white px-4 py-3 dark:bg-zinc-950 sm:flex-row sm:items-start sm:justify-between ${
+            className={`flex flex-col gap-2 bg-[var(--bg-card)] px-4 py-3  sm:flex-row sm:items-start sm:justify-between ${
               item.isRead ? "opacity-70" : ""
             }`}
           >
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
                 {item.title}
               </p>
               {item.message ? (
-                <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
                   {item.message}
                 </p>
               ) : null}
-              <p className="mt-1 text-xs tabular-nums text-zinc-500">
+              <p className="mt-1 text-xs tabular-nums text-[var(--text-tertiary)]">
                 {item.notificationType.replaceAll("_", " ")} ·{" "}
                 <time dateTime={item.createdAt}>{item.createdAt}</time>
               </p>
@@ -87,7 +87,7 @@ export function NotificationsHistory({
                 Mark read
               </button>
             ) : (
-              <span className="shrink-0 text-xs text-zinc-400">Read</span>
+              <span className="shrink-0 text-xs text-[var(--text-tertiary)]">Read</span>
             )}
           </li>
         ))}

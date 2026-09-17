@@ -10,7 +10,7 @@ import type { CertificateAttachmentRow } from "@/db/schema";
 import { Identifier } from "@/components/ui/identifier";
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   certificateId: string;
@@ -25,9 +25,9 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+      <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
         {attachments.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">No attachments yet.</li>
+          <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">No attachments yet.</li>
         ) : (
           attachments.map((a) => (
             <li
@@ -57,10 +57,10 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
         )}
       </ul>
 
-      <form action={formAction} className="space-y-3 rounded-lg border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
+      <form action={formAction} className="space-y-3 rounded-lg border border-dashed border-[var(--border)] p-4">
         <input type="hidden" name="certificateId" value={certificateId} />
-        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Upload attachment</p>
-        <p className="text-xs text-zinc-500">PDF, JPEG, or PNG — max 10 MB.</p>
+        <p className="text-sm font-medium text-[var(--text-primary)]">Upload attachment</p>
+        <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>
         {state && !state.ok ? (
           <p className="text-sm text-red-600 dark:text-red-400" role="alert">
             {state.message}

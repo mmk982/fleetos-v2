@@ -31,22 +31,22 @@ export function ConfirmDeleteButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-white px-4 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-zinc-950 dark:text-red-300 dark:hover:bg-red-950/30"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-[var(--bg-card)] px-4 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
       >
         {label}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} ariaLabel={title}>
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           {title}
         </h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">
           {description}
         </p>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="h-10 rounded-md border border-zinc-200 px-4 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            className="h-10 rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-secondary)]"
           >
             Cancel
           </button>

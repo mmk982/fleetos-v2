@@ -22,7 +22,7 @@ import {
 import type { CrewCategoryRow, VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type DrawerMode =
   | { kind: "closed" }
@@ -173,7 +173,7 @@ export function CrewList({
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No crew members match.{" "}
           <button
             type="button"
@@ -185,9 +185,9 @@ export function CrewList({
         </p>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800 md:block">
+          <div className="hidden overflow-x-auto rounded-lg border border-[var(--border)] md:block">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Category</th>
@@ -196,10 +196,10 @@ export function CrewList({
                   <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-[var(--border)]">
                 {visible.map((row) => (
-                  <tr key={row.id} className="bg-white dark:bg-zinc-950">
-                    <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50">
+                  <tr key={row.id} className="bg-[var(--bg-card)]">
+                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                       <Link
                         href={`/dashboard/crew/${row.id}`}
                         className="hover:underline"
@@ -207,7 +207,7 @@ export function CrewList({
                         {crewMemberDisplayName(row)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {row.categoryName ?? "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -241,17 +241,17 @@ export function CrewList({
             {visible.map((row) => (
               <li
                 key={row.id}
-                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                className="rounded-lg border border-[var(--border)] p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <Link
                       href={`/dashboard/crew/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {crewMemberDisplayName(row)}
                     </Link>
-                    <p className="mt-1 text-sm text-zinc-500">
+                    <p className="mt-1 text-sm text-[var(--text-tertiary)]">
                       {row.categoryName ?? "No category"}
                       {row.vesselName ? ` · ${row.vesselName}` : ""}
                     </p>

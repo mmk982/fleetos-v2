@@ -32,7 +32,7 @@ import type { IsmTemplateListItem } from "@/modules/ism-templates/ismTemplate.mo
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type ReqDrawer =
   | { kind: "closed" }
@@ -229,7 +229,7 @@ export function MonthlyFormsList({
             <button
               type="submit"
               disabled={genPending}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-200 px-4 text-sm font-medium text-zinc-800 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-200"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-primary)] disabled:opacity-60"
             >
               {genPending ? "Generating…" : "Generate this month's checklist"}
             </button>
@@ -258,13 +258,13 @@ export function MonthlyFormsList({
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No executed forms match. Generate a checklist or add an ad-hoc form.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Form</th>
                 <th className="px-4 py-3 font-medium">Vessel</th>
@@ -273,24 +273,24 @@ export function MonthlyFormsList({
                 <th className="px-4 py-3 font-medium">Files</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <tbody className="divide-y divide-[var(--border)]">
               {visible.map((row) => (
-                <tr key={row.id} className="bg-white dark:bg-zinc-950">
+                <tr key={row.id} className="bg-[var(--bg-card)]">
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/monthly-forms/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.formName}
                     </Link>
-                    <p className="mt-0.5 text-xs text-zinc-500">
+                    <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
                       {row.required ? "Checklist" : "Ad-hoc"}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     <Identifier>{row.vesselName}</Identifier>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.month}/{row.year}
                   </td>
                   <td className="px-4 py-3">
@@ -298,7 +298,7 @@ export function MonthlyFormsList({
                       {monthlyFormDisplayStatusLabel(row.displayStatus)}
                     </StatusPill>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {row.attachmentCount}
                   </td>
                 </tr>
@@ -308,21 +308,21 @@ export function MonthlyFormsList({
         </div>
       )}
 
-      <section className="rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <section className="rounded-lg border border-[var(--border)]">
         <button
           type="button"
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]"
           onClick={() => setReqOpen((o) => !o)}
           aria-expanded={reqOpen}
         >
           {/* Move to Settings / vessel profile once those exist (§10). */}
           Requirements (per vessel / template)
-          <span className="font-normal text-zinc-500">
+          <span className="font-normal text-[var(--text-tertiary)]">
             {reqOpen ? "Hide" : "Show"}
           </span>
         </button>
         {reqOpen ? (
-          <div className="space-y-4 border-t border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="space-y-4 border-t border-[var(--border)] p-4">
             <div className="flex justify-end">
               <button
                 type="button"
@@ -333,14 +333,14 @@ export function MonthlyFormsList({
               </button>
             </div>
             {requirements.length === 0 ? (
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[var(--text-tertiary)]">
                 No requirements yet — checklist generation will create nothing
                 until you add some.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wide text-zinc-500">
+                  <thead className="text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
                     <tr>
                       <th className="px-2 py-2 font-medium">Vessel</th>
                       <th className="px-2 py-2 font-medium">Template</th>
@@ -349,7 +349,7 @@ export function MonthlyFormsList({
                       <th className="px-2 py-2 font-medium" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-[var(--border)]">
                     {requirements.map((r) => (
                       <tr key={r.id}>
                         <td className="px-2 py-2">
@@ -357,7 +357,7 @@ export function MonthlyFormsList({
                         </td>
                         <td className="px-2 py-2">
                           <span className="font-mono text-xs">{r.formCode}</span>
-                          <span className="text-zinc-600 dark:text-zinc-400">
+                          <span className="text-[var(--text-secondary)]">
                             {" "}
                             — {r.templateName}
                           </span>

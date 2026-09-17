@@ -19,9 +19,9 @@ import type {
 import type { VesselRow } from "@/db/schema";
 import { Identifier } from "@/components/ui/identifier";
 
-const labelClass = "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 type CertificateFormProps = {
@@ -118,7 +118,7 @@ export function CertificateForm(props: CertificateFormProps) {
               </optgroup>
             ))}
           </select>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
             Need a new type? Add it under{" "}
             <Link href="/dashboard/settings" className="underline underline-offset-2">
               Settings
@@ -162,7 +162,7 @@ export function CertificateForm(props: CertificateFormProps) {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
             Missing an issuer? Add it under{" "}
             <Link href="/dashboard/settings" className="underline underline-offset-2">
               Settings
@@ -244,7 +244,7 @@ export function CertificateForm(props: CertificateFormProps) {
             defaultValue={d?.customOffsetDays ?? ""}
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
             Leave blank to inherit the type default (or 180 if linked to dry dock).
           </p>
         </div>
@@ -274,9 +274,9 @@ export function CertificateForm(props: CertificateFormProps) {
             type="checkbox"
             value="true"
             defaultChecked={d?.linkedToDryDock ?? false}
-            className="h-4 w-4 rounded border-zinc-300"
+            className="h-4 w-4 rounded border-[var(--border)]"
           />
-          <label htmlFor="linkedToDryDock" className="text-sm text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="linkedToDryDock" className="text-sm text-[var(--text-secondary)]">
             Linked to dry dock / renewal (forces 180-day reminder unless custom days set)
           </label>
         </div>
@@ -295,7 +295,7 @@ export function CertificateForm(props: CertificateFormProps) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+      <div className="flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-6">
         <button
           type="submit"
           disabled={pending}
@@ -313,7 +313,7 @@ export function CertificateForm(props: CertificateFormProps) {
               ? "/dashboard/certificates"
               : `/dashboard/certificates/${props.certificateId}`
           }
-          className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+          className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
         >
           Cancel
         </Link>

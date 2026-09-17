@@ -21,7 +21,7 @@ import type { IssuingAuthorityRow, VesselRow } from "@/db/schema";
 import { STATUS_LABELS, type ComplianceStatus } from "@/lib/expiry";
 
 const selectClass =
-  "h-10 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 const STATUS_FILTERS: ComplianceStatus[] = [
   "valid",
@@ -177,9 +177,9 @@ export function CertificatesList({
         searchPlaceholder="Search vessel, type, number…"
       />
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No certificates match.{" "}
             <Link
               href="/dashboard/certificates/new"
@@ -192,8 +192,8 @@ export function CertificatesList({
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block">
-              <table className="min-w-full divide-y divide-zinc-200 text-left text-sm dark:divide-zinc-800">
-                <thead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
+              <table className="min-w-full divide-y divide-[var(--border)] text-left text-sm">
+                <thead className="bg-[var(--bg-page)] text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                   <tr>
                     <th className="px-4 py-3">Vessel</th>
                     <th className="px-4 py-3">Type</th>
@@ -205,7 +205,7 @@ export function CertificatesList({
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {visible.map((row) => {
                     const dateRef =
                       row.ruleKind === "window"
@@ -214,12 +214,12 @@ export function CertificatesList({
                     return (
                       <tr
                         key={row.id}
-                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40"
+                        className="hover:bg-[var(--bg-page)]"
                       >
-                        <td className="px-4 py-3 text-zinc-800 dark:text-zinc-200">
+                        <td className="px-4 py-3 text-[var(--text-primary)]">
                           <Identifier>{row.vesselName}</Identifier>
                         </td>
-                        <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                        <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                           <Link
                             href={`/dashboard/certificates/${row.id}`}
                             className="text-[#378ADD] hover:underline"
@@ -227,16 +227,16 @@ export function CertificatesList({
                             {row.typeName}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 capitalize text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 capitalize text-[var(--text-secondary)]">
                           {row.authority}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">
                           <Identifier>{row.certificateNumber ?? "—"}</Identifier>
                         </td>
-                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">
                           {row.issuingAuthorityName ?? "—"}
                         </td>
-                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">
                           {dateRef}
                         </td>
                         <td className="px-4 py-3">
@@ -247,7 +247,7 @@ export function CertificatesList({
                             <CertificateQuickView row={row} />
                             <Link
                               href={`/dashboard/certificates/${row.id}/edit`}
-                              className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+                              className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
                             >
                               Edit
                             </Link>
@@ -260,7 +260,7 @@ export function CertificatesList({
               </table>
             </div>
 
-            <ul className="divide-y divide-zinc-200 md:hidden dark:divide-zinc-800">
+            <ul className="divide-y divide-[var(--border)] md:hidden">
               {visible.map((row) => (
                 <li key={row.id} className="relative p-4">
                   <div className="absolute end-4 top-4">
@@ -268,17 +268,17 @@ export function CertificatesList({
                   </div>
                   <Link
                     href={`/dashboard/certificates/${row.id}`}
-                    className="block pe-24 text-sm font-medium text-zinc-900 dark:text-zinc-50"
+                    className="block pe-24 text-sm font-medium text-[var(--text-primary)]"
                   >
                     {row.typeName}
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
-                      <span className="text-zinc-500">Vessel · </span>
+                      <span className="text-[var(--text-tertiary)]">Vessel · </span>
                       <Identifier>{row.vesselName}</Identifier>
                     </div>
                     <div>
-                      <span className="text-zinc-500">Number · </span>
+                      <span className="text-[var(--text-tertiary)]">Number · </span>
                       <Identifier>{row.certificateNumber ?? "—"}</Identifier>
                     </div>
                   </dl>

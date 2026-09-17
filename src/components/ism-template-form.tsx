@@ -16,9 +16,9 @@ import type {
   IsmTemplateRow,
 } from "@/db/schema";
 
-const labelClass = "mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 type Props = {
@@ -138,7 +138,7 @@ export function IsmTemplateForm(props: Props) {
           {fieldErrors?.categoryId ? (
             <p className={errorText}>{fieldErrors.categoryId.join(" ")}</p>
           ) : null}
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
             Category management moves to Settings later.
           </p>
         </div>
@@ -170,7 +170,7 @@ export function IsmTemplateForm(props: Props) {
         </button>
         <Link
           href={cancelHref}
-          className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-200 px-4 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 text-sm font-medium text-[var(--text-secondary)]"
         >
           Cancel
         </Link>

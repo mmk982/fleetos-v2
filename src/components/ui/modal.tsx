@@ -55,10 +55,10 @@ export function Modal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full rounded-t-2xl bg-white p-4 outline-none md:w-[380px] md:rounded-lg md:p-5 dark:bg-zinc-950"
+        className="relative w-full rounded-t-2xl bg-[var(--bg-card)] p-4 outline-none md:w-[380px] md:rounded-lg md:p-5"
       >
         <div
-          className="mx-auto mb-3 h-1 w-9 rounded-full bg-zinc-300 md:hidden dark:bg-zinc-600"
+          className="mx-auto mb-3 h-1 w-9 rounded-full bg-[var(--border)] md:hidden"
           aria-hidden="true"
         />
         {children}
