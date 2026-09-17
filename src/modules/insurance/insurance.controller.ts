@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
@@ -134,10 +136,15 @@ export async function listInsurancePolicies(
   filters: InsuranceListFilters = {},
 ): Promise<InsuranceListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "insurance", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(insurancePolicies.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(insurancePolicies.vesselId, scopedVesselId));
   }
   if (filters.policyType) {
     conditions.push(eq(insurancePolicies.policyType, filters.policyType));
@@ -165,6 +172,7 @@ export async function getInsurancePolicyById(
   id: string,
 ): Promise<InsuranceDetail | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "insurance", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -177,6 +185,7 @@ export async function getInsurancePolicyById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.policy.vesselId);
 
   const attachments = await db
     .select()
@@ -195,6 +204,8 @@ export async function createInsurancePolicy(
   input: InsuranceCreateInput,
 ): Promise<InsurancePolicyRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "insurance", "write");
+  assertVesselScope(ctx, input.vesselId);
   const db = getDb();
   let row: InsurancePolicyRow;
   try {
@@ -245,6 +256,7 @@ export async function updateInsurancePolicy(
   input: InsuranceUpdateInput,
 ): Promise<InsurancePolicyRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "insurance", "write");
   const db = getDb();
 
   const existing = await db
@@ -253,6 +265,7 @@ export async function updateInsurancePolicy(
     .where(eq(insurancePolicies.id, id))
     .limit(1);
   if (!existing[0]) throw new InsuranceNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof insurancePolicies.$inferInsert> & {
     updatedAt: Date;
@@ -310,13 +323,19 @@ export async function deleteInsurancePolicy(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "insurance", "write");
   const db = getDb();
   const existingRows = await db
-    .select({ policyType: insurancePolicies.policyType })
+    .select({
+      policyType: insurancePolicies.policyType,
+      vesselId: insurancePolicies.vesselId,
+    })
     .from(insurancePolicies)
     .where(eq(insurancePolicies.id, id))
     .limit(1);
-  const policyType = existingRows[0]?.policyType;
+  if (!existingRows[0]) throw new InsuranceNotFoundError(id);
+  assertVesselScope(ctx, existingRows[0].vesselId);
+  const policyType = existingRows[0].policyType;
   try {
     const atts = await db
       .select()
@@ -335,7 +354,7 @@ export async function deleteInsurancePolicy(
     logError("INSURANCE_DELETE_FAILED", { error, insurancePolicyId: id });
     throw error;
   }
-  const label = policyType ? insuranceTypeLabel(policyType) : "insurance";
+  const label = insuranceTypeLabel(policyType);
   await writeActivityLog({
     userId: ctx.userId,
     actionType: "deleted",
@@ -350,7 +369,16 @@ export async function listInsuranceAttachments(
   insurancePolicyId: string,
 ): Promise<InsuranceAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, insurancePolicyId);
-  return getDb()
+  assertModuleAccess(ctx, "insurance", "read");
+  const db = getDb();
+  const parent = await db
+    .select({ vesselId: insurancePolicies.vesselId })
+    .from(insurancePolicies)
+    .where(eq(insurancePolicies.id, insurancePolicyId))
+    .limit(1);
+  if (!parent[0]) return [];
+  assertVesselScope(ctx, parent[0].vesselId);
+  return db
     .select()
     .from(insuranceAttachments)
     .where(eq(insuranceAttachments.insurancePolicyId, insurancePolicyId))
@@ -370,6 +398,7 @@ export async function uploadInsuranceAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<InsuranceAttachmentRow> {
   assertAuthenticatedAccess(ctx, insurancePolicyId);
+  assertModuleAccess(ctx, "insurance", "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -383,15 +412,19 @@ export async function uploadInsuranceAttachment(
   }
 
   const db = getDb();
+  const parent = await db
+    .select({
+      id: insurancePolicies.id,
+      vesselId: insurancePolicies.vesselId,
+    })
+    .from(insurancePolicies)
+    .where(eq(insurancePolicies.id, insurancePolicyId))
+    .limit(1);
+  if (!parent[0]) throw new InsuranceNotFoundError(insurancePolicyId);
+  assertVesselScope(ctx, parent[0].vesselId);
+
   let row: InsuranceAttachmentRow;
   try {
-    const parent = await db
-      .select({ id: insurancePolicies.id })
-      .from(insurancePolicies)
-      .where(eq(insurancePolicies.id, insurancePolicyId))
-      .limit(1);
-    if (!parent[0]) throw new InsuranceNotFoundError(insurancePolicyId);
-
     await mkdir(ATTACHMENTS_DIR, { recursive: true });
     const id = randomUUID();
     const storedName = `${id}${extensionForMime(file.type)}`;
@@ -445,21 +478,30 @@ export async function deleteInsuranceAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "insurance", "write");
   const db = getDb();
+  const rows = await db
+    .select({
+      attachment: insuranceAttachments,
+      vesselId: insurancePolicies.vesselId,
+    })
+    .from(insuranceAttachments)
+    .innerJoin(
+      insurancePolicies,
+      eq(insuranceAttachments.insurancePolicyId, insurancePolicies.id),
+    )
+    .where(eq(insuranceAttachments.id, attachmentId))
+    .limit(1);
+  const row = rows[0];
+  if (!row) throw new AttachmentNotFoundError(attachmentId);
+  assertVesselScope(ctx, row.vesselId);
+
   try {
-    const rows = await db
-      .select()
-      .from(insuranceAttachments)
-      .where(eq(insuranceAttachments.id, attachmentId))
-      .limit(1);
-    const row = rows[0];
-    if (!row) throw new AttachmentNotFoundError(attachmentId);
     await db
       .delete(insuranceAttachments)
       .where(eq(insuranceAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
+    await removeStoredAttachmentFile(row.attachment.filePath);
   } catch (error) {
-    if (error instanceof AttachmentNotFoundError) throw error;
     logError("INSURANCE_ATTACHMENT_DELETE_FAILED", {
       error,
       attachmentId,
@@ -478,10 +520,21 @@ export async function getInsuranceAttachmentById(
   attachmentId: string,
 ): Promise<InsuranceAttachmentRow | undefined> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  assertModuleAccess(ctx, "insurance", "read");
   const rows = await getDb()
-    .select()
+    .select({
+      attachment: insuranceAttachments,
+      vesselId: insurancePolicies.vesselId,
+    })
     .from(insuranceAttachments)
+    .innerJoin(
+      insurancePolicies,
+      eq(insuranceAttachments.insurancePolicyId, insurancePolicies.id),
+    )
     .where(eq(insuranceAttachments.id, attachmentId))
     .limit(1);
-  return rows[0];
+  const row = rows[0];
+  if (!row) return undefined;
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
 }

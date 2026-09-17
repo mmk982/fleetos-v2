@@ -7,6 +7,8 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
+  assertModuleAccess: vi.fn(),
+  assertVesselScope: vi.fn(),
 }));
 
 vi.mock("@/lib/attachments/stream", () => ({
