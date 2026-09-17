@@ -101,18 +101,20 @@ export const STATUS_LABELS: Record<ComplianceStatus, string> = {
 };
 
 /**
- * Tailwind badge classes mapped to the 3+1 color legend (PROJECT_PLAN.md):
- * green = valid; yellow = due soon (`expiring` / `critical`); red = expired;
- * gray = unknown / revoked. `critical` shares yellow with `expiring` but is
- * visually stronger (bold + ring) because it is meaningfully more urgent.
+ * Tailwind badge classes mapped to DESIGN_HANDOFF.md §1.3:
+ * green = valid; amber = due soon (`expiring` / `critical`); red = expired;
+ * gray = unknown / revoked. `critical` shares amber with `expiring` but keeps
+ * bold + ring emphasis because it is meaningfully more urgent.
  */
 export const STATUS_STYLES: Record<ComplianceStatus, string> = {
-  valid: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
+  valid:
+    "bg-[#EAF3DE] text-[#27500A] dark:bg-[#085041] dark:text-[#5DCAA5]",
   expiring:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200",
+    "bg-[#FAEEDA] text-[#633806] dark:bg-[#633806] dark:text-[#FAC775]",
   critical:
-    "bg-yellow-100 text-yellow-900 font-semibold ring-1 ring-yellow-500/40 dark:bg-yellow-950 dark:text-yellow-100",
-  expired: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
+    "bg-[#FAEEDA] text-[#633806] font-semibold ring-1 ring-[#633806]/40 dark:bg-[#633806] dark:text-[#FAC775] dark:ring-[#FAC775]/40",
+  expired:
+    "bg-[#FCEBEB] text-[#791F1F] dark:bg-[#791F1F] dark:text-[#F09595]",
   unknown: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   revoked: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 };

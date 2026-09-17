@@ -14,53 +14,67 @@ type NavLeaf = {
   moduleKey?: ModuleKey;
 };
 type NavGroup = { label: string; children: readonly NavLeaf[] };
-type NavEntry = NavLeaf | NavGroup;
 
-function isGroup(item: NavEntry): item is NavGroup {
-  return "children" in item;
-}
-
-const NAV: readonly NavEntry[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/alerts", label: "Alerts", moduleKey: "alerts" },
-  { href: "/dashboard/vessels", label: "Vessels", moduleKey: "vessels" },
+const NAV: readonly NavGroup[] = [
   {
-    href: "/dashboard/certificates",
-    label: "Certificates",
-    moduleKey: "certificates",
+    label: "Overview",
+    children: [{ href: "/dashboard", label: "Dashboard" }],
   },
   {
-    href: "/dashboard/deficiencies",
-    label: "Deficiencies",
-    moduleKey: "deficiencies",
-  },
-  { href: "/dashboard/crew", label: "Crew", moduleKey: "crew" },
-  {
-    href: "/dashboard/insurance",
-    label: "Insurance",
-    moduleKey: "insurance",
-  },
-  {
-    href: "/dashboard/ism-templates",
-    label: "ISM Templates",
-    moduleKey: "ism_templates",
+    label: "Fleet",
+    children: [
+      { href: "/dashboard/vessels", label: "Vessels", moduleKey: "vessels" },
+      { href: "/dashboard/crew", label: "Crew", moduleKey: "crew" },
+      {
+        href: "/dashboard/particulars",
+        label: "Particulars",
+        moduleKey: "particulars",
+      },
+    ],
   },
   {
-    href: "/dashboard/monthly-forms",
-    label: "Monthly Executed Forms",
-    moduleKey: "monthly_forms",
+    label: "Compliance",
+    children: [
+      {
+        href: "/dashboard/certificates",
+        label: "Certificates",
+        moduleKey: "certificates",
+      },
+      {
+        href: "/dashboard/deficiencies",
+        label: "Deficiencies",
+        moduleKey: "deficiencies",
+      },
+      {
+        href: "/dashboard/insurance",
+        label: "Insurance",
+        moduleKey: "insurance",
+      },
+      { href: "/dashboard/alerts", label: "Alerts", moduleKey: "alerts" },
+      { href: "/dashboard/psc", label: "PSC" },
+    ],
   },
-  { href: "/dashboard/manuals", label: "Manuals", moduleKey: "manuals" },
-  { href: "/dashboard/drawings", label: "Drawings", moduleKey: "drawings" },
   {
-    href: "/dashboard/particulars",
-    label: "Particulars",
-    moduleKey: "particulars",
-  },
-  {
-    href: "/dashboard/reminders",
-    label: "Reminders",
-    moduleKey: "reminders",
+    label: "Documents",
+    children: [
+      { href: "/dashboard/manuals", label: "Manuals", moduleKey: "manuals" },
+      {
+        href: "/dashboard/ism-templates",
+        label: "ISM Templates",
+        moduleKey: "ism_templates",
+      },
+      {
+        href: "/dashboard/monthly-forms",
+        label: "Monthly Executed Forms",
+        moduleKey: "monthly_forms",
+      },
+      { href: "/dashboard/drawings", label: "Drawings", moduleKey: "drawings" },
+      {
+        href: "/dashboard/reminders",
+        label: "Reminders",
+        moduleKey: "reminders",
+      },
+    ],
   },
   {
     label: "Settings",
@@ -99,30 +113,29 @@ function leafIsActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function groupIsActive(pathname: string, children: readonly NavLeaf[]) {
-  return children.some((c) =>
-    leafIsActive(pathname, c.href, c.href === "/dashboard/settings"),
-  );
-}
-
 function leafVisible(role: UserRole | null, leaf: NavLeaf): boolean {
   if (!leaf.moduleKey) return true;
   return getModuleAccess(role, leaf.moduleKey) !== "none";
 }
 
-function visibleNav(role: UserRole | null): NavEntry[] {
-  const out: NavEntry[] = [];
-  for (const item of NAV) {
-    if (!isGroup(item)) {
-      if (leafVisible(role, item)) out.push(item);
-      continue;
-    }
-    const children = item.children.filter((c) => leafVisible(role, c));
+function visibleNav(role: UserRole | null): NavGroup[] {
+  const out: NavGroup[] = [];
+  for (const group of NAV) {
+    const children = group.children.filter((c) => leafVisible(role, c));
     if (children.length > 0) {
-      out.push({ label: item.label, children });
+      out.push({ label: group.label, children });
     }
   }
   return out;
+}
+
+function navLinkClass(active: boolean): string {
+  const base =
+    "block px-4 py-2 text-sm font-medium transition-colors rounded-none";
+  if (active) {
+    return `${base} border-r-2 border-[#85B7EB] bg-white/[0.08] text-white dark:border-r-0 dark:border-l-2 dark:border-[var(--accent)] dark:bg-[var(--bg-card)] dark:text-[var(--text-primary)]`;
+  }
+  return `${base} text-[#E2E8F0] hover:bg-white/[0.06] dark:text-[var(--text-secondary)] dark:hover:bg-white/[0.04]`;
 }
 
 export function DashboardSidebar({ role }: { role: UserRole | null }) {
@@ -131,75 +144,44 @@ export function DashboardSidebar({ role }: { role: UserRole | null }) {
 
   return (
     <aside
-      className="flex h-full w-[240px] shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+      className="flex h-full w-[220px] shrink-0 flex-col bg-[var(--bg-sidebar)]"
       aria-label="Main navigation"
     >
-      <div className="flex h-14 shrink-0 items-center border-b border-zinc-200 px-4 dark:border-zinc-800">
+      <div className="flex h-14 shrink-0 items-center border-b border-white/10 px-4">
         <Link
           href="/dashboard"
-          className="text-lg font-semibold tracking-tight text-[#0D2B45] dark:text-sky-100"
+          className="text-lg font-semibold tracking-tight text-white"
         >
           FleetOS
         </Link>
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-        {entries.map((item) => {
-          if (!isGroup(item)) {
-            const active = leafIsActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-[#0D2B45] text-white"
-                    : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                }`}
-                aria-current={active ? "page" : undefined}
-              >
-                {item.label}
-              </Link>
-            );
-          }
-
-          const open = groupIsActive(pathname, item.children);
-          return (
-            <div key={item.label} className="mt-1">
-              <div
-                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${
-                  open
-                    ? "text-[#0D2B45] dark:text-sky-200"
-                    : "text-zinc-500 dark:text-zinc-400"
-                }`}
-              >
-                {item.label}
-              </div>
-              <div className="flex flex-col gap-0.5">
-                {item.children.map((child) => {
-                  const active = leafIsActive(
-                    pathname,
-                    child.href,
-                    child.href === "/dashboard/settings",
-                  );
-                  return (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      className={`rounded-md py-1.5 pe-3 ps-5 text-sm font-medium transition-colors ${
-                        active
-                          ? "bg-[#0D2B45] text-white"
-                          : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                      }`}
-                      aria-current={active ? "page" : undefined}
-                    >
-                      {child.label}
-                    </Link>
-                  );
-                })}
-              </div>
+      <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-0 py-3">
+        {entries.map((group) => (
+          <div key={group.label}>
+            <div className="px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+              {group.label}
             </div>
-          );
-        })}
+            <div className="flex flex-col">
+              {group.children.map((child) => {
+                const active = leafIsActive(
+                  pathname,
+                  child.href,
+                  child.href === "/dashboard/settings",
+                );
+                return (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    className={navLinkClass(active)}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {child.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </aside>
   );

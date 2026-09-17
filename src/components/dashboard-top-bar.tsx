@@ -8,9 +8,17 @@ import {
 } from "@/modules/notifications/notifications.controller";
 import { toNotificationListItem } from "@/modules/notifications/notifications.model";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/modules/auth/actions";
 
-/** Dashboard top bar — company logo + name + notifications bell (§7a / §12a). */
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
+}
+
+/** Dashboard top bar — company, date, theme, bell, avatar, sign-out. */
 export async function DashboardTopBar() {
   const session = await requireSession();
   const access = toAccessContext(session);
@@ -21,10 +29,12 @@ export async function DashboardTopBar() {
   ]);
   const name = profile.companyName?.trim() || "FleetOS";
   const items = rows.map(toNotificationListItem);
+  const today = new Date().toLocaleDateString();
+  const initials = initialsFromName(session.user.name ?? "");
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <Link href="/dashboard" className="flex items-center gap-3">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--bg-card)] px-4">
+      <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
         {profile.logoPath ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -33,21 +43,35 @@ export async function DashboardTopBar() {
             className="h-8 w-auto max-w-[10rem] object-contain"
           />
         ) : null}
-        <span className="text-sm font-semibold tracking-tight text-[#0D2B45] dark:text-sky-100">
+        <span className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)]">
           {name}
         </span>
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <NotificationsBell
           userId={access.userId}
           unreadCount={unreadCount}
           items={items}
         />
+        <time
+          dateTime={new Date().toISOString().slice(0, 10)}
+          className="hidden text-[13px] text-[var(--text-tertiary)] sm:inline"
+        >
+          {today}
+        </time>
+        <ThemeToggle />
+        <span
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-medium text-white"
+          aria-hidden="true"
+          title={session.user.name}
+        >
+          {initials}
+        </span>
         <form action={logoutAction}>
           <button
             type="submit"
-            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           >
             Sign out
           </button>

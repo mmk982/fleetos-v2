@@ -337,11 +337,11 @@ describe("STATUS_LABELS and STATUS_STYLES", () => {
     }
   });
 
-  it("maps to the 3+1 color legend (green / yellow / red / gray)", () => {
-    expect(STATUS_STYLES.valid).toMatch(/green/i);
-    expect(STATUS_STYLES.expiring).toMatch(/yellow|amber/i);
-    expect(STATUS_STYLES.critical).toMatch(/yellow|amber/i);
-    expect(STATUS_STYLES.expired).toMatch(/red/i);
+  it("maps to the 3+1 color legend (green / amber / red / gray)", () => {
+    expect(STATUS_STYLES.valid).toMatch(/EAF3DE|085041|27500A|5DCAA5/i);
+    expect(STATUS_STYLES.expiring).toMatch(/FAEEDA|633806|FAC775/i);
+    expect(STATUS_STYLES.critical).toMatch(/FAEEDA|633806|FAC775/i);
+    expect(STATUS_STYLES.expired).toMatch(/FCEBEB|791F1F|F09595/i);
     expect(STATUS_STYLES.unknown).toMatch(/gray|zinc|neutral|slate/i);
     expect(STATUS_STYLES.revoked).toMatch(/gray|zinc|neutral|slate/i);
   });

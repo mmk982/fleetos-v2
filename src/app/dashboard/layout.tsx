@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   const session = await requireSession();
 
   return (
-    <div className="flex min-h-full flex-1 bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-1 bg-[var(--bg-page)]">
       <DashboardSidebar role={session.user.role} />
       <div className="flex min-h-full min-w-0 flex-1 flex-col">
         <DashboardTopBar />
