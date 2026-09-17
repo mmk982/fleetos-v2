@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ECC / Cursor tooling (CommonJS scripts) — not app source.
+    ".cursor/**",
+    // Legacy Laravel scaffold — not linted by the Next.js ESLint stack.
+    "backend/**",
   ]),
 ]);
 
