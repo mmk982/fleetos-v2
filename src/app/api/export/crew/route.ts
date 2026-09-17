@@ -6,7 +6,11 @@
  */
 import { NextResponse } from "next/server";
 import type { CrewStatus } from "@/db/schema";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeAccessLog } from "@/lib/access-log/write";
 import {
@@ -61,8 +65,16 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "crew", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listCrewMembers(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       status,
       categoryId: url.searchParams.get("categoryId") || undefined,
     });

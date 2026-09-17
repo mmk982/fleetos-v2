@@ -7,7 +7,11 @@ import type {
   ReminderStatus,
   ReminderType,
 } from "@/db/schema";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -88,8 +92,16 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "reminders", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listReminders(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       type,
       priority,
       status,

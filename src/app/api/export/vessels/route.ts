@@ -2,7 +2,11 @@
  * GET /api/export/vessels?format=xlsx|pdf
  */
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -50,6 +54,9 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "vessels", "read");
+
     const vessels = await listVessels(access);
     const exportRows: Row[] = vessels.map((v) => ({
       name: v.name,

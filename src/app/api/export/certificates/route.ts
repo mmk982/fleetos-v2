@@ -3,7 +3,11 @@
  * Session-authenticated list export with activity_logs audit row.
  */
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import { STATUS_LABELS, type ComplianceStatus } from "@/lib/expiry";
@@ -80,8 +84,16 @@ export async function GET(request: Request) {
   const access = toAccessContext(session);
 
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "certificates", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listCertificates(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       authority,
       issuingAuthorityId:
         url.searchParams.get("issuingAuthorityId") || undefined,

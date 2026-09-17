@@ -4,7 +4,11 @@
  */
 import { NextResponse } from "next/server";
 import type { DeficiencyStatus } from "@/db/schema";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -71,8 +75,16 @@ export async function GET(request: Request) {
   const access = toAccessContext(session);
 
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "deficiencies", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listDeficiencies(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       status,
       source,
       category: url.searchParams.get("category") || undefined,

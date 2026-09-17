@@ -3,7 +3,11 @@
  */
 import { NextResponse } from "next/server";
 import type { MonthlyFormStatus } from "@/db/schema";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -64,8 +68,16 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "monthly_forms", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listMonthlyForms(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       month: Number.isFinite(month) ? month : undefined,
       year: Number.isFinite(year) ? year : undefined,
       status,

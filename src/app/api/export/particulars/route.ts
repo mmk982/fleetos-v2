@@ -2,7 +2,11 @@
  * GET /api/export/particulars?format=xlsx|pdf
  */
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -49,6 +53,9 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "particulars", "read");
+
     const rows = await listVesselParticularsSummary(access);
     const exportRows: Row[] = rows.map((row) => ({
       vessel: row.vesselName,

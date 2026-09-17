@@ -2,7 +2,11 @@
  * GET /api/export/manuals?format=xlsx|pdf&vesselId&manualType&department
  */
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  assertModuleAccess,
+  ForbiddenError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import { writeActivityLog } from "@/lib/activity-log/write";
 import {
@@ -48,8 +52,16 @@ export async function GET(request: Request) {
 
   const access = toAccessContext(session);
   try {
+    assertModuleAccess(access, "export", "write");
+    assertModuleAccess(access, "manuals", "read");
+
+    const vesselId =
+      access.role === "management_user"
+        ? (access.vesselId ?? undefined)
+        : url.searchParams.get("vesselId") || undefined;
+
     const rows = await listManuals(access, {
-      vesselId: url.searchParams.get("vesselId") || undefined,
+      vesselId,
       manualType: url.searchParams.get("manualType") || undefined,
       department: url.searchParams.get("department") || undefined,
     });
