@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import type { ParticularsSummaryItem } from "@/modules/ship-particulars/particulars.model";
 
 export function ParticularsList({ rows }: { rows: ParticularsSummaryItem[] }) {
@@ -30,8 +31,23 @@ export function ParticularsList({ rows }: { rows: ParticularsSummaryItem[] }) {
       <ListToolbar
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        filters={undefined}
-        onExport={() => {}}
+        filters={null}
+        exportSlot={
+          <>
+            <a
+              href={`/api/export/particulars?${buildExportQuery({}, "xlsx")}`}
+              className={listToolbarExportLinkClass}
+            >
+              Excel
+            </a>
+            <a
+              href={`/api/export/particulars?${buildExportQuery({}, "pdf")}`}
+              className={listToolbarExportLinkClass}
+            >
+              PDF
+            </a>
+          </>
+        }
         searchPlaceholder="Search vessel, class society…"
       />
 

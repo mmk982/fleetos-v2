@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { DrawingForm } from "@/components/drawing-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import type { DrawingListItem } from "@/modules/drawings/drawing.model";
 import type { DrawingCategoryRow, VesselRow } from "@/db/schema";
 
@@ -104,7 +105,34 @@ export function DrawingsList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/drawings?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      categoryId: filters.categoryId || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/drawings?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      categoryId: filters.categoryId || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search name, number, vessel…"
           />
         </div>

@@ -12,7 +12,8 @@ import { useRouter } from "next/navigation";
 import { MonthlyFormRequirementForm } from "@/components/monthly-form-requirement-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   deleteMonthlyFormRequirementFormAction,
@@ -181,7 +182,36 @@ export function MonthlyFormsList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/monthly-forms?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      month: filters.month || undefined,
+                      year: filters.year || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/monthly-forms?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      month: filters.month || undefined,
+                      year: filters.year || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search form, vessel…"
           />
         </div>

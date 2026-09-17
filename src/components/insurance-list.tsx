@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { InsuranceForm } from "@/components/insurance-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   INSURANCE_TYPES,
@@ -106,7 +107,34 @@ export function InsuranceList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/insurance?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      policyType: filters.policyType || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/insurance?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      policyType: filters.policyType || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search vessel, provider, policy…"
           />
         </div>

@@ -7,7 +7,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   formatImo,
@@ -57,9 +58,22 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         filters={filters}
-        onExport={() => {
-          // Export utility is build-order step 15.
-        }}
+        exportSlot={
+          <>
+            <a
+              href={`/api/export/vessels?${buildExportQuery({}, "xlsx")}`}
+              className={listToolbarExportLinkClass}
+            >
+              Excel
+            </a>
+            <a
+              href={`/api/export/vessels?${buildExportQuery({}, "pdf")}`}
+              className={listToolbarExportLinkClass}
+            >
+              PDF
+            </a>
+          </>
+        }
         searchPlaceholder="Search name, IMO, flag…"
       />
 

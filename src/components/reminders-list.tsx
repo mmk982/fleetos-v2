@@ -24,7 +24,8 @@ import {
   type ReminderListItem,
 } from "@/modules/reminders/reminder.model";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import type { VesselRow } from "@/db/schema";
 
@@ -152,7 +153,38 @@ export function RemindersList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/reminders?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      type: filters.type || undefined,
+                      priority: filters.priority || undefined,
+                      status: filters.status || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/reminders?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      type: filters.type || undefined,
+                      priority: filters.priority || undefined,
+                      status: filters.status || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search title, vessel, type…"
           />
         </div>

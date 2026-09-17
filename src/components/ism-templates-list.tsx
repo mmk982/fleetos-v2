@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { IsmTemplateForm } from "@/components/ism-template-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   ISM_TEMPLATE_STATUSES,
@@ -102,7 +103,34 @@ export function IsmTemplatesList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/ism-templates?${buildExportQuery(
+                    {
+                      categoryId: filters.categoryId || undefined,
+                      status: filters.status || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/ism-templates?${buildExportQuery(
+                    {
+                      categoryId: filters.categoryId || undefined,
+                      status: filters.status || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search code, name, category…"
           />
         </div>

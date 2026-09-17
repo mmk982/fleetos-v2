@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { ManualForm } from "@/components/manual-form";
 import { Drawer } from "@/components/ui/drawer";
 import { Identifier } from "@/components/ui/identifier";
-import { ListToolbar } from "@/components/ui/list-toolbar";
+import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
+import { buildExportQuery } from "@/lib/export/http";
 import type { ManualListItem } from "@/modules/manuals/manual.model";
 import type { VesselRow } from "@/db/schema";
 
@@ -126,7 +127,36 @@ export function ManualsList({
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             filters={filterControls}
-            onExport={() => {}}
+            exportSlot={
+              <>
+                <a
+                  href={`/api/export/manuals?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      manualType: filters.manualType || undefined,
+                      department: filters.department || undefined,
+                    },
+                    "xlsx",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  Excel
+                </a>
+                <a
+                  href={`/api/export/manuals?${buildExportQuery(
+                    {
+                      vesselId: filters.vesselId || undefined,
+                      manualType: filters.manualType || undefined,
+                      department: filters.department || undefined,
+                    },
+                    "pdf",
+                  )}`}
+                  className={listToolbarExportLinkClass}
+                >
+                  PDF
+                </a>
+              </>
+            }
             searchPlaceholder="Search title, vessel, type…"
           />
         </div>
