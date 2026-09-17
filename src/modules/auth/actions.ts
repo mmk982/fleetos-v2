@@ -129,3 +129,12 @@ export async function loginAction(
     throw error;
   }
 }
+
+/**
+ * Ends the current session and sends the user to `/login`.
+ */
+export async function logoutAction(): Promise<void> {
+  await assertSameOriginMutation();
+  await destroySession();
+  redirect("/login");
+}

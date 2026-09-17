@@ -8,6 +8,7 @@ import {
 } from "@/modules/notifications/notifications.controller";
 import { toNotificationListItem } from "@/modules/notifications/notifications.model";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { logoutAction } from "@/modules/auth/actions";
 
 /** Dashboard top bar — company logo + name + notifications bell (§7a / §12a). */
 export async function DashboardTopBar() {
@@ -37,11 +38,21 @@ export async function DashboardTopBar() {
         </span>
       </Link>
 
-      <NotificationsBell
-        userId={access.userId}
-        unreadCount={unreadCount}
-        items={items}
-      />
+      <div className="flex items-center gap-4">
+        <NotificationsBell
+          userId={access.userId}
+          unreadCount={unreadCount}
+          items={items}
+        />
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+          >
+            Sign out
+          </button>
+        </form>
+      </div>
     </header>
   );
 }
