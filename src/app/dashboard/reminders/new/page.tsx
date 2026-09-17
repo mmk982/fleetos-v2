@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ReminderForm } from "@/components/reminder-form";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewReminderPage() {
   const session = await requireSession();
-  const vessels = await listVessels(toAccessContext(session));
+  const vessels = await listSelectableVessels(toAccessContext(session));
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

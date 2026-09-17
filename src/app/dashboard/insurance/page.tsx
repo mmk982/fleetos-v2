@@ -1,7 +1,7 @@
 import { InsuranceList } from "@/components/insurance-list";
 import { listInsurancePolicies } from "@/modules/insurance/insurance.controller";
 import { INSURANCE_TYPES } from "@/modules/insurance/insurance.model";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { InsuranceType } from "@/db/schema";
@@ -29,7 +29,7 @@ export default async function InsurancePage(props: {
       vesselId: sp.vesselId || undefined,
       policyType,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
 
   return (

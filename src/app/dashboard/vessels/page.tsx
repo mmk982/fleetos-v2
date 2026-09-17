@@ -1,14 +1,41 @@
 import Link from "next/link";
 import { VesselsList } from "@/components/vessels-list";
-import { listVessels } from "@/modules/vessels/vessel.controller";
-import { toAccessContext } from "@/lib/auth/access";
+import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
+import { listVessels } from "@/modules/vessels/vessel.controller";
+import type { VesselRow } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
 export default async function VesselsPage() {
   const session = await requireSession();
-  const vessels = await listVessels(toAccessContext(session));
+  const access = toAccessContext(session);
+
+  let vessels: VesselRow[] | null = null;
+  try {
+    vessels = await listVessels(access);
+  } catch (error) {
+    if (!(error instanceof ForbiddenError)) throw error;
+  }
+
+  if (!vessels) {
+    return (
+      <main className="flex flex-1 flex-col p-8" dir="auto">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+          <p className="font-medium">Admin access required</p>
+          <p className="mt-1">
+            Only Admin users can manage the vessel registry.{" "}
+            <Link
+              href="/dashboard"
+              className="underline underline-offset-2"
+            >
+              Back to Dashboard
+            </Link>
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-1 flex-col p-8">

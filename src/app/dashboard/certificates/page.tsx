@@ -4,7 +4,7 @@ import {
   listCertificates,
   listIssuingAuthorities,
 } from "@/modules/certificates/certificate.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { ComplianceStatus } from "@/lib/expiry";
@@ -45,7 +45,7 @@ export default async function CertificatesPage(props: {
       issuingAuthorityId: sp.issuingAuthorityId || undefined,
       status,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
     listIssuingAuthorities(access),
   ]);
 

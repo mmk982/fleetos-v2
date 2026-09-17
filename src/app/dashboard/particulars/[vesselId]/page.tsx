@@ -7,7 +7,7 @@ import { ParticularsVesselActions } from "@/components/particulars-vessel-action
 import { Identifier } from "@/components/ui/identifier";
 import { deleteParticularsFormAction } from "@/modules/ship-particulars/actions";
 import { getParticularsForVessel } from "@/modules/ship-particulars/particulars.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -20,7 +20,7 @@ export default async function ParticularsVesselPage(props: PageProps) {
 
   const [detail, vessels] = await Promise.all([
     getParticularsForVessel(access, vesselId),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
   if (!detail) notFound();
 

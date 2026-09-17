@@ -4,7 +4,7 @@ import {
   getDrawingById,
   listDrawingCategories,
 } from "@/modules/drawings/drawing.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import DrawingDetailPage from "../page";
@@ -18,7 +18,7 @@ export default async function EditDrawingPage(props: PageProps) {
 
   const [drawing, vessels, categories] = await Promise.all([
     getDrawingById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
     listDrawingCategories(access),
   ]);
   if (!drawing) notFound();

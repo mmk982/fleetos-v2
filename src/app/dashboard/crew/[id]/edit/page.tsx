@@ -4,7 +4,7 @@ import {
   getCrewMemberById,
   listCrewCategories,
 } from "@/modules/crew/crew.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import CrewDetailPage from "../page";
@@ -18,7 +18,7 @@ export default async function EditCrewPage(props: PageProps) {
 
   const [member, vessels, categories] = await Promise.all([
     getCrewMemberById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
     listCrewCategories(access),
   ]);
   if (!member) notFound();

@@ -1,6 +1,6 @@
 import { NewDrawingDrawer } from "@/components/new-drawing-drawer";
 import { listDrawingCategories } from "@/modules/drawings/drawing.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import DrawingsPage from "../page";
@@ -13,7 +13,7 @@ export default async function NewDrawingPage(props: {
   const session = await requireSession();
   const access = toAccessContext(session);
   const [vessels, categories] = await Promise.all([
-    listVessels(access),
+    listSelectableVessels(access),
     listDrawingCategories(access),
   ]);
 

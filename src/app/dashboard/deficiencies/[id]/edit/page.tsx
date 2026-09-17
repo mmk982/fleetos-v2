@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EditDeficiencyDrawer } from "@/components/edit-deficiency-drawer";
 import { getDeficiencyById } from "@/modules/deficiencies/deficiency.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -14,7 +14,7 @@ export default async function EditDeficiencyPage(props: PageProps) {
   const { id } = await props.params;
   const [row, vessels] = await Promise.all([
     getDeficiencyById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
   if (!row) notFound();
 

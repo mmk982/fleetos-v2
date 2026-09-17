@@ -5,7 +5,7 @@ import {
   REMINDER_STATUSES,
   REMINDER_TYPES,
 } from "@/modules/reminders/reminder.model";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type {
@@ -47,7 +47,7 @@ export default async function RemindersPage(props: {
       priority,
       status,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
 
   return (

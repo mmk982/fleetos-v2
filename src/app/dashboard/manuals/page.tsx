@@ -1,6 +1,6 @@
 import { ManualsList } from "@/components/manuals-list";
 import { listManuals } from "@/modules/manuals/manual.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -25,7 +25,7 @@ export default async function ManualsPage(props: {
       manualType: sp.manualType || undefined,
       department: sp.department || undefined,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
     listManuals(access, { vesselId: sp.vesselId || undefined }),
   ]);
 

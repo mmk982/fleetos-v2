@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { EditManualDrawer } from "@/components/edit-manual-drawer";
 import { getManualById } from "@/modules/manuals/manual.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import ManualDetailPage from "../page";
@@ -15,7 +15,7 @@ export default async function EditManualPage(props: PageProps) {
 
   const [manual, vessels] = await Promise.all([
     getManualById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
   if (!manual) notFound();
 

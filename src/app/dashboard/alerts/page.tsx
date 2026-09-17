@@ -8,7 +8,7 @@ import {
   parseAlertStatusFilter,
   type AlertKind,
 } from "@/modules/alerts/alerts.model";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export default async function AlertsPage(props: {
       kinds: kind ? [kind] : undefined,
       statuses: ["unknown"],
     }),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
 
   return (

@@ -4,7 +4,7 @@ import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { UserListItem } from "@/modules/settings/users.model";
 import { listUsers } from "@/modules/settings/users.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import type { VesselRow } from "@/db/schema";
 import Link from "next/link";
 
@@ -18,7 +18,7 @@ export default async function UsersRolesPage() {
   try {
     const [users, vessels] = await Promise.all([
       listUsers(access),
-      listVessels(access),
+      listSelectableVessels(access),
     ]);
     data = { users, vessels };
   } catch (error) {

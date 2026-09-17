@@ -70,6 +70,27 @@ export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
   return getDb().select().from(vessels).orderBy(asc(vessels.name));
 }
 
+/**
+ * Vessel options for filters / create-form `<select>`s across other modules.
+ * Auth-only — not gated on `vessels` module access (registry CRUD stays
+ * {@link listVessels}). Office roles see the full fleet; vessel-scoped roles
+ * see only their assigned vessel.
+ */
+export async function listSelectableVessels(
+  ctx: AccessContext,
+): Promise<VesselRow[]> {
+  assertAuthenticatedAccess(ctx);
+  if (ctx.role === "management_user" || ctx.role === "vessel_user") {
+    if (!ctx.vesselId) return [];
+    return getDb()
+      .select()
+      .from(vessels)
+      .where(eq(vessels.id, ctx.vesselId))
+      .orderBy(asc(vessels.name));
+  }
+  return getDb().select().from(vessels).orderBy(asc(vessels.name));
+}
+
 /** Fleet size — unfiltered vessel count for Dashboard summary cards. */
 export async function getVesselCount(ctx: AccessContext): Promise<number> {
   assertAuthenticatedAccess(ctx);

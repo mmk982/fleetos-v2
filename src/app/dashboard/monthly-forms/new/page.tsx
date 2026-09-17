@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MonthlyFormCreateForm } from "@/components/monthly-form-create-form";
 import { listIsmTemplates } from "@/modules/ism-templates/ismTemplate.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -9,7 +9,7 @@ export default async function NewMonthlyFormPage() {
   const session = await requireSession();
   const access = toAccessContext(session);
   const [vessels, templates] = await Promise.all([
-    listVessels(access),
+    listSelectableVessels(access),
     listIsmTemplates(access),
   ]);
 

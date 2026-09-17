@@ -2,7 +2,7 @@ import { MonthlyFormsList } from "@/components/monthly-forms-list";
 import { listIsmTemplates } from "@/modules/ism-templates/ismTemplate.controller";
 import { listMonthlyFormRequirements } from "@/modules/monthly-forms/monthly-form-requirement.controller";
 import { listMonthlyForms } from "@/modules/monthly-forms/monthlyForm.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { MonthlyFormStatus } from "@/db/schema";
@@ -44,7 +44,7 @@ export default async function MonthlyFormsPage(props: {
     listMonthlyFormRequirements(access, {
       vesselId: sp.vesselId || undefined,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
     listIsmTemplates(access),
   ]);
 

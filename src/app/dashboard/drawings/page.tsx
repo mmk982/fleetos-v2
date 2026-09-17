@@ -3,7 +3,7 @@ import {
   listDrawingCategories,
   listDrawings,
 } from "@/modules/drawings/drawing.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -26,7 +26,7 @@ export default async function DrawingsPage(props: {
       vesselId: sp.vesselId || undefined,
       categoryId: sp.categoryId || undefined,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
     listDrawingCategories(access),
   ]);
 

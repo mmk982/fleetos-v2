@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { NewDeficiencyDrawer } from "@/components/new-deficiency-drawer";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
 export default async function NewDeficiencyPage() {
   const session = await requireSession();
-  const vessels = await listVessels(toAccessContext(session));
+  const vessels = await listSelectableVessels(toAccessContext(session));
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

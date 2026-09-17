@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { EditInsuranceDrawer } from "@/components/edit-insurance-drawer";
 import { getInsurancePolicyById } from "@/modules/insurance/insurance.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import InsuranceDetailPage from "../page";
@@ -15,7 +15,7 @@ export default async function EditInsurancePage(props: PageProps) {
 
   const [policy, vessels] = await Promise.all([
     getInsurancePolicyById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
   if (!policy) notFound();
 

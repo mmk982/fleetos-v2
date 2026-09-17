@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReminderForm } from "@/components/reminder-form";
 import { getReminderById } from "@/modules/reminders/reminder.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -17,7 +17,7 @@ export default async function EditReminderPage(props: PageProps) {
 
   const [reminder, vessels] = await Promise.all([
     getReminderById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
   if (!reminder) notFound();
 

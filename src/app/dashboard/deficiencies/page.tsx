@@ -1,6 +1,6 @@
 import { DeficienciesList } from "@/components/deficiencies-list";
 import { listDeficiencies } from "@/modules/deficiencies/deficiency.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { DeficiencyStatus } from "@/db/schema";
@@ -33,7 +33,7 @@ export default async function DeficienciesPage(props: {
       source: sp.source || undefined,
       category: sp.category || undefined,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
   ]);
 
   return (

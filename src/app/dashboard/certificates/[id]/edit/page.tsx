@@ -6,7 +6,7 @@ import {
   listCertificateTypes,
   listIssuingAuthorities,
 } from "@/modules/certificates/certificate.controller";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 
@@ -18,7 +18,7 @@ export default async function EditCertificatePage(props: PageProps) {
   const { id } = await props.params;
   const [cert, vessels, types, authorities] = await Promise.all([
     getCertificateById(access, id),
-    listVessels(access),
+    listSelectableVessels(access),
     listCertificateTypes(access),
     listIssuingAuthorities(access),
   ]);

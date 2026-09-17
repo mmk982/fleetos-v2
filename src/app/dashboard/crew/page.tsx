@@ -4,7 +4,7 @@ import {
   listCrewMembers,
 } from "@/modules/crew/crew.controller";
 import { CREW_STATUSES } from "@/modules/crew/crew.model";
-import { listVessels } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import type { CrewStatus } from "@/db/schema";
@@ -32,7 +32,7 @@ export default async function CrewPage(props: { searchParams: SearchParams }) {
       status,
       categoryId: sp.categoryId || undefined,
     }),
-    listVessels(access),
+    listSelectableVessels(access),
     listCrewCategories(access),
   ]);
 
