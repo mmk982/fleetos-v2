@@ -1,7 +1,9 @@
 import { CriticalDaysForm } from "@/components/settings-critical-days-form";
+import { EmailDigestForm } from "@/components/settings-email-digest-form";
 import { SettingsSubnav } from "@/components/settings-subnav";
 import { requireSession } from "@/lib/auth/session";
 import { getCriticalDays } from "@/lib/settings/critical-days";
+import { getEmailDigestEnabled } from "@/lib/settings/email-digest";
 import { STATUS_STYLES } from "@/lib/expiry";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +41,10 @@ function StatusColorsPanel() {
 
 export default async function SettingsGeneralPage() {
   await requireSession();
-  const criticalDays = await getCriticalDays();
+  const [criticalDays, emailDigestEnabled] = await Promise.all([
+    getCriticalDays(),
+    getEmailDigestEnabled(),
+  ]);
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
@@ -60,6 +65,12 @@ export default async function SettingsGeneralPage() {
             General
           </h2>
           <CriticalDaysForm initialValue={criticalDays} />
+        </section>
+        <section className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+            Email digest
+          </h2>
+          <EmailDigestForm initialEnabled={emailDigestEnabled} />
         </section>
         <StatusColorsPanel />
       </div>

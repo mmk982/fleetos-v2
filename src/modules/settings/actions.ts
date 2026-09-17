@@ -8,6 +8,7 @@ import { toAccessContext } from "@/lib/auth/access";
 import { assertSameOriginMutation } from "@/lib/auth/request-guard";
 import { requireSession } from "@/lib/auth/session";
 import { setCriticalDays } from "@/lib/settings/critical-days";
+import { setEmailDigestEnabled } from "@/lib/settings/email-digest";
 import { optionalTrimmedString } from "@/lib/validation/form-fields";
 import { z } from "zod";
 import {
@@ -52,6 +53,19 @@ export async function setCriticalDaysAction(
   }
 
   await setCriticalDays(parsed.data.criticalDays);
+  revalidatePath("/dashboard/settings");
+  return { ok: true, message: "Saved." };
+}
+
+export async function setEmailDigestEnabledAction(
+  _prev: SettingsActionState | undefined,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  await assertSameOriginMutation();
+  await requireSession({ touch: true });
+
+  const enabled = formData.get("enabled") === "true";
+  await setEmailDigestEnabled(enabled);
   revalidatePath("/dashboard/settings");
   return { ok: true, message: "Saved." };
 }

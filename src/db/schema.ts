@@ -793,6 +793,39 @@ export type NotificationRow = typeof notifications.$inferSelect;
 export type NotificationInsert = typeof notifications.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// Email digest (PROJECT_PLAN.md §12b)
+// ---------------------------------------------------------------------------
+
+/**
+ * One row per Admin per calendar day that a digest was successfully sent.
+ * Dedupes cron retries via unique (recipientUserId, digestDate).
+ */
+export const emailDeliveries = pgTable(
+  "email_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    recipientUserId: uuid("recipient_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    digestDate: date("digest_date").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("email_deliveries_recipient_date_uidx").on(
+      t.recipientUserId,
+      t.digestDate,
+    ),
+  ],
+);
+
+/** A row as read from {@link emailDeliveries}. */
+export type EmailDeliveryRow = typeof emailDeliveries.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link emailDeliveries}. */
+export type EmailDeliveryInsert = typeof emailDeliveries.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // Insurance module (PROJECT_PLAN.md §4)
 // ---------------------------------------------------------------------------
 
