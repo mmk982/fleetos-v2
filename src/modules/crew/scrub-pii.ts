@@ -25,6 +25,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -51,23 +53,25 @@ export async function scrubCrewMemberPii(
   id: string,
 ): Promise<{ attachmentsRemoved: number }> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "crew", "write");
   const db = getDb();
 
-  let name: string | undefined;
+  const members = await db
+    .select({
+      id: crewMembers.id,
+      firstName: crewMembers.firstName,
+      lastName: crewMembers.lastName,
+      vesselId: crewMembers.vesselId,
+    })
+    .from(crewMembers)
+    .where(eq(crewMembers.id, id))
+    .limit(1);
+  if (!members[0]) throw new CrewMemberNotFoundError(id);
+  assertVesselScope(ctx, members[0].vesselId);
+  const name = `${members[0].firstName} ${members[0].lastName}`;
+
   let attachmentsRemoved = 0;
   try {
-    const members = await db
-      .select({
-        id: crewMembers.id,
-        firstName: crewMembers.firstName,
-        lastName: crewMembers.lastName,
-      })
-      .from(crewMembers)
-      .where(eq(crewMembers.id, id))
-      .limit(1);
-    if (!members[0]) throw new CrewMemberNotFoundError(id);
-    name = `${members[0].firstName} ${members[0].lastName}`;
-
     const certs = await db
       .select({ id: crewCertificates.id })
       .from(crewCertificates)
@@ -138,7 +142,6 @@ export async function scrubCrewMemberPii(
       }
     }
   } catch (error) {
-    if (error instanceof CrewMemberNotFoundError) throw error;
     logError("CREW_SCRUB_PII_FAILED", { error, crewMemberId: id });
     throw error;
   }
@@ -147,9 +150,7 @@ export async function scrubCrewMemberPii(
     actionType: "deleted",
     moduleName: "crew",
     recordId: id,
-    description: name
-      ? `Deleted crew member: ${name}`
-      : "Deleted crew member",
+    description: `Deleted crew member: ${name}`,
   });
   return { attachmentsRemoved };
 }

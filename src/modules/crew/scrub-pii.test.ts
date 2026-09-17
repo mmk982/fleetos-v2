@@ -22,10 +22,14 @@ vi.mock("@/db/client", () => ({
 }));
 
 const assertAuthenticatedAccess = vi.fn();
+const assertModuleAccess = vi.fn();
+const assertVesselScope = vi.fn();
 vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: (
     ...args: [unknown, string?]
   ) => assertAuthenticatedAccess(...args),
+  assertModuleAccess: (...args: unknown[]) => assertModuleAccess(...args),
+  assertVesselScope: (...args: unknown[]) => assertVesselScope(...args),
 }));
 import {
   crewCertificateAttachments,
@@ -58,7 +62,14 @@ function buildDb(options: { failMemberUpdate: boolean }) {
   let inFlight: AppliedOp[] = [];
 
   const selectQueue = [
-    thenableResult([{ id: MEMBER_ID }]),
+    thenableResult([
+      {
+        id: MEMBER_ID,
+        firstName: "Ada",
+        lastName: "Lovelace",
+        vesselId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      },
+    ]),
     thenableResult([{ id: CERT_ID }]),
     thenableResult([
       {
@@ -131,6 +142,8 @@ describe("scrubCrewMemberPii", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     assertAuthenticatedAccess.mockReset();
+    assertModuleAccess.mockReset();
+    assertVesselScope.mockReset();
   });
 
   it("rolls back certificate PII update when the member update fails mid-transaction", async () => {

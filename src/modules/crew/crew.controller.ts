@@ -21,6 +21,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeAccessLog } from "@/lib/access-log/write";
@@ -89,6 +91,7 @@ export async function listCrewCategories(
   ctx: AccessContext,
 ): Promise<CrewCategoryRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "crew", "read");
   return getDb()
     .select()
     .from(crewCategories)
@@ -99,6 +102,7 @@ export async function listEndorsementTypes(
   ctx: AccessContext,
 ): Promise<EndorsementTypeRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "crew", "read");
   return getDb()
     .select()
     .from(endorsementTypes)
@@ -110,6 +114,7 @@ export async function createCrewCategory(
   input: { name: string },
 ): Promise<CrewCategoryRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CrewConflictError("Name is required.");
@@ -140,6 +145,7 @@ export async function updateCrewCategory(
   input: { name: string },
 ): Promise<CrewCategoryRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CrewConflictError("Name is required.");
@@ -178,6 +184,7 @@ export async function deleteCrewCategory(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -202,6 +209,7 @@ export async function createEndorsementType(
   input: { name: string },
 ): Promise<EndorsementTypeRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CrewConflictError("Name is required.");
@@ -232,6 +240,7 @@ export async function updateEndorsementType(
   input: { name: string },
 ): Promise<EndorsementTypeRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const name = input.name.trim();
   if (name.length === 0) {
     throw new CrewConflictError("Name is required.");
@@ -273,6 +282,7 @@ export async function deleteEndorsementType(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
   const db = getDb();
   try {
     const deleted = await db
@@ -304,10 +314,15 @@ export async function listCrewMembers(
   filters: CrewListFilters = {},
 ): Promise<CrewMemberListItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "crew", "read");
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
-  if (filters.vesselId) {
-    conditions.push(eq(crewMembers.vesselId, filters.vesselId));
+  if (scopedVesselId) {
+    conditions.push(eq(crewMembers.vesselId, scopedVesselId));
   }
   if (filters.status) {
     conditions.push(eq(crewMembers.status, filters.status));
@@ -349,6 +364,7 @@ export async function getCrewMemberById(
   options: GetCrewMemberOptions = {},
 ): Promise<CrewMemberListItem | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "crew", "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -363,6 +379,7 @@ export async function getCrewMemberById(
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
+  assertVesselScope(ctx, row.member.vesselId);
 
   if (options.logView) {
     await writeAccessLog({
@@ -385,6 +402,8 @@ export async function createCrewMember(
   input: CrewMemberCreateInput,
 ): Promise<CrewMemberRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "crew", "write");
+  assertVesselScope(ctx, input.vesselId ?? null);
   const db = getDb();
   let row: CrewMemberRow;
   try {
@@ -429,14 +448,16 @@ export async function updateCrewMember(
   input: CrewMemberUpdateInput,
 ): Promise<CrewMemberRow> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "crew", "write");
   const db = getDb();
 
   const existing = await db
-    .select({ id: crewMembers.id })
+    .select({ id: crewMembers.id, vesselId: crewMembers.vesselId })
     .from(crewMembers)
     .where(eq(crewMembers.id, id))
     .limit(1);
   if (!existing[0]) throw new CrewMemberNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
 
   const patch: Partial<typeof crewMembers.$inferInsert> & {
     updatedAt: Date;
@@ -486,18 +507,20 @@ export async function deleteCrewMember(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "crew", "write");
   const db = getDb();
   const existing = await db
     .select({
       firstName: crewMembers.firstName,
       lastName: crewMembers.lastName,
+      vesselId: crewMembers.vesselId,
     })
     .from(crewMembers)
     .where(eq(crewMembers.id, id))
     .limit(1);
-  const name = existing[0]
-    ? `${existing[0].firstName} ${existing[0].lastName}`
-    : undefined;
+  if (!existing[0]) throw new CrewMemberNotFoundError(id);
+  assertVesselScope(ctx, existing[0].vesselId);
+  const name = `${existing[0].firstName} ${existing[0].lastName}`;
   try {
     const deleted = await db
       .delete(crewMembers)
