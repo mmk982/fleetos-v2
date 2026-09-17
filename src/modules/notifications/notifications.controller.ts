@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
   ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
@@ -214,6 +215,7 @@ export async function listNotifications(
   filters: ListNotificationsFilters,
 ): Promise<NotificationRow[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "alerts", "read");
   assertOwnUser(ctx, filters.userId);
 
   const conditions: SQL[] = [eq(notifications.userId, filters.userId)];
@@ -238,6 +240,7 @@ export async function getUnreadCount(
   userId: string,
 ): Promise<number> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "alerts", "read");
   assertOwnUser(ctx, userId);
 
   const rows = await getDb()

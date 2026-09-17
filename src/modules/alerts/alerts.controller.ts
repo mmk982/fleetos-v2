@@ -19,6 +19,7 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
   type AccessContext,
 } from "@/lib/auth/access";
 import {
@@ -280,11 +281,15 @@ export async function getAlerts(
   options: GetAlertsOptions = {},
 ): Promise<AlertItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "alerts", "read");
 
   const kinds = options.kinds?.filter((k) =>
     (ALERT_KINDS as readonly string[]).includes(k),
   );
-  const vesselId = options.vesselId || undefined;
+  const vesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? (ctx.vesselId ?? undefined)
+      : options.vesselId || undefined;
   const criticalDays = await getCriticalDays();
 
   const batches = await Promise.all([

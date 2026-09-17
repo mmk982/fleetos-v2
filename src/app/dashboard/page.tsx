@@ -27,7 +27,7 @@ import {
   type MonthlyFormListItem,
 } from "@/modules/monthly-forms/monthlyForm.model";
 import { syncNotifications } from "@/modules/notifications/notifications.controller";
-import { getVesselCount } from "@/modules/vessels/vessel.controller";
+import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +44,8 @@ const CERT_COUNT_STATUSES: ComplianceStatus[] = [
 export default async function DashboardPage() {
   const session = await requireSession();
   const access = toAccessContext(session);
+  const skipRecentActivity =
+    access.role === "management_user" || access.role === "vessel_user";
 
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -68,10 +70,12 @@ export default async function DashboardPage() {
     getAlerts(access, { kinds: ["certificate"], limit: PREVIEW_LIMIT }),
     getAlerts(access, { kinds: ["deficiency"], limit: PREVIEW_LIMIT }),
     listMonthlyForms(access, { month, year, status: "pending" }),
-    getVesselCount(access),
+    listSelectableVessels(access).then((v) => v.length),
     getOpenDeficienciesCount(access),
     getManualCount(access),
-    getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
+    skipRecentActivity
+      ? Promise.resolve([])
+      : getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
     // Lazy notification sweep — runs in parallel; errors are logged inside.
     syncNotifications(access),
   ]);
@@ -265,12 +269,14 @@ export default async function DashboardPage() {
           <MissingMonthlyFormsPreview rows={missingMonthlyForms} />
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Recent activity
-          </h2>
-          <RecentActivityList items={recentActivity} />
-        </section>
+        {!skipRecentActivity ? (
+          <section className="space-y-3">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Recent activity
+            </h2>
+            <RecentActivityList items={recentActivity} />
+          </section>
+        ) : null}
       </div>
     </main>
   );

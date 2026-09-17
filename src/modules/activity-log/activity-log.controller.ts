@@ -10,6 +10,8 @@ import { getDb } from "@/db/client";
 import { activityLogs, users } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  ForbiddenError,
   type AccessContext,
 } from "@/lib/auth/access";
 
@@ -39,6 +41,12 @@ export async function getRecentActivity(
   options: GetRecentActivityOptions = {},
 ): Promise<RecentActivityItem[]> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "alerts", "read");
+  if (ctx.role === "management_user" || ctx.role === "vessel_user") {
+    throw new ForbiddenError(
+      "Recent activity is not available for vessel-scoped roles.",
+    );
+  }
   const limit = options.limit ?? 8;
 
   return getDb()
