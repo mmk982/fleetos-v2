@@ -101,22 +101,25 @@ export const STATUS_LABELS: Record<ComplianceStatus, string> = {
 };
 
 /**
- * Tailwind badge classes mapped to DESIGN_HANDOFF.md §1.3:
- * green = valid; amber = due soon (`expiring` / `critical`); red = expired;
- * gray = unknown / revoked. `critical` shares amber with `expiring` but keeps
- * bold + ring emphasis because it is meaningfully more urgent.
+ * Tailwind badge classes mapped to ComplianceOne chip semantics:
+ * compliant (valid) / at risk (expiring, critical) / non-compliant (expired) /
+ * neutral filter chip (unknown, revoked). `critical` shares at-risk amber with
+ * `expiring` but keeps bold + ring emphasis. Dark chip fills are invented
+ * (spec is light-only) to preserve the theme toggle.
  */
 export const STATUS_STYLES: Record<ComplianceStatus, string> = {
   valid:
-    "bg-[#EAF3DE] text-[#27500A] dark:bg-[#085041] dark:text-[#5DCAA5]",
+    "bg-[#DCFCE7] text-[#059669] dark:bg-[#059669]/20 dark:text-[#34D399]",
   expiring:
-    "bg-[#FAEEDA] text-[#633806] dark:bg-[#633806] dark:text-[#FAC775]",
+    "bg-[#FEF3C7] text-[#D97706] dark:bg-[#D97706]/20 dark:text-[#FBBF24]",
   critical:
-    "bg-[#FAEEDA] text-[#633806] font-semibold ring-1 ring-[#633806]/40 dark:bg-[#633806] dark:text-[#FAC775] dark:ring-[#FAC775]/40",
+    "bg-[#FEF3C7] text-[#D97706] font-semibold ring-1 ring-[#D97706]/40 dark:bg-[#D97706]/20 dark:text-[#FBBF24] dark:ring-[#FBBF24]/40",
   expired:
-    "bg-[#FCEBEB] text-[#791F1F] dark:bg-[#791F1F] dark:text-[#F09595]",
-  unknown: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  revoked: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    "bg-[#FEE2E2] text-[#DC2626] dark:bg-[#DC2626]/20 dark:text-[#F87171]",
+  unknown:
+    "bg-[#F1F5F9] text-[#0F172A] dark:bg-gray-800 dark:text-gray-300",
+  revoked:
+    "bg-[#F1F5F9] text-[#0F172A] dark:bg-gray-800 dark:text-gray-300",
 };
 
 const SEVERITY_RANK: Record<ComplianceStatus, number> = {

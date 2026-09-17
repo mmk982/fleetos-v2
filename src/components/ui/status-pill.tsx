@@ -26,7 +26,7 @@ const TONE_CLASSES = {
 export type StatusPillTone = keyof typeof TONE_CLASSES;
 
 const BASE =
-  "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-normal";
+  "inline-flex items-center rounded-none px-2 py-0.5 text-[11px] font-normal";
 
 type ComplianceProps = {
   /** Live / cached compliance status — styles and default label from the expiry engine. */

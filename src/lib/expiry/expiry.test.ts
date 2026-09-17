@@ -337,13 +337,13 @@ describe("STATUS_LABELS and STATUS_STYLES", () => {
     }
   });
 
-  it("maps to the 3+1 color legend (green / amber / red / gray)", () => {
-    expect(STATUS_STYLES.valid).toMatch(/EAF3DE|085041|27500A|5DCAA5/i);
-    expect(STATUS_STYLES.expiring).toMatch(/FAEEDA|633806|FAC775/i);
-    expect(STATUS_STYLES.critical).toMatch(/FAEEDA|633806|FAC775/i);
-    expect(STATUS_STYLES.expired).toMatch(/FCEBEB|791F1F|F09595/i);
-    expect(STATUS_STYLES.unknown).toMatch(/gray|zinc|neutral|slate/i);
-    expect(STATUS_STYLES.revoked).toMatch(/gray|zinc|neutral|slate/i);
+  it("maps to ComplianceOne chip colors (compliant / at risk / non-compliant / neutral)", () => {
+    expect(STATUS_STYLES.valid).toMatch(/DCFCE7|059669|34D399/i);
+    expect(STATUS_STYLES.expiring).toMatch(/FEF3C7|D97706|FBBF24/i);
+    expect(STATUS_STYLES.critical).toMatch(/FEF3C7|D97706|FBBF24/i);
+    expect(STATUS_STYLES.expired).toMatch(/FEE2E2|DC2626|F87171/i);
+    expect(STATUS_STYLES.unknown).toMatch(/F1F5F9|0F172A|gray/i);
+    expect(STATUS_STYLES.revoked).toMatch(/F1F5F9|0F172A|gray/i);
   });
 
   it("visually distinguishes critical from plain expiring", () => {

@@ -3,42 +3,59 @@
 /* Class strategy (next-themes attribute="class") — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Light mode — DESIGN_HANDOFF.md §1.2 */
+/* Light mode — ComplianceOne */
 :root {
-  --bg-page: #f8fafc;
-  --bg-sidebar: #123a63;
+  --bg-page: #ffffff;
+  --bg-sidebar: #1e40af; /* Primary — primary actions, navigation */
   --border: #e2e8f0;
+  --border-strong: #cbd5e1; /* elevated cards, input borders */
   --bg-card: #ffffff;
-  --accent: #378add;
+  --accent: #1e40af; /* Primary */
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --info: #2563eb;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-tertiary: #64748b;
-  /* Not listed in §1.2; used for sidebar group headers on the deep-blue rail */
-  --text-muted: #8fa3c0;
+  --text-muted: #ffffffb3; /* sidebar group headers on the blue rail */
   --font-latin: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-arabic: var(--font-ibm-plex-arabic), var(--font-inter), ui-sans-serif,
     system-ui, sans-serif;
+  --font-headline: var(--font-zilla-slab), var(--font-inter), serif;
+  --font-mono: var(--font-fira-code), ui-monospace, monospace;
 }
 
-/* Dark mode — DESIGN_HANDOFF.md §1.1 (class strategy, not prefers-color-scheme) */
+/* Dark variant — NOT in complianceone-DESIGN.md (spec is light-only); invented to
+   preserve the existing theme toggle, same flat/bordered/sharp-corner language. */
 .dark {
-  --bg-page: #0b1526;
-  --bg-sidebar: #0a1220;
-  --border: #1e2c45;
-  --bg-card: #101b30;
-  --accent: #378add;
+  --bg-page: #0b0f17;
+  --bg-sidebar: #14204d;
+  --border: #263244;
+  --border-strong: #37475c;
+  --bg-card: #131a26;
+  --accent: #5b8def;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #60a5fa;
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-tertiary: #8fa3c0;
-  --text-muted: #5b729b;
+  --text-muted: #8fa3c0b3;
 }
 
 @theme inline {
   --color-bg-page: var(--bg-page);
   --color-bg-sidebar: var(--bg-sidebar);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-bg-card: var(--bg-card);
   --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);

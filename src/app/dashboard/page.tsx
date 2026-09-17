@@ -134,7 +134,7 @@ export default async function DashboardPage() {
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-5" dir="auto">
       <div>
-        <h1 className="text-[18px] font-medium text-[var(--text-primary)]">
+        <h1 className="font-[var(--font-headline)] text-[28px] font-bold leading-9 text-[var(--text-primary)]">
           Dashboard
         </h1>
         <p className="mt-1 text-[13px] text-[var(--text-tertiary)]">
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
       </div>
 
       <section className="mt-6" aria-label="Health summary">
-        <h2 className="text-[13px] font-medium text-[var(--text-primary)]">
+        <h2 className="font-[var(--font-headline)] text-[18px] font-semibold text-[var(--text-primary)]">
           Health summary
         </h2>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
           ).map(([status, n]) => (
             <span
               key={status}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px]"
+              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px]"
             >
               <StatusPill status={status} />
               <span className="tabular-nums text-[var(--text-secondary)]">
@@ -176,7 +176,7 @@ export default async function DashboardPage() {
           ).map(([kind, n]) => (
             <span
               key={kind}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px] text-[var(--text-secondary)]"
+              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px] text-[var(--text-secondary)]"
             >
               <span>{alertKindLabel(kind)}</span>
               <span className="tabular-nums font-medium">{n}</span>
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
               </>
             );
             const className =
-              "rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4";
+              "rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-4";
             return card.href ? (
               <Link
                 key={card.label}
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <section className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-[14px] font-medium text-[var(--text-primary)]">
+            <h2 className="font-[var(--font-headline)] text-[18px] font-semibold text-[var(--text-primary)]">
               Certificates due soon
             </h2>
             <Link
@@ -238,7 +238,7 @@ export default async function DashboardPage() {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-[14px] font-medium text-[var(--text-primary)]">
+            <h2 className="font-[var(--font-headline)] text-[18px] font-semibold text-[var(--text-primary)]">
               Open deficiencies
             </h2>
             <Link
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-[14px] font-medium text-[var(--text-primary)]">
+            <h2 className="font-[var(--font-headline)] text-[18px] font-semibold text-[var(--text-primary)]">
               Missing monthly forms
             </h2>
             <Link
@@ -271,7 +271,7 @@ export default async function DashboardPage() {
 
         {!skipRecentActivity ? (
           <section className="space-y-3">
-            <h2 className="text-[14px] font-medium text-[var(--text-primary)]">
+            <h2 className="font-[var(--font-headline)] text-[18px] font-semibold text-[var(--text-primary)]">
               Recent activity
             </h2>
             <RecentActivityList items={recentActivity} />
@@ -302,14 +302,14 @@ function MissingMonthlyFormsPreview({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
+      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
         No missing monthly forms this month.
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+    <div className="overflow-x-auto rounded-none border border-[var(--border)] bg-[var(--bg-card)]">
       <table className="min-w-full text-left text-[13px]">
         <thead className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--text-muted)]">
           <tr>
@@ -356,14 +356,14 @@ function RecentActivityList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
+      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
         No recent activity yet.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+    <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)] bg-[var(--bg-card)]">
       {items.map((item) => (
         <li
           key={item.id}

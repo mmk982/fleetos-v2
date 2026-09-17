@@ -9,6 +9,7 @@ import {
 import { toNotificationListItem } from "@/modules/notifications/notifications.model";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/modules/auth/actions";
 
 function initialsFromName(name: string): string {
@@ -62,19 +63,16 @@ export async function DashboardTopBar() {
         </time>
         <ThemeToggle />
         <span
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-medium text-white"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-[var(--accent)] text-[11px] font-medium text-white"
           aria-hidden="true"
           title={session.user.name}
         >
           {initials}
         </span>
         <form action={logoutAction}>
-          <button
-            type="submit"
-            className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          >
+          <Button type="submit" variant="ghost" size="sm">
             Sign out
-          </button>
+          </Button>
         </form>
       </div>
     </header>
