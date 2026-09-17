@@ -5,6 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+vi.mock("@/lib/auth/access", () => ({
+  assertAuthenticatedAccess: vi.fn(),
+  assertModuleAccess: vi.fn(),
+}));
+
 const getDb = vi.fn();
 vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
@@ -16,6 +21,8 @@ import {
   getCriticalDays,
   setCriticalDays,
 } from "./critical-days";
+
+const CTX = { userId: "user-1", role: "admin", vesselId: null };
 
 describe("getCriticalDays", () => {
   beforeEach(() => {
@@ -68,7 +75,7 @@ describe("setCriticalDays", () => {
   });
 
   it("rejects non-positive values", async () => {
-    await expect(setCriticalDays(0)).rejects.toThrow(/positive integer/i);
+    await expect(setCriticalDays(CTX, 0)).rejects.toThrow(/positive integer/i);
     expect(getDb).not.toHaveBeenCalled();
   });
 
@@ -78,7 +85,7 @@ describe("setCriticalDays", () => {
     const insert = vi.fn(() => ({ values }));
     getDb.mockReturnValue({ insert });
 
-    await setCriticalDays(21);
+    await setCriticalDays(CTX, 21);
 
     expect(insert).toHaveBeenCalled();
     expect(values).toHaveBeenCalledWith(

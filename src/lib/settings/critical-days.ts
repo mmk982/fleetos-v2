@@ -10,6 +10,11 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { settings } from "@/db/schema";
+import {
+  assertAuthenticatedAccess,
+  assertModuleAccess,
+  type AccessContext,
+} from "@/lib/auth/access";
 import { DEFAULT_CRITICAL_DAYS } from "@/lib/expiry";
 
 export const CRITICAL_DAYS_KEY = "criticalDays";
@@ -36,7 +41,12 @@ export async function getCriticalDays(): Promise<number> {
  *
  * @throws when `value` is not a positive integer.
  */
-export async function setCriticalDays(value: number): Promise<void> {
+export async function setCriticalDays(
+  ctx: AccessContext,
+  value: number,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   if (!Number.isInteger(value) || value < 1) {
     throw new Error("criticalDays must be a positive integer.");
   }

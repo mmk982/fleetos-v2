@@ -1,6 +1,6 @@
 /**
  * Users & Roles admin CRUD (`PROJECT_PLAN.md` §7a).
- * Admin-only — narrow gate, not the full Phase 6 WRITE_ROLES table.
+ * Gated via `settings_users` module access (admin-only in the matrix).
  */
 import "server-only";
 
@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
-  ForbiddenError,
+  assertModuleAccess,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -59,16 +59,9 @@ function isPgForeignKeyViolation(error: unknown): boolean {
   );
 }
 
-/** Users & Roles is Admin-only (independent of the broader Phase 6 table). */
-export function assertAdminAccess(ctx: AccessContext): void {
-  assertAuthenticatedAccess(ctx);
-  if (ctx.role !== "admin") {
-    throw new ForbiddenError("Admin role required for Users & Roles.");
-  }
-}
-
 export async function listUsers(ctx: AccessContext): Promise<UserListItem[]> {
-  assertAdminAccess(ctx);
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_users", "read");
   const rows = await getDb()
     .select({
       id: users.id,
@@ -102,7 +95,8 @@ export async function createUser(
   ctx: AccessContext,
   input: CreateUserInput,
 ): Promise<UserRow> {
-  assertAdminAccess(ctx);
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_users", "write");
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   if (!name) throw new UserConflictError("Name is required.");
@@ -168,7 +162,8 @@ export async function updateUser(
   id: string,
   input: UpdateUserInput,
 ): Promise<UserRow> {
-  assertAdminAccess(ctx);
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_users", "write");
   const db = getDb();
   const existing = await db
     .select()
@@ -240,7 +235,8 @@ export async function changeUserPassword(
   id: string,
   password: string,
 ): Promise<void> {
-  assertAdminAccess(ctx);
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_users", "write");
   if (password.length < 8) {
     throw new UserConflictError("Password must be at least 8 characters.");
   }
@@ -272,7 +268,8 @@ export async function setUserActive(
   id: string,
   isActive: boolean,
 ): Promise<UserRow> {
-  assertAdminAccess(ctx);
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_users", "write");
   if (id === ctx.userId && !isActive) {
     throw new UserConflictError("You cannot deactivate your own account.");
   }

@@ -12,6 +12,7 @@ import { getDb } from "@/db/client";
 import { companyProfile, type CompanyProfileRow } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
@@ -88,6 +89,7 @@ export async function updateCompanyProfile(
   input: CompanyProfileUpdateInput,
 ): Promise<CompanyProfileRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   await getCompanyProfile();
   const patch: Partial<typeof companyProfile.$inferInsert> & {
     updatedAt: Date;
@@ -122,6 +124,7 @@ export async function uploadCompanyLogo(
   file: UploadFile,
 ): Promise<CompanyProfileRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   if (!ALLOWED_MIME.has(file.type)) {
     throw new LogoValidationError("Logo must be JPEG or PNG.");
   }
@@ -159,6 +162,7 @@ export async function uploadCompanyLogo(
 
 export async function clearCompanyLogo(ctx: AccessContext): Promise<CompanyProfileRow> {
   assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const current = await getCompanyProfile();
   const updated = await getDb()
     .update(companyProfile)

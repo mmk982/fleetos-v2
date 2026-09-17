@@ -31,7 +31,7 @@ export async function setCriticalDaysAction(
   formData: FormData,
 ): Promise<SettingsActionState> {
   await assertSameOriginMutation();
-  await requireSession({ touch: true });
+  const access = toAccessContext(await requireSession({ touch: true }));
 
   const parsed = criticalDaysSchema.safeParse({
     criticalDays: formData.get("criticalDays"),
@@ -52,7 +52,7 @@ export async function setCriticalDaysAction(
     };
   }
 
-  await setCriticalDays(parsed.data.criticalDays);
+  await setCriticalDays(access, parsed.data.criticalDays);
   revalidatePath("/dashboard/settings");
   return { ok: true, message: "Saved." };
 }
@@ -62,10 +62,10 @@ export async function setEmailDigestEnabledAction(
   formData: FormData,
 ): Promise<SettingsActionState> {
   await assertSameOriginMutation();
-  await requireSession({ touch: true });
+  const access = toAccessContext(await requireSession({ touch: true }));
 
   const enabled = formData.get("enabled") === "true";
-  await setEmailDigestEnabled(enabled);
+  await setEmailDigestEnabled(access, enabled);
   revalidatePath("/dashboard/settings");
   return { ok: true, message: "Saved." };
 }

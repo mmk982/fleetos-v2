@@ -6,6 +6,11 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { settings } from "@/db/schema";
+import {
+  assertAuthenticatedAccess,
+  assertModuleAccess,
+  type AccessContext,
+} from "@/lib/auth/access";
 
 export const EMAIL_DIGEST_ENABLED_KEY = "emailDigestEnabled";
 
@@ -27,7 +32,12 @@ export async function getEmailDigestEnabled(): Promise<boolean> {
 /**
  * Upserts `emailDigestEnabled` as `"true"` / `"false"`.
  */
-export async function setEmailDigestEnabled(value: boolean): Promise<void> {
+export async function setEmailDigestEnabled(
+  ctx: AccessContext,
+  value: boolean,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
   const now = new Date();
   const asText = value ? "true" : "false";
   await getDb()
