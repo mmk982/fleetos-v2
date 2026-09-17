@@ -57,7 +57,11 @@ export async function GET(request: Request) {
     assertModuleAccess(access, "particulars", "read");
 
     const rows = await listVesselParticularsSummary(access);
-    const exportRows: Row[] = rows.map((row) => ({
+    const scopedRows =
+      access.role === "management_user"
+        ? rows.filter((r) => r.vesselId === access.vesselId)
+        : rows;
+    const exportRows: Row[] = scopedRows.map((row) => ({
       vessel: row.vesselName,
       classSociety: row.classSociety ?? "",
       dwt: row.deadweightTonnage != null ? String(row.deadweightTonnage) : "",
