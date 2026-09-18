@@ -10,6 +10,7 @@ import { toNotificationListItem } from "@/modules/notifications/notifications.mo
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { MobileNavButton } from "@/components/mobile-nav-button";
 import { logoutAction } from "@/modules/auth/actions";
 
 function initialsFromName(name: string): string {
@@ -35,19 +36,22 @@ export async function DashboardTopBar() {
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--bg-card)] px-4">
-      <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-        {profile.logoPath ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/api/company-profile/logo"
-            alt=""
-            className="h-8 w-auto max-w-[10rem] object-contain"
-          />
-        ) : null}
-        <span className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)]">
-          {name}
-        </span>
-      </Link>
+      <div className="flex min-w-0 items-center gap-2">
+        <MobileNavButton />
+        <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
+          {profile.logoPath ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/api/company-profile/logo"
+              alt=""
+              className="h-8 w-auto max-w-[10rem] object-contain"
+            />
+          ) : null}
+          <span className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)]">
+            {name}
+          </span>
+        </Link>
+      </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
         <NotificationsBell
@@ -63,7 +67,7 @@ export async function DashboardTopBar() {
         </time>
         <ThemeToggle />
         <span
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-[var(--accent)] text-[11px] font-medium text-white"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-medium text-white"
           aria-hidden="true"
           title={session.user.name}
         >

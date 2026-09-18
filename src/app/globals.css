@@ -3,46 +3,56 @@
 /* Class strategy (next-themes attribute="class") — not prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Light mode — ComplianceOne */
+/* Light — ported from prior FleetOS AppShell design */
 :root {
-  --bg-page: #ffffff;
-  --bg-sidebar: #1e40af; /* Primary — primary actions, navigation */
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1; /* elevated cards, input borders */
+  --bg-page: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --border: #f1f5f9;
+  --border-strong: #e2e8f0;
   --bg-card: #ffffff;
-  --accent: #1e40af; /* Primary */
+  --accent: #2563eb;
   --success: #059669;
   --warning: #d97706;
-  --error: #dc2626;
+  --error: #e11d48;
   --info: #2563eb;
   --text-primary: #0f172a;
-  --text-secondary: #334155;
+  --text-secondary: #475569;
   --text-tertiary: #64748b;
-  --text-muted: #ffffffb3; /* sidebar group headers on the blue rail */
+  --text-muted: #94a3b8;
   --font-latin: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-arabic: var(--font-ibm-plex-arabic), var(--font-inter), ui-sans-serif,
+  --font-arabic: var(--font-tajawal), var(--font-inter), ui-sans-serif,
     system-ui, sans-serif;
-  --font-headline: var(--font-zilla-slab), var(--font-inter), serif;
-  --font-mono: var(--font-fira-code), ui-monospace, monospace;
+  --font-headline: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --tone-blue-bg: #eff6ff;
+  --tone-blue-fg: #2563eb;
+  --tone-orange-bg: #fff7ed;
+  --tone-orange-fg: #ea580c;
+  --tone-slate-bg: #f1f5f9;
+  --tone-slate-fg: #475569;
 }
 
-/* Dark variant — NOT in complianceone-DESIGN.md (spec is light-only); invented to
-   preserve the existing theme toggle, same flat/bordered/sharp-corner language. */
 .dark {
-  --bg-page: #0b0f17;
-  --bg-sidebar: #14204d;
-  --border: #263244;
-  --border-strong: #37475c;
-  --bg-card: #131a26;
-  --accent: #5b8def;
+  --bg-page: #020617;
+  --bg-sidebar: #0f172a;
+  --border: #1e293b;
+  --border-strong: #334155;
+  --bg-card: #0f172a;
+  --accent: #60a5fa;
   --success: #34d399;
   --warning: #fbbf24;
-  --error: #f87171;
+  --error: #fb7185;
   --info: #60a5fa;
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
-  --text-tertiary: #8fa3c0;
-  --text-muted: #8fa3c0b3;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  --tone-blue-bg: rgba(30, 58, 138, 0.3);
+  --tone-blue-fg: #60a5fa;
+  --tone-orange-bg: rgba(124, 45, 18, 0.3);
+  --tone-orange-fg: #fb923c;
+  --tone-slate-bg: #1e293b;
+  --tone-slate-fg: #94a3b8;
 }
 
 @theme inline {
@@ -60,6 +70,12 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
   --color-text-muted: var(--text-muted);
+  --color-tone-blue-bg: var(--tone-blue-bg);
+  --color-tone-blue-fg: var(--tone-blue-fg);
+  --color-tone-orange-bg: var(--tone-orange-bg);
+  --color-tone-orange-fg: var(--tone-orange-fg);
+  --color-tone-slate-bg: var(--tone-slate-bg);
+  --color-tone-slate-fg: var(--tone-slate-fg);
   --font-sans: var(--font-latin);
 }
 
@@ -71,4 +87,8 @@ body {
 
 html[dir="rtl"] body {
   font-family: var(--font-arabic);
+}
+
+.nums {
+  font-variant-numeric: tabular-nums;
 }

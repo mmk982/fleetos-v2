@@ -1,11 +1,8 @@
 /**
- * Status badge primitive.
+ * Status badge primitive — bordered, rounded-full Pill (prior FleetOS design).
  *
  * Compliance statuses reuse {@link STATUS_STYLES} / {@link STATUS_LABELS} from
- * `src/lib/expiry` — color logic stays in the engine, not duplicated here.
- * Domain statuses that are not compliance (e.g. vessel lifecycle) pass a
- * `tone` instead; callers own the mapping (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md`
- * Task 5).
+ * `src/lib/expiry`. Domain statuses that are not compliance pass a `tone`.
  */
 import type { ReactNode } from "react";
 import {
@@ -15,30 +12,50 @@ import {
 } from "@/lib/expiry";
 
 const TONE_CLASSES = {
-  success: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
+  success:
+    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success)]",
   warning:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200",
-  danger: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)]",
+  danger:
+    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error)]",
   neutral:
-    "bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+    "bg-[var(--tone-slate-bg)] text-[var(--tone-slate-fg)] border-[var(--border-strong)]",
 } as const;
 
 export type StatusPillTone = keyof typeof TONE_CLASSES;
 
 const BASE =
-  "inline-flex items-center rounded-none px-2 py-0.5 text-[11px] font-normal";
+  "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap";
+
+const DOT_BY_STATUS: Partial<Record<ComplianceStatus, string>> = {
+  valid: "bg-[var(--success)]",
+  expiring: "bg-[var(--warning)]",
+  critical: "bg-[var(--warning)]",
+  expired: "bg-[var(--error)]",
+  unknown: "bg-[var(--text-muted)]",
+  revoked: "bg-[var(--text-muted)]",
+};
+
+const DOT_BY_TONE: Record<StatusPillTone, string> = {
+  success: "bg-[var(--success)]",
+  warning: "bg-[var(--warning)]",
+  danger: "bg-[var(--error)]",
+  neutral: "bg-[var(--text-muted)]",
+};
 
 type ComplianceProps = {
-  /** Live / cached compliance status — styles and default label from the expiry engine. */
   status: ComplianceStatus;
   tone?: never;
   children?: ReactNode;
+  /** Leading status dot (default true for compliance pills). */
+  dot?: boolean;
 };
 
 type ToneProps = {
   status?: never;
   tone: StatusPillTone;
   children: ReactNode;
+  dot?: boolean;
 };
 
 export type StatusPillProps = ComplianceProps | ToneProps;
@@ -49,14 +66,30 @@ export type StatusPillProps = ComplianceProps | ToneProps;
  */
 export function StatusPill(props: StatusPillProps) {
   if (props.status !== undefined) {
+    const showDot = props.dot !== false;
     return (
       <span className={`${BASE} ${STATUS_STYLES[props.status]}`}>
+        {showDot ? (
+          <span
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_BY_STATUS[props.status] ?? "bg-[var(--text-muted)]"}`}
+            aria-hidden="true"
+          />
+        ) : null}
         {props.children ?? STATUS_LABELS[props.status]}
       </span>
     );
   }
 
+  const showDot = props.dot === true;
   return (
-    <span className={`${BASE} ${TONE_CLASSES[props.tone]}`}>{props.children}</span>
+    <span className={`${BASE} ${TONE_CLASSES[props.tone]}`}>
+      {showDot ? (
+        <span
+          className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_BY_TONE[props.tone]}`}
+          aria-hidden="true"
+        />
+      ) : null}
+      {props.children}
+    </span>
   );
 }

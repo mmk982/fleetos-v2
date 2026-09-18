@@ -120,95 +120,104 @@ export default async function DashboardPage() {
     value: number;
     href?: string;
     icon: LucideIcon;
-    color: "accent" | "success" | "warning" | "error" | "info";
-    valueColor?: "success" | "warning" | "error";
+    tone: "green" | "amber" | "red" | "blue" | "orange" | "slate";
+    valueTone?: "green" | "amber" | "red" | "blue" | "orange" | "slate";
   }[] = [
     {
       label: "Vessels",
       value: vesselCount,
       href: "/dashboard/vessels",
       icon: Anchor,
-      color: "accent",
+      tone: "slate",
     },
     {
       label: "Valid certs",
       value: validCertificates,
       href: "/dashboard/certificates",
       icon: Award,
-      color: "success",
-      valueColor: "success",
+      tone: "green",
     },
     {
       label: "Expired certs",
       value: expiredCertificates,
       href: "/dashboard/alerts?kind=certificate&status=expired",
       icon: AlertCircle,
-      color: "error",
-      valueColor: "error",
+      tone: "red",
     },
     {
       label: "Open defs",
       value: openDeficienciesCount,
       href: "/dashboard/deficiencies",
       icon: AlertTriangle,
-      color: "warning",
-      valueColor: "error",
+      tone: "orange",
+      valueTone: "red",
     },
     {
       label: "Due certs",
       value: dueSoonCertificates,
       href: "/dashboard/alerts?kind=certificate",
       icon: Clock,
-      color: "warning",
-      valueColor: "warning",
+      tone: "amber",
     },
     {
       label: "Pending forms",
       value: missingMonthlyForms.length,
       href: "/dashboard/monthly-forms",
       icon: FileText,
-      color: "info",
+      tone: "slate",
     },
     {
       label: "Manuals",
       value: manualCount,
       href: "/dashboard/manuals",
       icon: FileText,
-      color: "info",
+      tone: "slate",
     },
   ];
 
-  const CARD_COLOR = {
-    accent: {
-      label: "text-[var(--accent)]",
-      iconBg: "bg-[var(--accent)]/10",
-      icon: "text-[var(--accent)]",
-    },
-    success: {
+  const TONE = {
+    green: {
       label: "text-[var(--success)]",
-      iconBg: "bg-[var(--success)]/10",
+      iconBg: "bg-[color-mix(in_oklab,var(--success)_12%,white)] dark:bg-[var(--success)]/20",
       icon: "text-[var(--success)]",
+      hoverBorder: "hover:border-[var(--success)]",
+      value: "text-[var(--success)]",
     },
-    warning: {
+    amber: {
       label: "text-[var(--warning)]",
-      iconBg: "bg-[var(--warning)]/10",
+      iconBg: "bg-[color-mix(in_oklab,var(--warning)_12%,white)] dark:bg-[var(--warning)]/20",
       icon: "text-[var(--warning)]",
+      hoverBorder: "hover:border-[var(--warning)]",
+      value: "text-[var(--warning)]",
     },
-    error: {
+    red: {
       label: "text-[var(--error)]",
-      iconBg: "bg-[var(--error)]/10",
+      iconBg: "bg-[color-mix(in_oklab,var(--error)_12%,white)] dark:bg-[var(--error)]/20",
       icon: "text-[var(--error)]",
+      hoverBorder: "hover:border-[var(--error)]",
+      value: "text-[var(--error)]",
     },
-    info: {
-      label: "text-[var(--text-tertiary)]",
-      iconBg: "bg-[var(--text-tertiary)]/10",
-      icon: "text-[var(--text-tertiary)]",
+    blue: {
+      label: "text-[var(--tone-blue-fg)]",
+      iconBg: "bg-[var(--tone-blue-bg)]",
+      icon: "text-[var(--tone-blue-fg)]",
+      hoverBorder: "hover:border-[var(--tone-blue-fg)]",
+      value: "text-[var(--tone-blue-fg)]",
     },
-  } as const;
-  const VALUE_COLOR = {
-    success: "text-[var(--success)]",
-    warning: "text-[var(--warning)]",
-    error: "text-[var(--error)]",
+    orange: {
+      label: "text-[var(--tone-orange-fg)]",
+      iconBg: "bg-[var(--tone-orange-bg)]",
+      icon: "text-[var(--tone-orange-fg)]",
+      hoverBorder: "hover:border-[var(--tone-orange-fg)]",
+      value: "text-[var(--tone-orange-fg)]",
+    },
+    slate: {
+      label: "text-[var(--tone-slate-fg)]",
+      iconBg: "bg-[var(--tone-slate-bg)]",
+      icon: "text-[var(--tone-slate-fg)]",
+      hoverBorder: "hover:border-[var(--tone-slate-fg)]",
+      value: "text-[var(--text-primary)]",
+    },
   } as const;
 
   return (
@@ -236,12 +245,10 @@ export default async function DashboardPage() {
           ).map(([status, n]) => (
             <span
               key={status}
-              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px]"
             >
               <StatusPill status={status} />
-              <span className="tabular-nums text-[var(--text-secondary)]">
-                {n}
-              </span>
+              <span className="nums text-[var(--text-secondary)]">{n}</span>
               <span className="sr-only">{STATUS_LABELS[status]}</span>
             </span>
           ))}
@@ -256,10 +263,10 @@ export default async function DashboardPage() {
           ).map(([kind, n]) => (
             <span
               key={kind}
-              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px] text-[var(--text-secondary)]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 text-[13px] text-[var(--text-secondary)]"
             >
               <span>{alertKindLabel(kind)}</span>
-              <span className="tabular-nums font-medium">{n}</span>
+              <span className="nums font-medium">{n}</span>
             </span>
           ))}
         </div>
@@ -268,41 +275,45 @@ export default async function DashboardPage() {
       <section className="mt-6" aria-label="Summary">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((card) => {
-            const c = CARD_COLOR[card.color];
+            const t = TONE[card.tone];
+            const valueTone = card.valueTone
+              ? TONE[card.valueTone].value
+              : t.value;
             const Icon = card.icon;
             const body = (
               <>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <p
-                    className={`text-[11px] font-semibold uppercase tracking-[0.5px] ${c.label}`}
+                    className={`text-xs font-semibold uppercase tracking-wider ${t.label}`}
                   >
                     {card.label}
                   </p>
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${c.iconBg}`}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${t.iconBg}`}
                   >
-                    <Icon className={`h-4 w-4 ${c.icon}`} aria-hidden="true" />
+                    <Icon className={`h-4 w-4 ${t.icon}`} aria-hidden="true" />
                   </span>
                 </div>
-                <p
-                  className={`mt-3 text-2xl font-bold tabular-nums ${
-                    card.valueColor
-                      ? VALUE_COLOR[card.valueColor]
-                      : "text-[var(--text-primary)]"
-                  }`}
-                >
+                <p className={`mt-3 text-3xl font-bold nums ${valueTone}`}>
                   {card.value}
                 </p>
               </>
             );
-            const className =
-              "rounded-2xl bg-[var(--bg-card)] p-4 shadow-[1px_1px_2px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[1px_2px_6px_rgba(0,0,0,0.08)]";
+            const baseClass =
+              "rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 transition-all";
+            const interactiveClass = card.href
+              ? `${baseClass} hover:-translate-y-0.5 hover:shadow-md hover:border-dashed ${t.hoverBorder}`
+              : baseClass;
             return card.href ? (
-              <Link key={card.label} href={card.href} className={className}>
+              <Link
+                key={card.label}
+                href={card.href}
+                className={interactiveClass}
+              >
                 {body}
               </Link>
             ) : (
-              <div key={card.label} className={className}>
+              <div key={card.label} className={baseClass}>
                 {body}
               </div>
             );

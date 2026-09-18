@@ -337,13 +337,13 @@ describe("STATUS_LABELS and STATUS_STYLES", () => {
     }
   });
 
-  it("maps to ComplianceOne chip colors (compliant / at risk / non-compliant / neutral)", () => {
-    expect(STATUS_STYLES.valid).toMatch(/DCFCE7|059669|34D399/i);
-    expect(STATUS_STYLES.expiring).toMatch(/FEF3C7|D97706|FBBF24/i);
-    expect(STATUS_STYLES.critical).toMatch(/FEF3C7|D97706|FBBF24/i);
-    expect(STATUS_STYLES.expired).toMatch(/FEE2E2|DC2626|F87171/i);
-    expect(STATUS_STYLES.unknown).toMatch(/F1F5F9|0F172A|gray/i);
-    expect(STATUS_STYLES.revoked).toMatch(/F1F5F9|0F172A|gray/i);
+  it("maps to tokenized Pill colors (success / warning / error / slate)", () => {
+    expect(STATUS_STYLES.valid).toMatch(/--success/i);
+    expect(STATUS_STYLES.expiring).toMatch(/--warning/i);
+    expect(STATUS_STYLES.critical).toMatch(/--warning/i);
+    expect(STATUS_STYLES.expired).toMatch(/--error/i);
+    expect(STATUS_STYLES.unknown).toMatch(/tone-slate|border-strong/i);
+    expect(STATUS_STYLES.revoked).toMatch(/tone-slate|border-strong/i);
   });
 
   it("visually distinguishes critical from plain expiring", () => {

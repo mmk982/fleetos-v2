@@ -101,25 +101,23 @@ export const STATUS_LABELS: Record<ComplianceStatus, string> = {
 };
 
 /**
- * Tailwind badge classes mapped to ComplianceOne chip semantics:
- * compliant (valid) / at risk (expiring, critical) / non-compliant (expired) /
- * neutral filter chip (unknown, revoked). `critical` shares at-risk amber with
- * `expiring` but keeps bold + ring emphasis. Dark chip fills are invented
- * (spec is light-only) to preserve the theme toggle.
+ * Tailwind badge classes — bordered Pill recipe from the prior FleetOS design
+ * (soft tinted fill + matching border + token foreground). `critical` shares
+ * warning tone with `expiring` but keeps bold + ring emphasis.
  */
 export const STATUS_STYLES: Record<ComplianceStatus, string> = {
   valid:
-    "bg-[#DCFCE7] text-[#059669] dark:bg-[#059669]/20 dark:text-[#34D399]",
+    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success)]",
   expiring:
-    "bg-[#FEF3C7] text-[#D97706] dark:bg-[#D97706]/20 dark:text-[#FBBF24]",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)]",
   critical:
-    "bg-[#FEF3C7] text-[#D97706] font-semibold ring-1 ring-[#D97706]/40 dark:bg-[#D97706]/20 dark:text-[#FBBF24] dark:ring-[#FBBF24]/40",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] font-semibold ring-1 ring-[var(--warning)]/40 dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)] dark:ring-[var(--warning)]/40",
   expired:
-    "bg-[#FEE2E2] text-[#DC2626] dark:bg-[#DC2626]/20 dark:text-[#F87171]",
+    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error)]",
   unknown:
-    "bg-[#F1F5F9] text-[#0F172A] dark:bg-gray-800 dark:text-gray-300",
+    "bg-[var(--tone-slate-bg)] text-[var(--tone-slate-fg)] border-[var(--border-strong)]",
   revoked:
-    "bg-[#F1F5F9] text-[#0F172A] dark:bg-gray-800 dark:text-gray-300",
+    "bg-[var(--tone-slate-bg)] text-[var(--tone-slate-fg)] border-[var(--border-strong)]",
 };
 
 const SEVERITY_RANK: Record<ComplianceStatus, number> = {

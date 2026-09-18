@@ -2,13 +2,12 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 const VARIANTS = {
   primary:
-    "bg-[var(--accent)] text-white border border-transparent hover:opacity-90",
+    "bg-[var(--accent)] text-white shadow-xs hover:opacity-90 hover:shadow-md hover:-translate-y-px active:translate-y-0",
   secondary:
-    "bg-transparent text-[var(--accent)] border border-[1.5px] border-[var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]",
+    "border border-[var(--border-strong)] bg-[var(--bg-card)] text-[var(--text-secondary)] shadow-xs hover:bg-[var(--bg-page)] hover:shadow-md hover:-translate-y-px",
   ghost:
-    "bg-transparent text-[var(--text-secondary)] border border-transparent hover:bg-[var(--bg-page)]",
-  destructive:
-    "bg-[var(--error)] text-white border border-transparent hover:opacity-90",
+    "text-[var(--text-secondary)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)]",
+  destructive: "bg-[var(--error)] text-white shadow-xs hover:opacity-90",
 } as const;
 
 const SIZES = {
@@ -34,7 +33,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       {...props}
-      className={`rounded-none font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={`rounded-lg font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
     />
   );
 });
