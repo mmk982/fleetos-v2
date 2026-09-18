@@ -38,7 +38,7 @@ const ROLE_LEGEND: { role: UserRole; blurb: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 
 function formatLastLogin(d: Date | string | null): string {
   if (!d) return "Never";
@@ -65,7 +65,7 @@ export function UsersRolesPanel({
   return (
     <div className="mt-6 space-y-6">
       {flash ? (
-        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+        <div className="rounded-md border border-[color-mix(in_oklab,var(--success)_25%,white)] bg-[color-mix(in_oklab,var(--success)_10%,white)] px-3 py-2 text-sm text-[var(--success)] dark:border-[var(--success)]/40 dark:bg-[var(--success)]/20">
           {flash}
         </div>
       ) : null}
@@ -110,8 +110,8 @@ export function UsersRolesPanel({
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-[11px] ${
                       u.isActive
-                        ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
-                        : "bg-[var(--bg-page)] text-[var(--text-secondary)]  "
+                        ? "border border-[color-mix(in_oklab,var(--success)_25%,white)] bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success)] dark:border-[var(--success)]/40 dark:bg-[var(--success)]/20"
+                        : "bg-[var(--bg-page)] text-[var(--text-secondary)]"
                     }`}
                   >
                     {u.isActive ? "Active" : "Inactive"}
@@ -290,7 +290,7 @@ function UserDialog({
       <form action={formAction} className="space-y-3">
         {user ? <input type="hidden" name="id" value={user.id} /> : null}
         {state && !state.ok ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-[var(--error)]" role="alert">
             {state.message}
           </p>
         ) : null}
@@ -405,7 +405,7 @@ function PasswordDialog({
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="id" value={user.id} />
         {state && !state.ok ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-[var(--error)]" role="alert">
             {state.message}
           </p>
         ) : null}

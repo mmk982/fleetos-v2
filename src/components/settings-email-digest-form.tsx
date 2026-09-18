@@ -24,14 +24,14 @@ export function EmailDigestForm({
     <form action={formAction} className="space-y-4">
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-md border border-[color-mix(in_oklab,var(--error)_25%,white)] bg-[color-mix(in_oklab,var(--error)_10%,white)] px-3 py-2 text-sm text-[var(--error)] dark:border-[var(--error)]/40 dark:bg-[var(--error)]/20"
           role="alert"
         >
           {state.message}
         </div>
       ) : null}
       {state?.ok ? (
-        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+        <div className="rounded-md border border-[color-mix(in_oklab,var(--success)_25%,white)] bg-[color-mix(in_oklab,var(--success)_10%,white)] px-3 py-2 text-sm text-[var(--success)] dark:border-[var(--success)]/40 dark:bg-[var(--success)]/20">
           {state.message ?? "Saved."}
         </div>
       ) : null}
@@ -43,7 +43,7 @@ export function EmailDigestForm({
           type="checkbox"
           value="true"
           defaultChecked={initialEnabled}
-          className="mt-1 h-4 w-4 rounded border-[var(--border)] text-[#378ADD] focus:ring-[#378ADD]"
+          className="mt-1 h-4 w-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
         />
         <div>
           <label

@@ -17,11 +17,11 @@ function StatusColorsPanel() {
   ];
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+    <section className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">
         Status Colors
       </h2>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mt-1 text-sm text-[var(--text-tertiary)]">
         Fixed compliance legend — not user-editable.
       </p>
       <ul className="mt-4 flex flex-wrap gap-3">
@@ -49,10 +49,10 @@ export default async function SettingsGeneralPage() {
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Settings
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-[var(--text-tertiary)]">
           General preferences for the fleet office.
         </p>
       </div>
@@ -60,14 +60,14 @@ export default async function SettingsGeneralPage() {
       <SettingsSubnav />
 
       <div className="mt-6 grid max-w-3xl gap-6">
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
             General
           </h2>
           <CriticalDaysForm initialValue={criticalDays} />
         </section>
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
             Email digest
           </h2>
           <EmailDigestForm initialEnabled={emailDigestEnabled} />
