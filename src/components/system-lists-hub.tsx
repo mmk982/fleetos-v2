@@ -140,7 +140,7 @@ const DELETE: Record<
 };
 
 const inputClass =
-  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 export function SystemListsHub({
   lists,
@@ -228,7 +228,7 @@ function SystemListsModal({
         role="dialog"
         aria-modal="true"
         aria-label="Manage System Lists"
-        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
+        className="relative flex h-[min(90vh,720px)] w-full max-w-4xl overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
       >
         <aside className="hidden w-56 shrink-0 flex-col border-e border-[var(--border)] bg-[var(--bg-page)] sm:flex">
           <div className="border-b border-[var(--border)] px-3 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
@@ -379,7 +379,7 @@ function SystemListPane({
     <>
       {banner ? (
         <div
-          className={`mx-4 mt-3 rounded-none px-3 py-2 text-sm ${
+          className={`mx-4 mt-3 rounded-md px-3 py-2 text-sm ${
             banner.ok
               ? "border border-green-200 bg-green-50 text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
               : "border border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"

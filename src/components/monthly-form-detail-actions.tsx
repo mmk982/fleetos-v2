@@ -36,7 +36,7 @@ export function MonthlyFormDetailActions({
         </Button>
       </div>
 
-      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)]">
         {attachments.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">
             No files yet.

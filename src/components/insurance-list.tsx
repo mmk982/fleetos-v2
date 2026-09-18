@@ -21,7 +21,7 @@ import {
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type DrawerMode =
   | { kind: "closed" }
@@ -146,7 +146,7 @@ export function InsuranceList({
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No policies match.{" "}
           <Button variant="ghost" type="button"
             onClick={() => setDrawer({ kind: "create" })} className="underline-offset-2">
@@ -155,7 +155,7 @@ export function InsuranceList({
         </p>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-none border border-[var(--border)] md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] md:block">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
                 <tr>
@@ -206,7 +206,7 @@ export function InsuranceList({
             {visible.map((row) => (
               <li
                 key={row.id}
-                className="rounded-none border border-[var(--border)] p-4"
+                className="rounded-xl border border-[var(--border)] p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>

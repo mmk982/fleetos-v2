@@ -29,7 +29,7 @@ export default async function UsersRolesPage() {
     return (
       <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
         <SettingsSubnav />
-        <div className="mt-6 rounded-none border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
           <p className="font-medium">Admin access required</p>
           <p className="mt-1">
             Only Admin users can manage Users & Roles.{" "}

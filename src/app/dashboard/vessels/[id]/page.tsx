@@ -120,7 +120,7 @@ export default async function VesselDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/vessels/${vessel.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-none bg-[#0D2B45] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[#0D2B45] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>
@@ -208,7 +208,7 @@ function GeneralInfoPanel({ vessel }: { vessel: VesselRow }) {
       {rows.map((row) => (
         <div
           key={row.label}
-          className="rounded-none border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
+          className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
         >
           <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             {row.label}
@@ -240,7 +240,7 @@ function PanelHeader({ title, href }: { title: string; href: string }) {
 
 function EmptyHint({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-none border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+    <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
       {children}
     </p>
   );
@@ -262,7 +262,7 @@ function CertificatesPanel({
       {rows.length === 0 ? (
         <EmptyHint>No certificates for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -314,7 +314,7 @@ function ManualsPanel({
       {rows.length === 0 ? (
         <EmptyHint>No manuals for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -362,7 +362,7 @@ function IsmFormsPanel({ rows }: { rows: IsmTemplateListItem[] }) {
       {rows.length === 0 ? (
         <EmptyHint>No ISM templates yet.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -420,7 +420,7 @@ function ExecutedFormsPanel({
       {rows.length === 0 ? (
         <EmptyHint>No executed forms for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -476,7 +476,7 @@ function DrawingsPanel({
       {rows.length === 0 ? (
         <EmptyHint>No drawings for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -580,7 +580,7 @@ function ParticularsPanel({
             {current.attachments.length === 0 ? (
               <p className="mt-2 text-sm text-zinc-500">No attachments.</p>
             ) : (
-              <ul className="mt-2 divide-y divide-zinc-200 rounded-none border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+              <ul className="mt-2 divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
                 {current.attachments.map((a) => (
                   <li key={a.id} className="px-4 py-3 text-sm">
                     <a
@@ -615,7 +615,7 @@ function ParticularsPanel({
         {history.length === 0 ? (
           <p className="mt-3 text-sm text-zinc-500">No historical records.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+          <div className="mt-3 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
                 <tr>
@@ -667,7 +667,7 @@ function InsurancePanel({
       {rows.length === 0 ? (
         <EmptyHint>No insurance policies for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -723,7 +723,7 @@ function DeficienciesPanel({
       {rows.length === 0 ? (
         <EmptyHint>No deficiencies for this vessel.</EmptyHint>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
@@ -783,7 +783,7 @@ function NotesPanel({
       {rows.length === 0 ? (
         <EmptyHint>No notes yet.</EmptyHint>
       ) : (
-        <ul className="divide-y divide-zinc-100 rounded-none border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
           {rows.map((note) => (
             <li
               key={note.id}

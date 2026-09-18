@@ -37,7 +37,7 @@ export function ManualRevisionHistory({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-none border border-[var(--border)]">
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>

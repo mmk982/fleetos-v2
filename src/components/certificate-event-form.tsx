@@ -10,7 +10,7 @@ import { CERTIFICATE_EVENT_TYPES } from "@/modules/certificates/certificate.mode
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = { certificateId: string };
 
@@ -21,7 +21,7 @@ export function CertificateEventForm({ certificateId }: Props) {
   );
 
   return (
-    <form action={formAction} className="space-y-4 rounded-none border border-[var(--border)] p-4">
+    <form action={formAction} className="space-y-4 rounded-xl border border-[var(--border)] p-4">
       <input type="hidden" name="certificateId" value={certificateId} />
       <h3 className="text-sm font-semibold text-[var(--text-primary)]">Add event</h3>
       {state && !state.ok ? (

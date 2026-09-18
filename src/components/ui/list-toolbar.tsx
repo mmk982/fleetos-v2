@@ -11,7 +11,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
 const controlClass =
-  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)]";
 
 export function ListToolbar({
   searchValue,
@@ -64,7 +64,7 @@ export function ListToolbar({
         </Button>
       </div>
       {mobileFiltersOpen ? (
-        <div className="flex flex-col gap-2 rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-3 md:hidden">
+        <div className="flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 md:hidden">
           {filters}
           {exportControls ? (
             <div className="flex flex-wrap gap-2">{exportControls}</div>
@@ -76,4 +76,4 @@ export function ListToolbar({
 }
 
 export const listToolbarExportLinkClass =
-  "inline-flex h-10 items-center justify-center rounded-none border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)]";
+  "inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)]";

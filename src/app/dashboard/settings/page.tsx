@@ -17,7 +17,7 @@ function StatusColorsPanel() {
   ];
 
   return (
-    <section className="rounded-none border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
         Status Colors
       </h2>
@@ -28,7 +28,7 @@ function StatusColorsPanel() {
         {items.map((item) => (
           <li key={item.key} className="flex items-center gap-2 text-sm">
             <span
-              className={`inline-flex items-center rounded-none px-2 py-0.5 text-[11px] font-normal ${STATUS_STYLES[item.key]}`}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-normal ${STATUS_STYLES[item.key]}`}
             >
               {item.label}
             </span>
@@ -60,13 +60,13 @@ export default async function SettingsGeneralPage() {
       <SettingsSubnav />
 
       <div className="mt-6 grid max-w-3xl gap-6">
-        <section className="rounded-none border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
             General
           </h2>
           <CriticalDaysForm initialValue={criticalDays} />
         </section>
-        <section className="rounded-none border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-50">
             Email digest
           </h2>

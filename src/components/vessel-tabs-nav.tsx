@@ -51,7 +51,7 @@ export function VesselTabsNav({
           <Link
             key={item.key}
             href={`/dashboard/vessels/${vesselId}?tab=${item.key}`}
-            className={`rounded-none px-3 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               isActive
                 ? "border-b-2 border-[var(--accent)] text-[var(--accent)]  "
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]  "

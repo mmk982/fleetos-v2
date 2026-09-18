@@ -80,7 +80,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/deficiencies/${row.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>
@@ -131,7 +131,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         {fields.map((f) => (
           <div
             key={f.label}
-            className="rounded-none border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               {f.label}
@@ -148,7 +148,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Description
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.description}
           </p>
         </section>
@@ -159,7 +159,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Corrective action
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.correctiveAction}
           </p>
         </section>
@@ -170,7 +170,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Notes
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-none border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {row.notes}
           </p>
         </section>

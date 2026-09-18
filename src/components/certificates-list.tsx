@@ -21,7 +21,7 @@ import type { IssuingAuthorityRow, VesselRow } from "@/db/schema";
 import { STATUS_LABELS, type ComplianceStatus } from "@/lib/expiry";
 
 const selectClass =
-  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 const STATUS_FILTERS: ComplianceStatus[] = [
   "valid",
@@ -177,7 +177,7 @@ export function CertificatesList({
         searchPlaceholder="Search vessel, type, number…"
       />
 
-      <div className="overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No certificates match.{" "}

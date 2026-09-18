@@ -38,7 +38,7 @@ const ROLE_LEGEND: { role: UserRole; blurb: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 function formatLastLogin(d: Date | string | null): string {
   if (!d) return "Never";
@@ -65,7 +65,7 @@ export function UsersRolesPanel({
   return (
     <div className="mt-6 space-y-6">
       {flash ? (
-        <div className="rounded-none border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
+        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200">
           {flash}
         </div>
       ) : null}
@@ -77,7 +77,7 @@ export function UsersRolesPanel({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-none border border-[var(--border)]">
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
@@ -108,7 +108,7 @@ export function UsersRolesPanel({
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex rounded-none px-2 py-0.5 text-[11px] ${
+                    className={`inline-flex rounded-full px-2 py-0.5 text-[11px] ${
                       u.isActive
                         ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
                         : "bg-[var(--bg-page)] text-[var(--text-secondary)]  "
@@ -132,7 +132,7 @@ export function UsersRolesPanel({
                     ⋮
                   </Button>
                   {menuId === u.id ? (
-                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-none border border-[var(--border)] bg-[var(--bg-card)] py-1 text-start shadow-md">
+                    <div className="absolute end-4 z-10 mt-1 w-44 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] py-1 text-start shadow-md">
                       <Button
                         variant="ghost"
                         type="button"
@@ -190,7 +190,7 @@ export function UsersRolesPanel({
         </table>
       </div>
 
-      <section className="rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-5">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">
           Role reference
         </h2>
@@ -449,7 +449,7 @@ function ModalShell({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-5 shadow-lg"
+        className="relative w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 shadow-lg"
       >
         <h2 className="mb-4 text-base font-semibold text-[var(--text-primary)]">
           {title}

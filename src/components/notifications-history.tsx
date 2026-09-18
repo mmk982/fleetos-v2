@@ -35,7 +35,7 @@ export function NotificationsHistory({
 
   if (items.length === 0) {
     return (
-      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+      <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
         No notifications yet. Visit the Dashboard to refresh the alert sweep.
       </p>
     );
@@ -56,7 +56,7 @@ export function NotificationsHistory({
         </div>
       ) : null}
 
-      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)]">
         {items.map((item) => (
           <li
             key={item.id}

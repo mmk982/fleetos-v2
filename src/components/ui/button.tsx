@@ -33,7 +33,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       {...props}
-      className={`rounded-lg font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={`rounded-md font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
     />
   );
 });

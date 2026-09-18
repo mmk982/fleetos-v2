@@ -21,7 +21,7 @@ export function AlertsList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+      <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
         {emptyMessage}
       </p>
     );
@@ -29,7 +29,7 @@ export function AlertsList({
 
   return (
     <>
-      <div className="hidden overflow-x-auto rounded-none border border-[var(--border)] md:block">
+      <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] md:block">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
             <tr>
@@ -84,7 +84,7 @@ export function AlertsList({
         {items.map((item) => (
           <li
             key={`${item.kind}-${item.id}`}
-            className="rounded-none border border-[var(--border)] bg-[var(--bg-card)] p-4"
+            className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
           >
             <div className="flex items-start justify-between gap-2">
               <Link

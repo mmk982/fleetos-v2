@@ -78,7 +78,7 @@ export function NotificationsBell({
       >
         <BellIcon className="h-5 w-5" />
         {badge ? (
-          <span className="absolute end-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-none bg-red-600 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute end-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
             {badge}
           </span>
         ) : null}
@@ -87,7 +87,7 @@ export function NotificationsBell({
       {open ? (
         <div
           role="menu"
-          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-none border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
+          className="absolute end-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-lg"
         >
           <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-3 py-2">
             <p className="text-sm font-semibold text-[var(--text-primary)]">

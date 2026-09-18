@@ -33,7 +33,7 @@ import type { IsmTemplateListItem } from "@/modules/ism-templates/ismTemplate.mo
 import type { VesselRow } from "@/db/schema";
 
 const selectClass =
-  "h-10 rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
+  "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 type ReqDrawer =
   | { kind: "closed" }
@@ -234,7 +234,7 @@ export function MonthlyFormsList({
           </form>
           <Link
             href="/dashboard/monthly-forms/new"
-            className="inline-flex h-10 items-center justify-center rounded-none bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
           >
             Add ad-hoc form
           </Link>
@@ -243,7 +243,7 @@ export function MonthlyFormsList({
 
       {genState?.ok ? (
         <p
-          className="rounded-none border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
+          className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-200"
           role="status"
         >
           {genState.message}
@@ -256,11 +256,11 @@ export function MonthlyFormsList({
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
           No executed forms match. Generate a checklist or add an ad-hoc form.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-none border border-[var(--border)]">
+        <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--bg-page)] text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
               <tr>
@@ -306,7 +306,7 @@ export function MonthlyFormsList({
         </div>
       )}
 
-      <section className="rounded-none border border-[var(--border)]">
+      <section className="rounded-xl border border-[var(--border)]">
         <Button variant="ghost" type="button"
           onClick={() => setReqOpen((o) => !o)}
           aria-expanded={reqOpen} className="w-full justify-between text-left">

@@ -11,7 +11,7 @@ import type { CertificateAttachmentRow } from "@/db/schema";
 import { Identifier } from "@/components/ui/identifier";
 
 const inputClass =
-  "w-full rounded-none border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
 
 type Props = {
   certificateId: string;
@@ -26,7 +26,7 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)]">
         {attachments.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">No attachments yet.</li>
         ) : (
@@ -55,7 +55,7 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
         )}
       </ul>
 
-      <form action={formAction} className="space-y-3 rounded-none border border-dashed border-[var(--border)] p-4">
+      <form action={formAction} className="space-y-3 rounded-xl border border-dashed border-[var(--border)] p-4">
         <input type="hidden" name="certificateId" value={certificateId} />
         <p className="text-sm font-medium text-[var(--text-primary)]">Upload attachment</p>
         <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>

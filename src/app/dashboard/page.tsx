@@ -406,14 +406,14 @@ function MissingMonthlyFormsPreview({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
+      <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
         No missing monthly forms this month.
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-none border border-[var(--border)] bg-[var(--bg-card)]">
+    <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
       <table className="min-w-full text-left text-[13px]">
         <thead className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--text-muted)]">
           <tr>
@@ -460,14 +460,14 @@ function RecentActivityList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-none border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
+      <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">
         No recent activity yet.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-[var(--border)] rounded-none border border-[var(--border)] bg-[var(--bg-card)]">
+    <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
       {items.map((item) => (
         <li
           key={item.id}

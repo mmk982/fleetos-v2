@@ -50,7 +50,7 @@ export function CrewCertificatesSection({
       </div>
 
       {certificates.length === 0 ? (
-        <p className="mt-4 rounded-none border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
+        <p className="mt-4 rounded-xl border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
           No documents yet — passport, STCW, medical, visas go here.
         </p>
       ) : (
@@ -58,7 +58,7 @@ export function CrewCertificatesSection({
           {certificates.map((cert) => (
             <li
               key={cert.id}
-              className="rounded-none border border-[var(--border)] p-4"
+              className="rounded-xl border border-[var(--border)] p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
