@@ -94,7 +94,7 @@ export default async function CertificateDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/certificates/${cert.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>
@@ -138,7 +138,7 @@ export default async function CertificateDetailPage(props: PageProps) {
           ) : (
             cert.events.map((ev) => (
               <li key={ev.id} className="relative">
-                <span className="absolute -start-[1.625rem] mt-1.5 h-2.5 w-2.5 rounded-md bg-[#378ADD]" />
+                <span className="absolute -start-[1.625rem] mt-1.5 h-2.5 w-2.5 rounded-md bg-[var(--accent)]" />
                 <p className="text-sm font-medium capitalize text-zinc-900 dark:text-zinc-100">
                   {ev.eventType}
                   <span className="ms-2 font-normal text-zinc-500">{ev.eventDate}</span>

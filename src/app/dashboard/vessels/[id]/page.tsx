@@ -230,7 +230,7 @@ function PanelHeader({ title, href }: { title: string; href: string }) {
       </h2>
       <Link
         href={href}
-        className="text-sm font-medium text-[#378ADD] hover:underline"
+        className="text-sm font-medium text-[var(--accent)] hover:underline"
       >
         View all
       </Link>
@@ -550,7 +550,7 @@ function ParticularsPanel({
         </h2>
         <Link
           href={`/dashboard/particulars/${vesselId}`}
-          className="text-sm font-medium text-[#378ADD] hover:underline"
+          className="text-sm font-medium text-[var(--accent)] hover:underline"
         >
           Manage particulars
         </Link>
@@ -585,7 +585,7 @@ function ParticularsPanel({
                   <li key={a.id} className="px-4 py-3 text-sm">
                     <a
                       href={`/api/attachments/${a.id}`}
-                      className="font-medium text-[#378ADD] hover:underline"
+                      className="font-medium text-[var(--accent)] hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -607,7 +607,7 @@ function ParticularsPanel({
           Past records (read-only).{" "}
           <Link
             href={`/dashboard/particulars/${vesselId}`}
-            className="font-medium text-[#378ADD] hover:underline"
+            className="font-medium text-[var(--accent)] hover:underline"
           >
             View full history
           </Link>

@@ -26,7 +26,7 @@ export default async function EditReminderPage(props: PageProps) {
       <div className="mb-6">
         <Link
           href="/dashboard/reminders"
-          className="text-sm font-medium text-[#378ADD] underline-offset-2 hover:underline"
+          className="text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline"
         >
           ← Reminders
         </Link>

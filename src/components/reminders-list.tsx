@@ -34,7 +34,7 @@ const selectClass =
   "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
 const quietBtn =
-  "text-sm font-medium text-[#378ADD] underline-offset-2 hover:underline disabled:opacity-50";
+  "text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline disabled:opacity-50";
 
 export function RemindersList({
   rows,
@@ -191,7 +191,7 @@ export function RemindersList({
         </div>
         <Link
           href="/dashboard/reminders/new"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
         >
           Add reminder
         </Link>
@@ -202,7 +202,7 @@ export function RemindersList({
           No reminders match.{" "}
           <Link
             href="/dashboard/reminders/new"
-            className="font-medium text-[#378ADD] underline-offset-2 hover:underline"
+            className="font-medium text-[var(--accent)] underline-offset-2 hover:underline"
           >
             Add one
           </Link>

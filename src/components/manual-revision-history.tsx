@@ -71,7 +71,7 @@ export function ManualRevisionHistory({
                   <td className="px-4 py-3">
                     <a
                       href={`/api/attachments/${r.id}`}
-                      className="font-medium text-[#378ADD] underline-offset-2 hover:underline"
+                      className="font-medium text-[var(--accent)] underline-offset-2 hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >

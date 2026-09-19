@@ -54,7 +54,7 @@ export function CertificateQuickView({ row }: { row: CertificateListItem }) {
           </dl>
           <Link
             href={`/dashboard/certificates/${row.id}`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
             onClick={() => setOpen(false)}
           >
             Open detail

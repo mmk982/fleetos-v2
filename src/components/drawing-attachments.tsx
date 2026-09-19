@@ -11,7 +11,7 @@ import {
 import type { DrawingAttachmentRow } from "@/db/schema";
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 
 type Props = {
   drawingId: string;
@@ -39,7 +39,7 @@ export function DrawingAttachments({ drawingId, attachments }: Props) {
             >
               <a
                 href={`/api/attachments/${a.id}`}
-                className="font-medium text-[#378ADD] underline-offset-2 hover:underline"
+                className="font-medium text-[var(--accent)] underline-offset-2 hover:underline"
                 target="_blank"
                 rel="noreferrer"
               >

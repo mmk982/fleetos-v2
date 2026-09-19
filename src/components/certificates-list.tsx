@@ -183,7 +183,7 @@ export function CertificatesList({
             No certificates match.{" "}
             <Link
               href="/dashboard/certificates/new"
-              className="font-medium text-[#378ADD] underline-offset-4 hover:underline"
+              className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
             >
               Create one
             </Link>
@@ -222,7 +222,7 @@ export function CertificatesList({
                         <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                           <Link
                             href={`/dashboard/certificates/${row.id}`}
-                            className="text-[#378ADD] hover:underline"
+                            className="text-[var(--accent)] hover:underline"
                           >
                             {row.typeName}
                           </Link>

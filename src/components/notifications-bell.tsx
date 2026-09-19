@@ -150,7 +150,7 @@ export function NotificationsBell({
             <Link
               href="/dashboard/notifications"
               onClick={() => setOpen(false)}
-              className="text-sm font-medium text-[#378ADD] hover:underline"
+              className="text-sm font-medium text-[var(--accent)] hover:underline"
             >
               View all notifications
             </Link>

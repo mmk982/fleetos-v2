@@ -95,7 +95,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/deficiencies/${row.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
           >
             Edit
           </Link>

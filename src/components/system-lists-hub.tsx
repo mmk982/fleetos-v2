@@ -152,7 +152,7 @@ const DELETE: Record<
 };
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 
 export function SystemListsHub({
   lists,
@@ -174,7 +174,7 @@ export function SystemListsHub({
               setActive(meta.key);
               setOpen(true);
             }}
-            className="h-auto w-full flex-col items-stretch p-4 text-start hover:border-[#378ADD]"
+            className="h-auto w-full flex-col items-stretch p-4 text-start hover:border-[var(--accent)]"
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-medium text-[var(--text-primary)]">

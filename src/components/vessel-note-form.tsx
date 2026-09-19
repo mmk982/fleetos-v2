@@ -8,7 +8,7 @@ import {
 } from "@/modules/ship-particulars/actions";
 
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 
 export function VesselNoteForm({ vesselId }: { vesselId: string }) {
   const [state, formAction, pending] = useActionState(

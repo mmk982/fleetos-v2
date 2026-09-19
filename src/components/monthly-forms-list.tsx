@@ -234,7 +234,7 @@ export function MonthlyFormsList({
           </form>
           <Link
             href="/dashboard/monthly-forms/new"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#378ADD] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
           >
             Add ad-hoc form
           </Link>
