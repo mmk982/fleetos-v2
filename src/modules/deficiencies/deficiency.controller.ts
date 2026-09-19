@@ -19,10 +19,12 @@ import {
   deficiencies,
   deficiencyAttachments,
   deficiencySeverityLevels,
+  deficiencySources,
   vessels,
   type DeficiencyAttachmentRow,
   type DeficiencyRow,
   type DeficiencySeverityLevelRow,
+  type DeficiencySourceRow,
   type DeficiencyStatus,
   type VesselRow,
 } from "@/db/schema";
@@ -92,6 +94,14 @@ export class DeficiencySeverityLevelNotFoundError extends Error {
   }
 }
 
+export class DeficiencySourceNotFoundError extends Error {
+  readonly code = "DEFICIENCY_SOURCE_NOT_FOUND" as const;
+  constructor(id: string) {
+    super(`Deficiency source not found: ${id}`);
+    this.name = "DeficiencySourceNotFoundError";
+  }
+}
+
 function isPgForeignKeyViolation(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -117,7 +127,7 @@ function todayIso(): string {
 export type DeficiencyListFilters = {
   vesselId?: string;
   status?: DeficiencyStatus;
-  source?: string;
+  sourceId?: string;
   category?: string;
 };
 
@@ -228,6 +238,113 @@ export async function deleteDeficiencySeverityLevel(
   }
 }
 
+/** Deficiency sources for Settings System Lists + form dropdowns. */
+export async function listDeficiencySources(
+  ctx: AccessContext,
+): Promise<DeficiencySourceRow[]> {
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "deficiencies", "read");
+  return getDb()
+    .select()
+    .from(deficiencySources)
+    .orderBy(asc(deficiencySources.name));
+}
+
+export async function createDeficiencySource(
+  ctx: AccessContext,
+  input: { name: string },
+): Promise<DeficiencySourceRow> {
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "settings_general", "write");
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DeficiencyConflictError("Name is required.");
+  }
+  try {
+    const inserted = await getDb()
+      .insert(deficiencySources)
+      .values({ name, isCustom: true })
+      .returning();
+    const row = inserted[0];
+    if (!row) throw new Error("Deficiency source insert did not return a row");
+    return row;
+  } catch (error) {
+    if (isPgUniqueViolation(error)) {
+      throw new DeficiencyConflictError(
+        "A deficiency source with that name already exists.",
+      );
+    }
+    logError("DEFICIENCY_SOURCE_CREATE_FAILED", { error });
+    throw error;
+  }
+}
+
+export async function updateDeficiencySource(
+  ctx: AccessContext,
+  id: string,
+  input: { name: string },
+): Promise<DeficiencySourceRow> {
+  assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
+  const name = input.name.trim();
+  if (name.length === 0) {
+    throw new DeficiencyConflictError("Name is required.");
+  }
+  const db = getDb();
+  const existing = await db
+    .select({ id: deficiencySources.id })
+    .from(deficiencySources)
+    .where(eq(deficiencySources.id, id))
+    .limit(1);
+  if (!existing[0]) throw new DeficiencySourceNotFoundError(id);
+
+  try {
+    const updated = await db
+      .update(deficiencySources)
+      .set({ name })
+      .where(eq(deficiencySources.id, id))
+      .returning();
+    const row = updated[0];
+    if (!row) throw new DeficiencySourceNotFoundError(id);
+    return row;
+  } catch (error) {
+    if (error instanceof DeficiencySourceNotFoundError) throw error;
+    if (isPgUniqueViolation(error)) {
+      throw new DeficiencyConflictError(
+        "A deficiency source with that name already exists.",
+      );
+    }
+    logError("DEFICIENCY_SOURCE_UPDATE_FAILED", { error, sourceId: id });
+    throw error;
+  }
+}
+
+export async function deleteDeficiencySource(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  assertAuthenticatedAccess(ctx, id);
+  assertModuleAccess(ctx, "settings_general", "write");
+  try {
+    const deleted = await getDb()
+      .delete(deficiencySources)
+      .where(eq(deficiencySources.id, id))
+      .returning({ id: deficiencySources.id });
+    if (deleted.length === 0) {
+      throw new DeficiencySourceNotFoundError(id);
+    }
+  } catch (error) {
+    if (error instanceof DeficiencySourceNotFoundError) throw error;
+    if (isPgForeignKeyViolation(error)) {
+      throw new DeficiencyConflictError(
+        "Cannot delete: this source is still referenced by deficiencies.",
+      );
+    }
+    logError("DEFICIENCY_SOURCE_DELETE_FAILED", { error, sourceId: id });
+    throw error;
+  }
+}
+
 export type DeficiencyDetail = DeficiencyListItem & {
   attachments: DeficiencyAttachmentRow[];
   vessel: VesselRow;
@@ -276,10 +393,8 @@ export async function listDeficiencies(
   if (filters.status) {
     conditions.push(eq(deficiencies.status, filters.status));
   }
-  if (filters.source) {
-    conditions.push(
-      eq(deficiencies.source, filters.source as DeficiencyRow["source"]),
-    );
+  if (filters.sourceId) {
+    conditions.push(eq(deficiencies.sourceId, filters.sourceId));
   }
   if (filters.category) {
     conditions.push(eq(deficiencies.category, filters.category));
@@ -289,15 +404,21 @@ export async function listDeficiencies(
     .select({
       deficiency: deficiencies,
       vesselName: vessels.name,
+      sourceName: deficiencySources.name,
     })
     .from(deficiencies)
     .innerJoin(vessels, eq(deficiencies.vesselId, vessels.id))
+    .innerJoin(
+      deficiencySources,
+      eq(deficiencies.sourceId, deficiencySources.id),
+    )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(asc(vessels.name), desc(deficiencies.dueDate), asc(deficiencies.title));
 
   return rows.map((row) => ({
     ...row.deficiency,
     vesselName: row.vesselName,
+    sourceName: row.sourceName,
   }));
 }
 
@@ -313,9 +434,14 @@ export async function getDeficiencyById(
     .select({
       deficiency: deficiencies,
       vessel: vessels,
+      sourceName: deficiencySources.name,
     })
     .from(deficiencies)
     .innerJoin(vessels, eq(deficiencies.vesselId, vessels.id))
+    .innerJoin(
+      deficiencySources,
+      eq(deficiencies.sourceId, deficiencySources.id),
+    )
     .where(eq(deficiencies.id, id))
     .limit(1);
   const row = rows[0];
@@ -331,6 +457,7 @@ export async function getDeficiencyById(
   return {
     ...row.deficiency,
     vesselName: row.vessel.name,
+    sourceName: row.sourceName,
     attachments,
     vessel: row.vessel,
   };
@@ -362,7 +489,7 @@ export async function createDeficiency(
       .values({
         vesselId: input.vesselId,
         title: input.title,
-        source: input.source,
+        sourceId: input.sourceId,
         status: input.status,
         deficiencyNumber: input.deficiencyNumber ?? null,
         category: input.category ?? null,
@@ -374,6 +501,7 @@ export async function createDeficiency(
         correctiveAction: input.correctiveAction ?? null,
         responsiblePerson: input.responsiblePerson ?? null,
         notes: input.notes ?? null,
+        pscInspectionId: input.pscInspectionId ?? null,
       })
       .returning();
     const insertedRow = inserted[0];
@@ -381,7 +509,9 @@ export async function createDeficiency(
     row = insertedRow;
   } catch (error) {
     if (isPgForeignKeyViolation(error)) {
-      throw new DeficiencyConflictError("Vessel reference is invalid.");
+      throw new DeficiencyConflictError(
+        "Vessel, source, or PSC inspection reference is invalid.",
+      );
     }
     logError("DEFICIENCY_CREATE_FAILED", {
       error,
@@ -421,7 +551,10 @@ export async function updateDeficiency(
   };
   if (input.vesselId !== undefined) patch.vesselId = input.vesselId;
   if (input.title !== undefined) patch.title = input.title;
-  if (input.source !== undefined) patch.source = input.source;
+  if (input.sourceId !== undefined) patch.sourceId = input.sourceId;
+  if (input.pscInspectionId !== undefined) {
+    patch.pscInspectionId = input.pscInspectionId;
+  }
   if (input.status !== undefined) patch.status = input.status;
   if (input.deficiencyNumber !== undefined) {
     patch.deficiencyNumber = input.deficiencyNumber;
@@ -455,7 +588,9 @@ export async function updateDeficiency(
   } catch (error) {
     if (error instanceof DeficiencyNotFoundError) throw error;
     if (isPgForeignKeyViolation(error)) {
-      throw new DeficiencyConflictError("Vessel reference is invalid.");
+      throw new DeficiencyConflictError(
+        "Vessel, source, or PSC inspection reference is invalid.",
+      );
     }
     logError("DEFICIENCY_UPDATE_FAILED", { error, deficiencyId: id });
     throw error;

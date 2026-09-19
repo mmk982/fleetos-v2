@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const vesselId = url.searchParams.get("vesselId") ?? undefined;
   const statusParam = url.searchParams.get("status");
-  const source = url.searchParams.get("source") ?? undefined;
+  const sourceId = url.searchParams.get("sourceId") ?? undefined;
   const category = url.searchParams.get("category") ?? undefined;
   const status = statusParam
     ? (statusParam as DeficiencyStatus)
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const data = await listDeficiencies(toAccessContext(session), {
     vesselId,
     status,
-    source,
+    sourceId,
     category,
   });
   return NextResponse.json({ data });

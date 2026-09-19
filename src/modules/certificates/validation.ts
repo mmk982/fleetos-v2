@@ -40,14 +40,38 @@ export const certificateTypeCreateSchema = z
     }
   });
 
-export const certificateTypeUpdateSchema = certificateTypeCreateSchema.partial();
+/** Explicit optional fields — Zod 4 rejects `.partial()` on refined schemas. */
+export const certificateTypeUpdateSchema = z
+  .object({
+    authority: z.enum(certificateAuthorityEnum).optional(),
+    name: z.string().trim().min(1).max(200).optional(),
+    ruleKind: z.enum(reminderRuleKindEnum).optional(),
+    offsetDays: optionalPositiveInt,
+    isCustom: formBoolean.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.ruleKind === "expiry_offset" &&
+      data.offsetDays !== undefined &&
+      (data.offsetDays == null || data.offsetDays <= 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "offsetDays is required when ruleKind is expiry_offset",
+        path: ["offsetDays"],
+      });
+    }
+  });
 
 export const issuingAuthorityCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   isCustom: formBoolean.default(true),
 });
 
-export const issuingAuthorityUpdateSchema = issuingAuthorityCreateSchema.partial();
+export const issuingAuthorityUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  isCustom: formBoolean.optional(),
+});
 
 /** Full certificate-creation input. */
 export const certificateCreateSchema = z
@@ -86,7 +110,42 @@ export const certificateCreateSchema = z
     }
   });
 
-export const certificateUpdateSchema = certificateCreateSchema.partial();
+/** Explicit optional fields — Zod 4 rejects `.partial()` on refined schemas. */
+export const certificateUpdateSchema = z
+  .object({
+    vesselId: z.string().uuid().optional(),
+    certificateTypeId: z.string().uuid().optional(),
+    issuingAuthorityId: optionalUuid,
+    certificateNumber: optionalTrimmedString,
+    issueDate: isoDateField,
+    expiryDate: isoDateField,
+    windowOpenDate: isoDateField,
+    windowCloseDate: isoDateField,
+    linkedToDryDock: formBoolean.optional(),
+    customOffsetDays: optionalPositiveInt,
+    lifecycleStatus: z.enum(certificateLifecycleEnum).optional(),
+    remarks: optionalTrimmedString,
+  })
+  .superRefine((data, ctx) => {
+    if (data.issueDate && data.expiryDate && data.expiryDate < data.issueDate) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Expiry date must be on or after issue date",
+        path: ["expiryDate"],
+      });
+    }
+    if (
+      data.windowOpenDate &&
+      data.windowCloseDate &&
+      data.windowCloseDate < data.windowOpenDate
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Window close must be on or after window open",
+        path: ["windowCloseDate"],
+      });
+    }
+  });
 
 export const certificateEventCreateSchema = z.object({
   certificateId: z.string().uuid(),

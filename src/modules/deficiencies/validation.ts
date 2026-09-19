@@ -5,10 +5,11 @@
  * at parse time so controllers do not invent that rule ad hoc.
  */
 import { z } from "zod";
-import { deficiencySourceEnum, deficiencyStatusEnum } from "@/db/schema";
+import { deficiencyStatusEnum } from "@/db/schema";
 import {
   isoDateField,
   optionalTrimmedString,
+  optionalUuid,
 } from "@/lib/validation/form-fields";
 
 function todayIso(): string {
@@ -19,7 +20,7 @@ export const deficiencyCreateSchema = z
   .object({
     vesselId: z.string().uuid(),
     title: z.string().trim().min(1).max(200),
-    source: z.enum(deficiencySourceEnum),
+    sourceId: z.string().uuid(),
     status: z.enum(deficiencyStatusEnum).default("open"),
     deficiencyNumber: optionalTrimmedString,
     category: optionalTrimmedString,
@@ -31,6 +32,7 @@ export const deficiencyCreateSchema = z
     correctiveAction: optionalTrimmedString,
     responsiblePerson: optionalTrimmedString,
     notes: optionalTrimmedString,
+    pscInspectionId: optionalUuid,
   })
   .superRefine((data, ctx) => {
     if (
@@ -56,7 +58,7 @@ export const deficiencyUpdateSchema = z
   .object({
     vesselId: z.string().uuid().optional(),
     title: z.string().trim().min(1).max(200).optional(),
-    source: z.enum(deficiencySourceEnum).optional(),
+    sourceId: z.string().uuid().optional(),
     status: z.enum(deficiencyStatusEnum).optional(),
     deficiencyNumber: optionalTrimmedString,
     category: optionalTrimmedString,
@@ -68,6 +70,7 @@ export const deficiencyUpdateSchema = z
     correctiveAction: optionalTrimmedString,
     responsiblePerson: optionalTrimmedString,
     notes: optionalTrimmedString,
+    pscInspectionId: optionalUuid,
   })
   .superRefine((data, ctx) => {
     if (

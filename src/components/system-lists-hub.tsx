@@ -26,8 +26,11 @@ import {
 } from "@/modules/crew/actions";
 import {
   createDeficiencySeverityLevelAction,
+  createDeficiencySourceAction,
   deleteDeficiencySeverityLevelFormAction,
+  deleteDeficiencySourceFormAction,
   updateDeficiencySeverityLevelAction,
+  updateDeficiencySourceAction,
 } from "@/modules/deficiencies/actions";
 import {
   createDrawingCategoryAction,
@@ -51,7 +54,8 @@ export type SystemListKey =
   | "drawing_categories"
   | "crew_categories"
   | "endorsement_types"
-  | "deficiency_severity_levels";
+  | "deficiency_severity_levels"
+  | "deficiency_sources";
 
 export type SystemListRow = {
   id: string;
@@ -99,6 +103,11 @@ const LIST_META: { key: SystemListKey; label: string; description: string }[] =
       label: "Deficiency Severity Levels",
       description: "User-defined severity labels (form wiring later)",
     },
+    {
+      key: "deficiency_sources",
+      label: "Deficiency Sources",
+      description: "Where a deficiency was raised (PSC, Class, Flag, etc.)",
+    },
   ];
 
 type ActionFn = (
@@ -114,6 +123,7 @@ const CREATE: Record<SystemListKey, ActionFn> = {
   crew_categories: createCrewCategoryAction,
   endorsement_types: createEndorsementTypeAction,
   deficiency_severity_levels: createDeficiencySeverityLevelAction,
+  deficiency_sources: createDeficiencySourceAction,
 };
 
 const UPDATE: Record<SystemListKey, ActionFn> = {
@@ -124,6 +134,7 @@ const UPDATE: Record<SystemListKey, ActionFn> = {
   crew_categories: updateCrewCategoryAction,
   endorsement_types: updateEndorsementTypeAction,
   deficiency_severity_levels: updateDeficiencySeverityLevelAction,
+  deficiency_sources: updateDeficiencySourceAction,
 };
 
 const DELETE: Record<
@@ -137,6 +148,7 @@ const DELETE: Record<
   crew_categories: deleteCrewCategoryFormAction,
   endorsement_types: deleteEndorsementTypeFormAction,
   deficiency_severity_levels: deleteDeficiencySeverityLevelFormAction,
+  deficiency_sources: deleteDeficiencySourceFormAction,
 };
 
 const inputClass =

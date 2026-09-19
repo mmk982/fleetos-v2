@@ -14,14 +14,14 @@ import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-to
 import { buildExportQuery } from "@/lib/export/http";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
-  DEFICIENCY_SOURCES,
   DEFICIENCY_STATUSES,
   deficiencySourceLabel,
   deficiencyStatusLabel,
   deficiencyStatusTone,
   type DeficiencyListItem,
 } from "@/modules/deficiencies/deficiency.model";
-import type { VesselRow } from "@/db/schema";
+import type { DeficiencySourceRow, VesselRow } from "@/db/schema";
+import type { PscInspectionListItem } from "@/modules/psc/psc.model";
 
 const selectClass =
   "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
@@ -34,14 +34,18 @@ type DrawerMode =
 export function DeficienciesList({
   rows,
   vessels,
+  sources,
+  pscInspections,
   initialFilters,
 }: {
   rows: DeficiencyListItem[];
   vessels: VesselRow[];
+  sources: DeficiencySourceRow[];
+  pscInspections: PscInspectionListItem[];
   initialFilters: {
     vesselId: string;
     status: string;
-    source: string;
+    sourceId: string;
     category: string;
   };
 }) {
@@ -55,7 +59,7 @@ export function DeficienciesList({
     const params = new URLSearchParams();
     if (next.vesselId) params.set("vesselId", next.vesselId);
     if (next.status) params.set("status", next.status);
-    if (next.source) params.set("source", next.source);
+    if (next.sourceId) params.set("sourceId", next.sourceId);
     if (next.category) params.set("category", next.category);
     const q = params.toString();
     router.push(q ? `/dashboard/deficiencies?${q}` : "/dashboard/deficiencies");
@@ -79,7 +83,7 @@ export function DeficienciesList({
         row.deficiencyNumber ?? "",
         row.category ?? "",
         row.responsiblePerson ?? "",
-        row.source,
+        row.sourceName,
       ]
         .join(" ")
         .toLowerCase();
@@ -118,13 +122,13 @@ export function DeficienciesList({
       <select
         aria-label="Source"
         className={selectClass}
-        value={filters.source}
-        onChange={(e) => pushFilters({ ...filters, source: e.target.value })}
+        value={filters.sourceId}
+        onChange={(e) => pushFilters({ ...filters, sourceId: e.target.value })}
       >
         <option value="">All sources</option>
-        {DEFICIENCY_SOURCES.map((s) => (
-          <option key={s} value={s}>
-            {deficiencySourceLabel(s)}
+        {sources.map((s) => (
+          <option key={s.id} value={s.id}>
+            {deficiencySourceLabel(s.name)}
           </option>
         ))}
       </select>
@@ -149,7 +153,7 @@ export function DeficienciesList({
       {
         vesselId: filters.vesselId || undefined,
         status: filters.status || undefined,
-        source: filters.source || undefined,
+        sourceId: filters.sourceId || undefined,
         category: filters.category || undefined,
       },
       format,
@@ -182,8 +186,12 @@ export function DeficienciesList({
             searchPlaceholder="Search title, vessel, number…"
           />
         </div>
-        <Button variant="primary" type="button"
-          onClick={() => setDrawer({ kind: "create" })} className="shrink-0">
+        <Button
+          variant="primary"
+          type="button"
+          onClick={() => setDrawer({ kind: "create" })}
+          className="shrink-0"
+        >
           Add deficiency
         </Button>
       </div>
@@ -232,13 +240,13 @@ export function DeficienciesList({
                       <td className="px-4 py-3 font-medium">
                         <Link
                           href={`/dashboard/deficiencies/${row.id}`}
-                          className="text-[#378ADD] hover:underline"
+                          className="text-[var(--accent)] hover:underline"
                         >
                           {row.title}
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        {deficiencySourceLabel(row.source)}
+                        {deficiencySourceLabel(row.sourceName)}
                       </td>
                       <td className="px-4 py-3">
                         <StatusPill tone={deficiencyStatusTone(row.status)}>
@@ -250,8 +258,12 @@ export function DeficienciesList({
                         {row.responsiblePerson ?? "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" type="button"
-                          onClick={() => setDrawer({ kind: "edit", row })}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => setDrawer({ kind: "edit", row })}
+                        >
                           Edit
                         </Button>
                       </td>
@@ -301,6 +313,8 @@ export function DeficienciesList({
           <DeficiencyForm
             mode="create"
             vessels={vessels}
+            sources={sources}
+            pscInspections={pscInspections}
             onCancelHref="/dashboard/deficiencies"
           />
         ) : null}
@@ -310,6 +324,8 @@ export function DeficienciesList({
             deficiencyId={drawer.row.id}
             defaultValues={drawer.row}
             vessels={vessels}
+            sources={sources}
+            pscInspections={pscInspections}
             onCancelHref={`/dashboard/deficiencies/${drawer.row.id}`}
           />
         ) : null}

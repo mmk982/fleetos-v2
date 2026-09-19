@@ -1,5 +1,9 @@
 import { DeficienciesList } from "@/components/deficiencies-list";
-import { listDeficiencies } from "@/modules/deficiencies/deficiency.controller";
+import {
+  listDeficiencies,
+  listDeficiencySources,
+} from "@/modules/deficiencies/deficiency.controller";
+import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
@@ -11,7 +15,7 @@ export const dynamic = "force-dynamic";
 type SearchParams = Promise<{
   vesselId?: string;
   status?: string;
-  source?: string;
+  sourceId?: string;
   category?: string;
 }>;
 
@@ -26,23 +30,25 @@ export default async function DeficienciesPage(props: {
     ? (sp.status as DeficiencyStatus)
     : undefined;
 
-  const [rows, vessels] = await Promise.all([
+  const [rows, vessels, sources, pscInspections] = await Promise.all([
     listDeficiencies(access, {
       vesselId: sp.vesselId || undefined,
       status,
-      source: sp.source || undefined,
+      sourceId: sp.sourceId || undefined,
       category: sp.category || undefined,
     }),
     listSelectableVessels(access),
+    listDeficiencySources(access),
+    listPscInspections(access),
   ]);
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Deficiencies
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-[var(--text-tertiary)]">
           Findings and corrective actions by vessel — stored 4-state status.
         </p>
       </div>
@@ -50,10 +56,12 @@ export default async function DeficienciesPage(props: {
       <DeficienciesList
         rows={rows}
         vessels={vessels}
+        sources={sources}
+        pscInspections={pscInspections}
         initialFilters={{
           vesselId: sp.vesselId ?? "",
           status: sp.status ?? "",
-          source: sp.source ?? "",
+          sourceId: sp.sourceId ?? "",
           category: sp.category ?? "",
         }}
       />

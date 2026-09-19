@@ -20,17 +20,21 @@ import {
   closeDeficiency,
   createDeficiency,
   createDeficiencySeverityLevel,
+  createDeficiencySource,
   deleteDeficiency,
   deleteDeficiencyAttachment,
   deleteDeficiencySeverityLevel,
+  deleteDeficiencySource,
   DeficiencyConflictError,
   DeficiencyNotFoundError,
   DeficiencySeverityLevelNotFoundError,
+  DeficiencySourceNotFoundError,
   reopenDeficiency,
   setMonitoringDeficiency,
   startProgressDeficiency,
   updateDeficiency,
   updateDeficiencySeverityLevel,
+  updateDeficiencySource,
   uploadDeficiencyAttachment,
 } from "./deficiency.controller";
 import {
@@ -80,7 +84,7 @@ export async function createDeficiencyAction(
   const raw = {
     vesselId: readFormString(formData, "vesselId") ?? "",
     title: readFormString(formData, "title") ?? "",
-    source: readFormString(formData, "source") ?? "",
+    sourceId: readFormString(formData, "sourceId") ?? "",
     status: readFormString(formData, "status"),
     deficiencyNumber: readFormString(formData, "deficiencyNumber"),
     category: readFormString(formData, "category"),
@@ -92,6 +96,7 @@ export async function createDeficiencyAction(
     correctiveAction: readFormString(formData, "correctiveAction"),
     responsiblePerson: readFormString(formData, "responsiblePerson"),
     notes: readFormString(formData, "notes"),
+    pscInspectionId: readFormString(formData, "pscInspectionId"),
   };
 
   const parsed = deficiencyCreateSchema.safeParse(raw);
@@ -128,7 +133,7 @@ export async function updateDeficiencyAction(
   const keys = [
     "vesselId",
     "title",
-    "source",
+    "sourceId",
     "status",
     "deficiencyNumber",
     "category",
@@ -140,6 +145,7 @@ export async function updateDeficiencyAction(
     "correctiveAction",
     "responsiblePerson",
     "notes",
+    "pscInspectionId",
   ] as const;
 
   const raw: Record<string, string | undefined> = {};
@@ -406,6 +412,80 @@ export async function deleteDeficiencySeverityLevelFormAction(
     if (
       error instanceof DeficiencyConflictError ||
       error instanceof DeficiencySeverityLevelNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function createDeficiencySourceAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "Name is required." };
+  }
+  try {
+    await createDeficiencySource(access, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Added." };
+  } catch (error) {
+    if (error instanceof DeficiencyConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateDeficiencySourceAction(
+  _prev: SystemListActionState | undefined,
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id") ?? "";
+  const parsed = nameOnlySchema.safeParse({
+    name: readFormString(formData, "name") ?? "",
+  });
+  if (!parsed.success || !id) {
+    return { ok: false, message: "Please fix the highlighted fields." };
+  }
+  try {
+    await updateDeficiencySource(access, id, parsed.data);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Saved." };
+  } catch (error) {
+    if (
+      error instanceof DeficiencyConflictError ||
+      error instanceof DeficiencySourceNotFoundError
+    ) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function deleteDeficiencySourceFormAction(
+  formData: FormData,
+): Promise<SystemListActionState> {
+  await assertSameOriginMutation();
+  const access = toAccessContext(await requireSession({ touch: true }));
+  const id = readFormString(formData, "id");
+  if (!id) return { ok: false, message: "Missing id." };
+  try {
+    await deleteDeficiencySource(access, id);
+    revalidatePath(systemListsPath);
+    return { ok: true, message: "Deleted." };
+  } catch (error) {
+    if (
+      error instanceof DeficiencyConflictError ||
+      error instanceof DeficiencySourceNotFoundError
     ) {
       return { ok: false, message: error.message };
     }

@@ -44,7 +44,22 @@ export default async function DeficiencyDetailPage(props: PageProps) {
       ),
     },
     { label: "Category", value: row.category ?? "—" },
-    { label: "Source", value: deficiencySourceLabel(row.source) },
+    { label: "Source", value: deficiencySourceLabel(row.sourceName) },
+    ...(row.pscInspectionId
+      ? [
+          {
+            label: "PSC Inspection",
+            value: (
+              <Link
+                href={`/dashboard/psc/${row.pscInspectionId}`}
+                className="text-[var(--accent)] hover:underline"
+              >
+                View linked inspection
+              </Link>
+            ),
+          },
+        ]
+      : []),
     {
       label: "Status",
       value: (

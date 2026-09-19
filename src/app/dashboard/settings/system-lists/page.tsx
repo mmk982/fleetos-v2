@@ -16,7 +16,7 @@ import {
 } from "@/modules/crew/crew.controller";
 import { listDrawingCategories } from "@/modules/drawings/drawing.controller";
 import { listIsmTemplateCategories } from "@/modules/ism-templates/ismTemplate.controller";
-import { listDeficiencySeverityLevels } from "@/modules/deficiencies/deficiency.controller";
+import { listDeficiencySeverityLevels, listDeficiencySources } from "@/modules/deficiencies/deficiency.controller";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,7 @@ export default async function SystemListsPage() {
     crewCategories,
     endorsementTypes,
     severityLevels,
+    deficiencySourceRows,
   ] = await Promise.all([
     listCertificateTypes(access),
     listIssuingAuthorities(access),
@@ -40,6 +41,7 @@ export default async function SystemListsPage() {
     listCrewCategories(access),
     listEndorsementTypes(access),
     listDeficiencySeverityLevels(access),
+    listDeficiencySources(access),
   ]);
 
   const lists: Record<SystemListKey, SystemListRow[]> = {
@@ -77,6 +79,11 @@ export default async function SystemListsPage() {
       isCustom: r.isCustom,
     })),
     deficiency_severity_levels: severityLevels.map((r) => ({
+      id: r.id,
+      name: r.name,
+      isCustom: r.isCustom,
+    })),
+    deficiency_sources: deficiencySourceRows.map((r) => ({
       id: r.id,
       name: r.name,
       isCustom: r.isCustom,

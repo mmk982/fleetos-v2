@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { Identifier } from "@/components/ui/identifier";
 import {
   createDeficiencyAction,
@@ -10,20 +10,26 @@ import {
   type DeficiencyActionState,
 } from "@/modules/deficiencies/actions";
 import {
-  DEFICIENCY_SOURCES,
   DEFICIENCY_STATUSES,
   deficiencySourceLabel,
   deficiencyStatusLabel,
 } from "@/modules/deficiencies/deficiency.model";
-import type { DeficiencyRow, VesselRow } from "@/db/schema";
+import type {
+  DeficiencyRow,
+  DeficiencySourceRow,
+  VesselRow,
+} from "@/db/schema";
+import type { PscInspectionListItem } from "@/modules/psc/psc.model";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]";
-const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
+const errorText = "mt-1 text-sm text-[var(--error)]";
 
 type DeficiencyFormProps = {
   vessels: VesselRow[];
+  sources: DeficiencySourceRow[];
+  pscInspections: PscInspectionListItem[];
   onCancelHref?: string;
 } & (
   | { mode: "create" }
@@ -52,11 +58,31 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
       ? "/dashboard/deficiencies"
       : `/dashboard/deficiencies/${props.deficiencyId}`);
 
+  const defaultSourceId =
+    d?.sourceId ??
+    props.sources.find((s) => s.name === "internal")?.id ??
+    props.sources[0]?.id ??
+    "";
+
+  const [vesselId, setVesselId] = useState(d?.vesselId ?? "");
+  const [sourceId, setSourceId] = useState(defaultSourceId);
+
+  const selectedSource = props.sources.find((s) => s.id === sourceId);
+  const showPscLink = selectedSource?.name === "psc";
+
+  const vesselPscInspections = useMemo(
+    () =>
+      props.pscInspections.filter(
+        (i) => !vesselId || i.vesselId === vesselId,
+      ),
+    [props.pscInspections, vesselId],
+  );
+
   return (
     <form action={formAction} className="space-y-5">
       {state && !state.ok ? (
         <div
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-md border border-[color-mix(in_oklab,var(--error)_25%,white)] bg-[color-mix(in_oklab,var(--error)_10%,white)] px-3 py-2 text-sm text-[var(--error)] dark:border-[var(--error)]/40 dark:bg-[var(--error)]/20"
           role="alert"
         >
           {state.message}
@@ -66,13 +92,14 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label htmlFor="vesselId" className={labelClass}>
-            Vessel <span className="text-red-600">*</span>
+            Vessel <span className="text-[var(--error)]">*</span>
           </label>
           <select
             id="vesselId"
             name="vesselId"
             required
-            defaultValue={d?.vesselId ?? ""}
+            value={vesselId}
+            onChange={(e) => setVesselId(e.target.value)}
             className={inputClass}
           >
             <option value="" disabled>
@@ -91,7 +118,7 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
 
         <div className="sm:col-span-2">
           <label htmlFor="title" className={labelClass}>
-            Title <span className="text-red-600">*</span>
+            Title <span className="text-[var(--error)]">*</span>
           </label>
           <input
             id="title"
@@ -136,22 +163,26 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
         </div>
 
         <div>
-          <label htmlFor="source" className={labelClass}>
-            Source <span className="text-red-600">*</span>
+          <label htmlFor="sourceId" className={labelClass}>
+            Source <span className="text-[var(--error)]">*</span>
           </label>
           <select
-            id="source"
-            name="source"
+            id="sourceId"
+            name="sourceId"
             required
-            defaultValue={d?.source ?? "internal"}
+            value={sourceId}
+            onChange={(e) => setSourceId(e.target.value)}
             className={inputClass}
           >
-            {DEFICIENCY_SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {deficiencySourceLabel(s)}
+            {props.sources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {deficiencySourceLabel(s.name)}
               </option>
             ))}
           </select>
+          {fieldErrors?.sourceId ? (
+            <p className={errorText}>{fieldErrors.sourceId.join(" ")}</p>
+          ) : null}
         </div>
 
         <div>
@@ -171,6 +202,33 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
             ))}
           </select>
         </div>
+
+        {showPscLink ? (
+          <div className="sm:col-span-2">
+            <label htmlFor="pscInspectionId" className={labelClass}>
+              Link to PSC Inspection
+            </label>
+            <select
+              id="pscInspectionId"
+              name="pscInspectionId"
+              defaultValue={d?.pscInspectionId ?? ""}
+              className={inputClass}
+              disabled={!vesselId}
+            >
+              <option value="">None</option>
+              {vesselPscInspections.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.port} · {i.inspectionDate} · {i.authority}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+              Optional — only inspections for the selected vessel.
+            </p>
+          </div>
+        ) : (
+          <input type="hidden" name="pscInspectionId" value="" />
+        )}
 
         <div>
           <label htmlFor="identifiedDate" className={labelClass}>
@@ -281,8 +339,7 @@ export function DeficiencyForm(props: DeficiencyFormProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-4">
-        <Button variant="primary" type="submit"
-          disabled={pending}>
+        <Button variant="primary" type="submit" disabled={pending}>
           {pending
             ? "Saving…"
             : props.mode === "create"

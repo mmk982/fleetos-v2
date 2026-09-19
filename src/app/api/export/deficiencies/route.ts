@@ -1,5 +1,5 @@
 /**
- * GET /api/export/deficiencies?format=xlsx|pdf&vesselId&status&source&category
+ * GET /api/export/deficiencies?format=xlsx|pdf&vesselId&status&sourceId&category
  * Session-authenticated list export with activity_logs audit row.
  */
 import { NextResponse } from "next/server";
@@ -23,7 +23,6 @@ import {
 } from "@/lib/export/http";
 import { listDeficiencies } from "@/modules/deficiencies/deficiency.controller";
 import {
-  DEFICIENCY_SOURCES,
   DEFICIENCY_STATUSES,
   deficiencySourceLabel,
   deficiencyStatusLabel,
@@ -47,6 +46,9 @@ const COLUMNS: ExportColumn<DefExportRow>[] = [
   { key: "dueDate", header: "Due Date" },
 ];
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET(request: Request) {
   const session = await validateSession();
   if (!session) {
@@ -67,10 +69,8 @@ export async function GET(request: Request) {
     ? (statusRaw as DeficiencyStatus)
     : undefined;
 
-  const sourceRaw = url.searchParams.get("source") ?? "";
-  const source = (DEFICIENCY_SOURCES as readonly string[]).includes(sourceRaw)
-    ? sourceRaw
-    : undefined;
+  const sourceIdRaw = url.searchParams.get("sourceId") ?? "";
+  const sourceId = UUID_RE.test(sourceIdRaw) ? sourceIdRaw : undefined;
 
   const access = toAccessContext(session);
 
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     const rows = await listDeficiencies(access, {
       vesselId,
       status,
-      source,
+      sourceId,
       category: url.searchParams.get("category") || undefined,
     });
 
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
       vessel: row.vesselName,
       number: row.deficiencyNumber ?? "",
       title: row.title,
-      source: deficiencySourceLabel(row.source),
+      source: deficiencySourceLabel(row.sourceName),
       status: deficiencyStatusLabel(row.status),
       dueDate: row.dueDate ?? "",
     }));

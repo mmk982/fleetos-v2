@@ -41,6 +41,14 @@ const imoField = z.preprocess((val) => {
   return Number.isFinite(n) ? Math.trunc(n) : undefined;
 }, z.union([z.null(), z.number().int().min(1_000_000).max(9_999_999)]).optional());
 
+const yearBuiltField = z.preprocess((val) => {
+  if (val === null || val === undefined || val === "") {
+    return null;
+  }
+  const n = typeof val === "number" ? val : Number(val);
+  return Number.isFinite(n) ? Math.trunc(n) : undefined;
+}, z.union([z.null(), z.number().int().min(1800).max(2100)]).optional());
+
 /** Full vessel-creation input — every field except `name` is optional. */
 export const vesselCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
@@ -50,29 +58,29 @@ export const vesselCreateSchema = z.object({
   flagState: optionalTrimmedString,
   vesselType: optionalTrimmedString,
   grossTonnage: optionalPositiveInt,
-  yearBuilt: z.preprocess((val) => {
-    if (val === null || val === undefined || val === "") {
-      return null;
-    }
-    const n = typeof val === "number" ? val : Number(val);
-    return Number.isFinite(n) ? Math.trunc(n) : undefined;
-  }, z.union([z.null(), z.number().int().min(1800).max(2100)]).optional()),
+  yearBuilt: yearBuiltField,
   status: z.enum(vesselStatusEnum).default("active"),
   notes: optionalTrimmedString,
 });
 
 /**
- * Partial update input. `.extend({ name: ... })` re-adds an explicit
- * (still-optional) `name` rule after `.partial()` — without it, `.partial()`
- * alone would still permit an empty-string name because the base schema's
- * `min(1)` message is preserved but not the "absent means unchanged"
- * semantics `actions.ts` relies on for partial updates.
+ * Partial update input. Explicit optional fields — Zod 4 rejects `.partial()`
+ * on object schemas that contain preprocess/transform fields.
  */
-export const vesselUpdateSchema = vesselCreateSchema.partial().extend({
+export const vesselUpdateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
+  imoNumber: imoField,
+  mmsi: optionalTrimmedString,
+  callSign: optionalTrimmedString,
+  flagState: optionalTrimmedString,
+  vesselType: optionalTrimmedString,
+  grossTonnage: optionalPositiveInt,
+  yearBuilt: yearBuiltField,
+  status: z.enum(vesselStatusEnum).optional(),
+  notes: optionalTrimmedString,
 });
 
 /** Parsed, validated shape accepted by `createVessel` — inferred from {@link vesselCreateSchema}, not hand-maintained, so it can't drift from the runtime validation. */
 export type VesselCreateInput = z.infer<typeof vesselCreateSchema>;
-/** Parsed, validated shape accepted by `updateVessel` — every field optional except `name` (see {@link vesselUpdateSchema}'s `.partial().extend()` pattern). */
+/** Parsed, validated shape accepted by `updateVessel` — every field optional. */
 export type VesselUpdateInput = z.infer<typeof vesselUpdateSchema>;

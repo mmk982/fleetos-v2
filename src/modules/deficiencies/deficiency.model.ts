@@ -19,10 +19,14 @@ export type {
   DeficiencyAttachmentRow,
   DeficiencyRow,
   DeficiencySource,
+  DeficiencySourceRow,
   DeficiencyStatus,
 } from "@/db/schema";
 
-/** Source options for forms / filters. */
+/**
+ * Well-known seed source names (still used for labels / PSC gating).
+ * Live dropdown options come from {@link listDeficiencySources}.
+ */
 export const DEFICIENCY_SOURCES = deficiencySourceEnum;
 /** Status options for forms / filters. */
 export const DEFICIENCY_STATUSES = deficiencyStatusEnum;
@@ -68,7 +72,10 @@ export function deficiencyStatusLabel(status: DeficiencyStatus): string {
   }
 }
 
-/** Human label for a deficiency source. */
+/**
+ * Human label for a deficiency source name.
+ * Known seed names get title-cased labels; custom rows fall back to `name`.
+ */
 export function deficiencySourceLabel(source: string): string {
   switch (source) {
     case "psc":
@@ -86,7 +93,8 @@ export function deficiencySourceLabel(source: string): string {
   }
 }
 
-/** List-row shape with vessel name (safe for client props). */
+/** List-row shape with vessel + source names (safe for client props). */
 export type DeficiencyListItem = DeficiencyRow & {
   vesselName: string;
+  sourceName: string;
 };

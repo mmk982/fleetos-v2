@@ -443,6 +443,61 @@ export type DeficiencySeverityLevelRow =
 export type DeficiencySeverityLevelInsert =
   typeof deficiencySeverityLevels.$inferInsert;
 
+/**
+ * Where a deficiency was raised (PSC, Class, Flag, …). Seeded well-known
+ * names match {@link deficiencySourceEnum}; users may add custom rows.
+ */
+export const deficiencySources = pgTable("deficiency_sources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  isCustom: boolean("is_custom").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link deficiencySources}. */
+export type DeficiencySourceRow = typeof deficiencySources.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link deficiencySources}. */
+export type DeficiencySourceInsert = typeof deficiencySources.$inferInsert;
+
+/**
+ * PSC / MOU inspection records (`PROJECT_PLAN.md` §7b).
+ * `result` and `detained` are separate: detention is an escalation on top of
+ * a deficiencies-noted inspection, not a third mutually-exclusive outcome.
+ */
+export const pscInspectionResultEnum = [
+  "no_deficiencies",
+  "deficiencies_noted",
+] as const;
+/** Union of {@link pscInspectionResultEnum} literals. */
+export type PscInspectionResult = (typeof pscInspectionResultEnum)[number];
+
+export const pscInspections = pgTable("psc_inspections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  vesselId: uuid("vessel_id")
+    .notNull()
+    .references(() => vessels.id, { onDelete: "restrict" }),
+  port: text("port").notNull(),
+  inspectionDate: date("inspection_date").notNull(),
+  authority: text("authority").notNull(),
+  result: text("result", { enum: pscInspectionResultEnum }).notNull(),
+  detained: boolean("detained").notNull().default(false),
+  inspectorName: text("inspector_name"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link pscInspections}. */
+export type PscInspectionRow = typeof pscInspections.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link pscInspections}. */
+export type PscInspectionInsert = typeof pscInspections.$inferInsert;
+
 export const deficiencies = pgTable(
   "deficiencies",
   {
@@ -454,13 +509,19 @@ export const deficiencies = pgTable(
     title: text("title").notNull(),
     description: text("description"),
     category: text("category"),
-    source: text("source", { enum: deficiencySourceEnum }).notNull(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => deficiencySources.id, { onDelete: "restrict" }),
     status: text("status", { enum: deficiencyStatusEnum })
       .notNull()
       .default("open"),
     severityLevelId: uuid("severity_level_id").references(
       () => deficiencySeverityLevels.id,
       { onDelete: "restrict" },
+    ),
+    pscInspectionId: uuid("psc_inspection_id").references(
+      () => pscInspections.id,
+      { onDelete: "set null" },
     ),
     reference: text("reference"),
     identifiedDate: date("identified_date"),

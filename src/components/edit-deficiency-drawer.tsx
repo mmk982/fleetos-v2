@@ -3,14 +3,23 @@
 import { useRouter } from "next/navigation";
 import { DeficiencyForm } from "@/components/deficiency-form";
 import { Drawer } from "@/components/ui/drawer";
-import type { DeficiencyRow, VesselRow } from "@/db/schema";
+import type {
+  DeficiencyRow,
+  DeficiencySourceRow,
+  VesselRow,
+} from "@/db/schema";
+import type { PscInspectionListItem } from "@/modules/psc/psc.model";
 
 export function EditDeficiencyDrawer({
   deficiency,
   vessels,
+  sources,
+  pscInspections,
 }: {
   deficiency: DeficiencyRow;
   vessels: VesselRow[];
+  sources: DeficiencySourceRow[];
+  pscInspections: PscInspectionListItem[];
 }) {
   const router = useRouter();
 
@@ -25,6 +34,8 @@ export function EditDeficiencyDrawer({
         deficiencyId={deficiency.id}
         defaultValues={deficiency}
         vessels={vessels}
+        sources={sources}
+        pscInspections={pscInspections}
       />
     </Drawer>
   );
