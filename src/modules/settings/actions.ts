@@ -144,8 +144,9 @@ export async function uploadCompanyLogoAction(
 }
 
 export async function clearCompanyLogoAction(
-  _formData?: FormData,
+  formData?: FormData,
 ): Promise<void> {
+  void formData;
   await assertSameOriginMutation();
   const access = toAccessContext(await requireSession({ touch: true }));
   await clearCompanyLogo(access);

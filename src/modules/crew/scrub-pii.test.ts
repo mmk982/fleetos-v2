@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const removeStoredAttachmentFile = vi.fn(async (_path: string) => undefined);
+const removeStoredAttachmentFile = vi.fn(async (_path: string) => {
+  void _path;
+});
 vi.mock("@/lib/attachments/stream", () => ({
   removeStoredAttachmentFile: (filePath: string) =>
     removeStoredAttachmentFile(filePath),

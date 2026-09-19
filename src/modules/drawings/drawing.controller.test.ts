@@ -11,7 +11,9 @@ vi.mock("@/lib/auth/access", () => ({
   assertVesselScope: vi.fn(),
 }));
 
-const removeStoredAttachmentFile = vi.fn(async (_path: string) => undefined);
+const removeStoredAttachmentFile = vi.fn(async (_path: string) => {
+  void _path;
+});
 vi.mock("@/lib/attachments/stream", () => ({
   removeStoredAttachmentFile: (filePath: string) =>
     removeStoredAttachmentFile(filePath),
