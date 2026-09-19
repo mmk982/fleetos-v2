@@ -5,7 +5,7 @@
  * logging outage never blocks the mutation being recorded.
  *
  * Fixed vocabulary (call sites must use these exact strings):
- * - moduleName: vessel | certificate | deficiency | insurance | crew |
+ * - moduleName: vessel | certificate | deficiency | psc | audits | insurance | crew |
  *   ism_template | manual | drawing | monthly_form | particulars |
  *   reminder | user
  * - actionType: created | updated | deleted | uploaded | exported (+ closed /

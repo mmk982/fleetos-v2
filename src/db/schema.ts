@@ -498,6 +498,38 @@ export type PscInspectionRow = typeof pscInspections.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link pscInspections}. */
 export type PscInspectionInsert = typeof pscInspections.$inferInsert;
 
+/**
+ * ISSC / MLC / SMC / DOC audit event log. Standalone — no FK to deficiencies
+ * (unlike PSC inspections, which may link findings). Pass/fail events with an
+ * optional note; no expiry / compliance-status concept.
+ */
+export const auditTypeEnum = ["ISSC", "MLC", "SMC", "DOC", "Other"] as const;
+/** Union of {@link auditTypeEnum} literals. */
+export type AuditType = (typeof auditTypeEnum)[number];
+
+export const audits = pgTable("audits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  vesselId: uuid("vessel_id")
+    .notNull()
+    .references(() => vessels.id, { onDelete: "restrict" }),
+  auditType: text("audit_type", { enum: auditTypeEnum }).notNull(),
+  auditDate: date("audit_date").notNull(),
+  auditor: text("auditor"),
+  findingsCount: integer("findings_count").notNull().default(0),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** A row as read from {@link audits}. */
+export type AuditRow = typeof audits.$inferSelect;
+/** Shape accepted by Drizzle's `.insert()` for {@link audits}. */
+export type AuditInsert = typeof audits.$inferInsert;
+
 export const deficiencies = pgTable(
   "deficiencies",
   {
