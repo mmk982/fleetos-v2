@@ -23,7 +23,7 @@ export default function DashboardError({
 
   return (
     <main className="flex flex-1 flex-col items-start gap-4 p-8" dir="auto">
-      <div className="max-w-lg rounded-xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+      <div className="max-w-lg rounded-xl border border-zinc-200 bg-white px-4 py-6 text-sm text-[var(--text-primary)] shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-base font-semibold text-[var(--text-primary)]">
           Something went wrong
         </h1>
@@ -37,7 +37,7 @@ export default function DashboardError({
           </Button>
           <Link
             href="/dashboard"
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-zinc-300 px-3 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-zinc-300 px-3 text-sm font-medium text-[var(--text-secondary)] dark:border-zinc-700"
           >
             Back to Dashboard
           </Link>

@@ -124,7 +124,7 @@ export default async function CertificateDetailPage(props: PageProps) {
       {cert.remarks ? (
         <section className="mt-8 max-w-4xl">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">Remarks</h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-[var(--text-secondary)] dark:border-zinc-800 dark:bg-zinc-950">
             {cert.remarks}
           </p>
         </section>
@@ -149,7 +149,7 @@ export default async function CertificateDetailPage(props: PageProps) {
                   </p>
                 ) : null}
                 {ev.note ? (
-                  <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{ev.note}</p>
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">{ev.note}</p>
                 ) : null}
               </li>
             ))

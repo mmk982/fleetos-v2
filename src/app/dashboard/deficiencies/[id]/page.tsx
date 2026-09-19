@@ -163,7 +163,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Description
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-[var(--text-secondary)] dark:border-zinc-800 dark:bg-zinc-950">
             {row.description}
           </p>
         </section>
@@ -174,7 +174,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Corrective action
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-[var(--text-secondary)] dark:border-zinc-800 dark:bg-zinc-950">
             {row.correctiveAction}
           </p>
         </section>
@@ -185,7 +185,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Notes
           </h2>
-          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+          <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-[var(--text-secondary)] dark:border-zinc-800 dark:bg-zinc-950">
             {row.notes}
           </p>
         </section>
