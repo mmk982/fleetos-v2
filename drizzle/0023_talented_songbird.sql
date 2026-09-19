@@ -1,0 +1,3 @@
+ALTER TABLE "certificates" ADD COLUMN "parent_certificate_id" uuid;--> statement-breakpoint
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_parent_certificate_id_certificates_id_fk" FOREIGN KEY ("parent_certificate_id") REFERENCES "public"."certificates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "certificates_parent_certificate_id_idx" ON "certificates" USING btree ("parent_certificate_id");

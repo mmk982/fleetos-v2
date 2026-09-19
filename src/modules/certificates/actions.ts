@@ -88,6 +88,7 @@ export async function createCertificateAction(
   const raw = {
     vesselId: readFormString(formData, "vesselId") ?? "",
     certificateTypeId: readFormString(formData, "certificateTypeId") ?? "",
+    parentCertificateId: readFormString(formData, "parentCertificateId"),
     issuingAuthorityId: readFormString(formData, "issuingAuthorityId"),
     certificateNumber: readFormString(formData, "certificateNumber"),
     issueDate: readFormString(formData, "issueDate"),
@@ -136,6 +137,7 @@ export async function updateCertificateAction(
   const keys = [
     "vesselId",
     "certificateTypeId",
+    "parentCertificateId",
     "issuingAuthorityId",
     "certificateNumber",
     "issueDate",

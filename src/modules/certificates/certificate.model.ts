@@ -44,6 +44,10 @@ export type CertificateListItem = CertificateRow & {
   typeOffsetDays: number | null;
   issuingAuthorityName: string | null;
   compliance: ComplianceResult;
+  /** Joined type name of the parent certificate, if this row is a sub-item. */
+  parentCertificateName: string | null;
+  /** Count of linked sub-items; 0 for certificates that are not parents. */
+  subItemCount: number;
 };
 
 /** Authority options for `<select>` / filters. */

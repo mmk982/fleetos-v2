@@ -78,6 +78,7 @@ export const certificateCreateSchema = z
   .object({
     vesselId: z.string().uuid(),
     certificateTypeId: z.string().uuid(),
+    parentCertificateId: optionalUuid,
     issuingAuthorityId: optionalUuid,
     certificateNumber: optionalTrimmedString,
     issueDate: isoDateField,
@@ -115,6 +116,7 @@ export const certificateUpdateSchema = z
   .object({
     vesselId: z.string().uuid().optional(),
     certificateTypeId: z.string().uuid().optional(),
+    parentCertificateId: optionalUuid,
     issuingAuthorityId: optionalUuid,
     certificateNumber: optionalTrimmedString,
     issueDate: isoDateField,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CertificateForm } from "@/components/certificate-form";
 import {
+  listCertificates,
   listCertificateTypes,
   listIssuingAuthorities,
 } from "@/modules/certificates/certificate.controller";
@@ -11,11 +12,20 @@ import { requireSession } from "@/lib/auth/session";
 export default async function NewCertificatePage() {
   const session = await requireSession();
   const access = toAccessContext(session);
-  const [vessels, types, authorities] = await Promise.all([
+  const [vessels, types, authorities, certificates] = await Promise.all([
     listSelectableVessels(access),
     listCertificateTypes(access),
     listIssuingAuthorities(access),
+    listCertificates(access),
   ]);
+  const parentCandidates = certificates
+    .filter((row) => !row.parentCertificateId)
+    .map((row) => ({
+      id: row.id,
+      vesselId: row.vesselId,
+      typeName: row.typeName,
+      certificateNumber: row.certificateNumber,
+    }));
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
@@ -38,6 +48,7 @@ export default async function NewCertificatePage() {
         vessels={vessels}
         types={types}
         authorities={authorities}
+        parentCandidates={parentCandidates}
       />
     </main>
   );

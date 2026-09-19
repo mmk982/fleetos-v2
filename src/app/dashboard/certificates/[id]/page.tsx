@@ -7,7 +7,10 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Identifier } from "@/components/ui/identifier";
 import { StatusPill } from "@/components/ui/status-pill";
 import { deleteCertificateFormAction } from "@/modules/certificates/actions";
-import { getCertificateById } from "@/modules/certificates/certificate.controller";
+import {
+  getCertificateById,
+  listSubCertificates,
+} from "@/modules/certificates/certificate.controller";
 import { formatAuthority } from "@/modules/certificates/certificate.model";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
@@ -16,11 +19,19 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CertificateDetailPage(props: PageProps) {
   const session = await requireSession();
+  const access = toAccessContext(session);
   const { id } = await props.params;
-  const cert = await getCertificateById(toAccessContext(session), id);
+  const cert = await getCertificateById(access, id);
   if (!cert) {
     notFound();
   }
+
+  const [parent, subItems] = await Promise.all([
+    cert.parentCertificateId
+      ? getCertificateById(access, cert.parentCertificateId)
+      : Promise.resolve(undefined),
+    listSubCertificates(access, cert.id),
+  ]);
 
   const rows: { label: string; value: ReactNode }[] = [
     {
@@ -58,6 +69,23 @@ export default async function CertificateDetailPage(props: PageProps) {
       label: "Lifecycle",
       value:
         cert.lifecycleStatus.charAt(0).toUpperCase() + cert.lifecycleStatus.slice(1),
+    },
+    {
+      label: "Parent certificate",
+      value: parent ? (
+        <Link
+          href={`/dashboard/certificates/${parent.id}`}
+          className="text-[var(--accent)] hover:underline"
+        >
+          {parent.typeName}
+        </Link>
+      ) : (
+        "—"
+      ),
+    },
+    {
+      label: "Sub-items",
+      value: subItems.length > 0 ? String(subItems.length) : "—",
     },
     {
       label: "Status",
@@ -127,6 +155,37 @@ export default async function CertificateDetailPage(props: PageProps) {
           <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-[var(--text-secondary)] dark:border-zinc-800 dark:bg-zinc-950">
             {cert.remarks}
           </p>
+        </section>
+      ) : null}
+
+      {subItems.length > 0 ? (
+        <section className="mt-10 max-w-4xl space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            Sub-items
+          </h2>
+          <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
+            {subItems.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/dashboard/certificates/${item.id}`}
+                    className="text-sm font-medium text-[var(--accent)] hover:underline"
+                  >
+                    {item.typeName}
+                  </Link>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {item.ruleKind === "window"
+                      ? (item.windowOpenDate ?? "No window")
+                      : (item.expiryDate ?? "No expiry")}
+                  </p>
+                </div>
+                <StatusPill status={item.compliance.status} />
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 

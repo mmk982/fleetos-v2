@@ -86,23 +86,44 @@ function baseCert(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function parentDetail(overrides: Record<string, unknown> = {}) {
+function parentJoinRow(overrides: Record<string, unknown> = {}) {
   const certificate = baseCert(overrides);
   return {
-    ...certificate,
-    vesselName: "GLIMLIT",
-    typeName: "Radio Certificate",
-    authority: "radio",
-    ruleKind: "expiry_offset",
-    typeOffsetDays: 30,
-    issuingAuthorityName: null,
-    compliance: { status: "valid", daysRemaining: 400 },
-    events: [],
-    attachments: [],
+    certificate,
+    vessel: { id: certificate.vesselId, name: "GLIMLIT" },
     certificateType: TYPE_ROW,
     issuingAuthority: null,
-    vessel: { id: certificate.vesselId, name: "GLIMLIT" },
   };
+}
+
+function selectChain(opts: {
+  parentJoin: unknown;
+  inserted?: unknown;
+}) {
+  let simpleLimitCalls = 0;
+  const node = (joined: boolean): Record<string, unknown> => ({
+    from: () => node(joined),
+    innerJoin: () => node(true),
+    leftJoin: () => node(joined),
+    where: () => node(joined),
+    groupBy: () => node(joined),
+    orderBy: async () => [],
+    limit: async () => {
+      if (joined) {
+        return [opts.parentJoin];
+      }
+      simpleLimitCalls += 1;
+      if (simpleLimitCalls === 1) {
+        return [TYPE_ROW];
+      }
+      return opts.inserted ? [opts.inserted] : [TYPE_ROW];
+    },
+    then: (
+      onfulfilled?: (v: unknown) => unknown,
+      onrejected?: (e: unknown) => unknown,
+    ) => Promise.resolve([]).then(onfulfilled, onrejected),
+  });
+  return () => node(false);
 }
 
 describe("certificate parentCertificateId", () => {
@@ -115,28 +136,9 @@ describe("certificate parentCertificateId", () => {
     const captured: Record<string, unknown>[] = [];
 
     getDb.mockReturnValue({
-      select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: async () => [TYPE_ROW],
-          }),
-          innerJoin: () => ({
-            innerJoin: () => ({
-              leftJoin: () => ({
-                where: () => ({
-                  limit: async () => [
-                    {
-                      certificate: baseCert(),
-                      vessel: { id: VESSEL_A, name: "GLIMLIT" },
-                      certificateType: TYPE_ROW,
-                      issuingAuthority: null,
-                    },
-                  ],
-                }),
-              }),
-            }),
-          }),
-        }),
+      select: selectChain({
+        parentJoin: parentJoinRow(),
+        inserted,
       }),
       insert: () => ({
         values: (payload: Record<string, unknown>) => {
@@ -167,28 +169,8 @@ describe("certificate parentCertificateId", () => {
 
   it("rejects a parentCertificateId on a different vessel", async () => {
     getDb.mockReturnValue({
-      select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: async () => [TYPE_ROW],
-          }),
-          innerJoin: () => ({
-            innerJoin: () => ({
-              leftJoin: () => ({
-                where: () => ({
-                  limit: async () => [
-                    {
-                      certificate: baseCert({ vesselId: VESSEL_B }),
-                      vessel: { id: VESSEL_B, name: "OTHER" },
-                      certificateType: TYPE_ROW,
-                      issuingAuthority: null,
-                    },
-                  ],
-                }),
-              }),
-            }),
-          }),
-        }),
+      select: selectChain({
+        parentJoin: parentJoinRow({ vesselId: VESSEL_B }),
       }),
     });
 
@@ -205,30 +187,10 @@ describe("certificate parentCertificateId", () => {
 
   it("rejects a parent that is itself a sub-item", async () => {
     getDb.mockReturnValue({
-      select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: async () => [TYPE_ROW],
-          }),
-          innerJoin: () => ({
-            innerJoin: () => ({
-              leftJoin: () => ({
-                where: () => ({
-                  limit: async () => [
-                    {
-                      certificate: baseCert({
-                        id: PARENT_ID,
-                        parentCertificateId: GRANDCHILD_ID,
-                      }),
-                      vessel: { id: VESSEL_A, name: "GLIMLIT" },
-                      certificateType: TYPE_ROW,
-                      issuingAuthority: null,
-                    },
-                  ],
-                }),
-              }),
-            }),
-          }),
+      select: selectChain({
+        parentJoin: parentJoinRow({
+          id: PARENT_ID,
+          parentCertificateId: GRANDCHILD_ID,
         }),
       }),
     });
@@ -257,4 +219,142 @@ describe("certificate parentCertificateId", () => {
       updateCertificate(CTX, PARENT_ID, { parentCertificateId: PARENT_ID }),
     ).rejects.toBeInstanceOf(CertificateConflictError);
   });
+
+  it("rejects moving a sub-item to another vessel while the parent link is untouched", async () => {
+    getDb.mockReturnValue(
+      updateDbMock({
+        existing: baseCert({
+          id: CHILD_ID,
+          parentCertificateId: PARENT_ID,
+        }),
+        childCount: 0,
+      }),
+    );
+
+    await expect(
+      updateCertificate(CTX, CHILD_ID, { vesselId: VESSEL_B }),
+    ).rejects.toBeInstanceOf(CertificateConflictError);
+  });
+
+  it("allows moving a sub-item when the same call clears the parent link", async () => {
+    const existing = baseCert({
+      id: CHILD_ID,
+      parentCertificateId: PARENT_ID,
+    });
+    const updated = baseCert({
+      id: CHILD_ID,
+      vesselId: VESSEL_B,
+      parentCertificateId: null,
+    });
+    const captured: Record<string, unknown>[] = [];
+
+    getDb.mockReturnValue(
+      updateDbMock({
+        existing,
+        updated,
+        childCount: 0,
+        captured,
+      }),
+    );
+
+    const row = await updateCertificate(CTX, CHILD_ID, {
+      vesselId: VESSEL_B,
+      parentCertificateId: null,
+    });
+
+    expect(captured[0]?.vesselId).toBe(VESSEL_B);
+    expect(captured[0]?.parentCertificateId).toBeNull();
+    expect(row.vesselId).toBe(VESSEL_B);
+    expect(row.parentCertificateId).toBeNull();
+  });
+
+  it("rejects moving a parent certificate that still has sub-items", async () => {
+    getDb.mockReturnValue(
+      updateDbMock({
+        existing: baseCert({ id: PARENT_ID, parentCertificateId: null }),
+        childCount: 2,
+      }),
+    );
+
+    await expect(
+      updateCertificate(CTX, PARENT_ID, { vesselId: VESSEL_B }),
+    ).rejects.toBeInstanceOf(CertificateConflictError);
+  });
+
+  it("allows moving a certificate with no parent link and no children", async () => {
+    const existing = baseCert({ id: PARENT_ID, parentCertificateId: null });
+    const updated = baseCert({
+      id: PARENT_ID,
+      vesselId: VESSEL_B,
+      parentCertificateId: null,
+    });
+    const captured: Record<string, unknown>[] = [];
+
+    getDb.mockReturnValue(
+      updateDbMock({
+        existing,
+        updated,
+        childCount: 0,
+        captured,
+      }),
+    );
+
+    const row = await updateCertificate(CTX, PARENT_ID, { vesselId: VESSEL_B });
+
+    expect(captured[0]?.vesselId).toBe(VESSEL_B);
+    expect(row.vesselId).toBe(VESSEL_B);
+  });
 });
+
+function updateDbMock(opts: {
+  existing: ReturnType<typeof baseCert>;
+  updated?: ReturnType<typeof baseCert>;
+  childCount?: number;
+  captured?: Record<string, unknown>[];
+}) {
+  const updated = opts.updated ?? {
+    ...opts.existing,
+    vesselId: VESSEL_B,
+  };
+  let limitCalls = 0;
+  return {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => {
+            limitCalls += 1;
+            if (limitCalls === 1) {
+              return [opts.existing];
+            }
+            if (limitCalls === 2) {
+              return [TYPE_ROW];
+            }
+            return [updated];
+          },
+          then: (
+            onfulfilled?: (v: unknown) => unknown,
+            onrejected?: (e: unknown) => unknown,
+          ) =>
+            Promise.resolve([{ n: opts.childCount ?? 0 }]).then(
+              onfulfilled,
+              onrejected,
+            ),
+        }),
+      }),
+    }),
+    update: () => ({
+      set: (payload: Record<string, unknown>) => {
+        opts.captured?.push(payload);
+        return {
+          where: () => ({
+            returning: async () => [updated],
+            then: (
+              onfulfilled?: (v: unknown) => unknown,
+              onrejected?: (e: unknown) => unknown,
+            ) => Promise.resolve(undefined).then(onfulfilled, onrejected),
+          }),
+        };
+      },
+    }),
+  };
+}

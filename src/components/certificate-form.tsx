@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import {
   createCertificateAction,
   updateCertificateAction,
@@ -25,10 +25,21 @@ const inputClass =
   "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
+/** Top-level certificates that can be selected as a parent (one-level rule). */
+export type ParentCertificateOption = {
+  id: string;
+  vesselId: string;
+  typeName: string;
+  certificateNumber: string | null;
+};
+
 type CertificateFormProps = {
   vessels: VesselRow[];
   types: CertificateTypeRow[];
   authorities: IssuingAuthorityRow[];
+  parentCandidates: ParentCertificateOption[];
+  /** When true, this row already has sub-items and cannot itself be nested. */
+  hasSubItems?: boolean;
 } & (
   | { mode: "create" }
   | { mode: "edit"; certificateId: string; defaultValues: CertificateRow }
@@ -50,6 +61,19 @@ export function CertificateForm(props: CertificateFormProps) {
 
   const fieldErrors = state?.ok === false ? state.fieldErrors : undefined;
   const d = props.mode === "edit" ? props.defaultValues : null;
+  const selfId = props.mode === "edit" ? props.certificateId : null;
+  const [vesselId, setVesselId] = useState(d?.vesselId ?? "");
+  const [parentCertificateId, setParentCertificateId] = useState(
+    d?.parentCertificateId ?? "",
+  );
+
+  const parentOptions = useMemo(
+    () =>
+      props.parentCandidates.filter(
+        (row) => row.vesselId === vesselId && row.id !== selfId,
+      ),
+    [props.parentCandidates, vesselId, selfId],
+  );
 
   const typesByAuthority = new Map<string, CertificateTypeRow[]>();
   for (const t of props.types) {
@@ -78,7 +102,20 @@ export function CertificateForm(props: CertificateFormProps) {
             id="vesselId"
             name="vesselId"
             required
-            defaultValue={d?.vesselId ?? ""}
+            value={vesselId}
+            onChange={(e) => {
+              const nextVesselId = e.target.value;
+              setVesselId(nextVesselId);
+              const parentStillValid = props.parentCandidates.some(
+                (row) =>
+                  row.id === parentCertificateId &&
+                  row.vesselId === nextVesselId &&
+                  row.id !== selfId,
+              );
+              if (!parentStillValid) {
+                setParentCertificateId("");
+              }
+            }}
             className={inputClass}
           >
             <option value="" disabled>
@@ -130,6 +167,46 @@ export function CertificateForm(props: CertificateFormProps) {
             <p className={errorText}>{fieldErrors.certificateTypeId.join(" ")}</p>
           ) : null}
         </div>
+
+        {props.hasSubItems ? (
+          <div className="sm:col-span-2">
+            <p className="text-sm text-[var(--text-secondary)]">
+              This certificate already has sub-items, so it cannot be linked under
+              another parent.
+            </p>
+          </div>
+        ) : (
+        <div className="sm:col-span-2">
+          <label htmlFor="parentCertificateId" className={labelClass}>
+            Parent certificate
+          </label>
+          <select
+            id="parentCertificateId"
+            name="parentCertificateId"
+            disabled={!vesselId}
+            value={parentCertificateId}
+            onChange={(e) => setParentCertificateId(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">
+              {vesselId ? "None — top-level certificate" : "Select a vessel first"}
+            </option>
+            {parentOptions.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.typeName}
+                {row.certificateNumber ? ` · ${row.certificateNumber}` : ""}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+            Optional. Link a sub-item (EPIRB Battery, Lifeboat Load Test, VDR APT, …)
+            to its equipment certificate on the same vessel.
+          </p>
+          {fieldErrors?.parentCertificateId ? (
+            <p className={errorText}>{fieldErrors.parentCertificateId.join(" ")}</p>
+          ) : null}
+        </div>
+        )}
 
         <div>
           <label htmlFor="certificateNumber" className={labelClass}>

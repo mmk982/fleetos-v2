@@ -259,7 +259,7 @@ function CertificatesPanel({
         title="Certificates"
         href={`/dashboard/certificates?vesselId=${vesselId}`}
       />
-      {rows.length === 0 ? (
+      {rows.filter((row) => !row.parentCertificateId).length === 0 ? (
         <EmptyHint>No certificates for this vessel.</EmptyHint>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -272,7 +272,9 @@ function CertificatesPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {rows.map((row) => (
+              {rows
+                .filter((row) => !row.parentCertificateId)
+                .map((row) => (
                 <tr key={row.id} className="bg-white dark:bg-zinc-950">
                   <td className="px-4 py-3">
                     <Link
@@ -281,6 +283,12 @@ function CertificatesPanel({
                     >
                       {row.typeName}
                     </Link>
+                    {row.subItemCount > 0 ? (
+                      <span className="ms-2 text-xs text-[var(--text-tertiary)]">
+                        {row.subItemCount} sub-item
+                        {row.subItemCount === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                     {row.expiryDate ?? "—"}

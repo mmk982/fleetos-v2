@@ -1,12 +1,16 @@
 /**
  * Certificates list UI — ListToolbar + StatusPill + Identifier retrofit
  * (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Tasks 3/5).
+ *
+ * Default view groups sub-items under their parent certificate. Search still
+ * matches sub-items independently so they remain findable without expanding.
  */
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { CertificateQuickView } from "@/components/certificate-quick-view";
 import { Identifier } from "@/components/ui/identifier";
 import { ListToolbar, listToolbarExportLinkClass } from "@/components/ui/list-toolbar";
@@ -32,6 +36,12 @@ const STATUS_FILTERS: ComplianceStatus[] = [
   "revoked",
 ];
 
+function dateRef(row: CertificateListItem): string {
+  return row.ruleKind === "window"
+    ? (row.windowOpenDate ?? "—")
+    : (row.expiryDate ?? "—");
+}
+
 export function CertificatesList({
   rows,
   vessels,
@@ -51,6 +61,7 @@ export function CertificatesList({
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const [filters, setFilters] = useState(initialFilters);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   function pushFilters(next: typeof filters) {
     setFilters(next);
@@ -65,7 +76,18 @@ export function CertificatesList({
     router.push(q ? `/dashboard/certificates?${q}` : "/dashboard/certificates");
   }
 
-  const visible = useMemo(() => {
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, CertificateListItem[]>();
+    for (const row of rows) {
+      if (!row.parentCertificateId) continue;
+      const list = map.get(row.parentCertificateId) ?? [];
+      list.push(row);
+      map.set(row.parentCertificateId, list);
+    }
+    return map;
+  }, [rows]);
+
+  const matching = useMemo(() => {
     const q = searchValue.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((row) => {
@@ -75,12 +97,48 @@ export function CertificatesList({
         row.certificateNumber ?? "",
         row.issuingAuthorityName ?? "",
         row.authority,
+        row.parentCertificateName ?? "",
       ]
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
   }, [rows, searchValue]);
+
+  const topLevel = useMemo(() => {
+    const matchingIds = new Set(matching.map((row) => row.id));
+    return matching.filter((row) => {
+      if (!row.parentCertificateId) return true;
+      return !matchingIds.has(row.parentCertificateId);
+    });
+  }, [matching]);
+
+  const searchExpandedIds = useMemo(() => {
+    const ids = new Set<string>();
+    const topIds = new Set(topLevel.map((row) => row.id));
+    for (const row of matching) {
+      if (row.parentCertificateId && topIds.has(row.parentCertificateId)) {
+        ids.add(row.parentCertificateId);
+      }
+    }
+    return ids;
+  }, [matching, topLevel]);
+
+  function isExpanded(id: string): boolean {
+    return expandedIds.has(id) || searchExpandedIds.has(id);
+  }
+
+  function toggleExpanded(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   const filterControls = (
     <>
@@ -152,6 +210,91 @@ export function CertificatesList({
       format,
     );
 
+  function typeCell(row: CertificateListItem, nested: boolean) {
+    const childCount = row.subItemCount;
+    const hasChildren = childCount > 0;
+    const expanded = isExpanded(row.id);
+    return (
+      <div className={`flex items-center gap-2 ${nested ? "ps-6" : ""}`}>
+        {hasChildren && !nested ? (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-label={
+              expanded
+                ? `Collapse ${childCount} sub-items`
+                : `Expand ${childCount} sub-items`
+            }
+            onClick={() => toggleExpanded(row.id)}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-[var(--text-secondary)] hover:bg-[var(--bg-page)]"
+          >
+            {expanded ? (
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        ) : null}
+        <div className="min-w-0">
+          <Link
+            href={`/dashboard/certificates/${row.id}`}
+            className="font-medium text-[var(--accent)] hover:underline"
+          >
+            {row.typeName}
+          </Link>
+          {hasChildren && !nested ? (
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {childCount} sub-item{childCount === 1 ? "" : "s"}
+            </p>
+          ) : null}
+          {nested && row.parentCertificateName ? (
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Sub-item of {row.parentCertificateName}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  function tableRow(row: CertificateListItem, nested: boolean) {
+    return (
+      <tr
+        key={row.id}
+        className={nested ? "bg-[var(--bg-page)]" : "hover:bg-[var(--bg-page)]"}
+      >
+        <td className="px-4 py-3 text-[var(--text-primary)]">
+          <Identifier>{row.vesselName}</Identifier>
+        </td>
+        <td className="px-4 py-3 text-[var(--text-primary)]">{typeCell(row, nested)}</td>
+        <td className="px-4 py-3 capitalize text-[var(--text-secondary)]">
+          {row.authority}
+        </td>
+        <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">
+          <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
+        </td>
+        <td className="px-4 py-3 text-[var(--text-secondary)]">
+          {row.issuingAuthorityName ?? "—"}
+        </td>
+        <td className="px-4 py-3 text-[var(--text-secondary)]">{dateRef(row)}</td>
+        <td className="px-4 py-3">
+          <StatusPill status={row.compliance.status} />
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="flex items-center justify-end gap-3">
+            <CertificateQuickView row={row} />
+            <Link
+              href={`/dashboard/certificates/${row.id}/edit`}
+              className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
+            >
+              Edit
+            </Link>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-6">
       <ListToolbar
@@ -178,7 +321,7 @@ export function CertificatesList({
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
-        {visible.length === 0 ? (
+        {topLevel.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
             No certificates match.{" "}
             <Link
@@ -206,54 +349,16 @@ export function CertificatesList({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {visible.map((row) => {
-                    const dateRef =
-                      row.ruleKind === "window"
-                        ? (row.windowOpenDate ?? "—")
-                        : (row.expiryDate ?? "—");
+                  {topLevel.map((row) => {
+                    const children = childrenByParent.get(row.id) ?? [];
+                    const showChildren = isExpanded(row.id) && children.length > 0;
                     return (
-                      <tr
-                        key={row.id}
-                        className="hover:bg-[var(--bg-page)]"
-                      >
-                        <td className="px-4 py-3 text-[var(--text-primary)]">
-                          <Identifier>{row.vesselName}</Identifier>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
-                          <Link
-                            href={`/dashboard/certificates/${row.id}`}
-                            className="text-[var(--accent)] hover:underline"
-                          >
-                            {row.typeName}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 capitalize text-[var(--text-secondary)]">
-                          {row.authority}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">
-                          <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">
-                          {row.issuingAuthorityName ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">
-                          {dateRef}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusPill status={row.compliance.status} />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            <CertificateQuickView row={row} />
-                            <Link
-                              href={`/dashboard/certificates/${row.id}/edit`}
-                              className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
-                            >
-                              Edit
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
+                      <Fragment key={row.id}>
+                        {tableRow(row, false)}
+                        {showChildren
+                          ? children.map((child) => tableRow(child, true))
+                          : null}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -261,29 +366,45 @@ export function CertificatesList({
             </div>
 
             <ul className="divide-y divide-[var(--border)] md:hidden">
-              {visible.map((row) => (
-                <li key={row.id} className="relative p-4">
-                  <div className="absolute end-4 top-4">
-                    <StatusPill status={row.compliance.status} />
-                  </div>
-                  <Link
-                    href={`/dashboard/certificates/${row.id}`}
-                    className="block pe-24 text-sm font-medium text-[var(--text-primary)]"
-                  >
-                    {row.typeName}
-                  </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
-                    <div>
-                      <span className="text-[var(--text-tertiary)]">Vessel · </span>
-                      <Identifier>{row.vesselName}</Identifier>
+              {topLevel.map((row) => {
+                const children = childrenByParent.get(row.id) ?? [];
+                const showChildren = isExpanded(row.id) && children.length > 0;
+                return (
+                  <li key={row.id} className="p-4">
+                    <div className="relative">
+                      <div className="absolute end-0 top-0">
+                        <StatusPill status={row.compliance.status} />
+                      </div>
+                      {typeCell(row, false)}
+                      <dl className="mt-2 space-y-1 pe-24 text-xs text-[var(--text-secondary)]">
+                        <div>
+                          <span className="text-[var(--text-tertiary)]">Vessel · </span>
+                          <Identifier>{row.vesselName}</Identifier>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-tertiary)]">Number · </span>
+                          <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
+                        </div>
+                      </dl>
                     </div>
-                    <div>
-                      <span className="text-[var(--text-tertiary)]">Number · </span>
-                      <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
-                    </div>
-                  </dl>
-                </li>
-              ))}
+                    {showChildren ? (
+                      <ul className="mt-3 space-y-2 border-s border-[var(--border)] ps-3">
+                        {children.map((child) => (
+                          <li key={child.id} className="flex items-start justify-between gap-2">
+                            <Link
+                              href={`/dashboard/certificates/${child.id}`}
+                              className="text-sm text-[var(--text-primary)] hover:underline"
+                            >
+                              {child.typeName}
+                            </Link>
+                            <StatusPill status={child.compliance.status} />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </>
         )}

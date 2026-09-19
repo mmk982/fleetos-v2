@@ -14,7 +14,8 @@ import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db/client";
 import {
   certificateAttachments,
@@ -182,6 +183,90 @@ async function loadType(
     throw new CertificateTypeNotFoundError(id);
   }
   return row;
+}
+
+/**
+ * Counts certificates that list `certificateId` as their parent.
+ * Shared by {@link assertValidParentLink} and the vessel-reassignment guard
+ * in {@link updateCertificate} — don't duplicate the query inline twice.
+ */
+async function countChildCertificates(certificateId: string): Promise<number> {
+  const rows = await getDb()
+    .select({ n: count() })
+    .from(certificates)
+    .where(eq(certificates.parentCertificateId, certificateId));
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * Loads and validates a parent certificate for a create/update.
+ * One level only: the parent must be on the same vessel and must not
+ * itself be a sub-item.
+ *
+ * @throws {CertificateNotFoundError}
+ * @throws {CertificateConflictError}
+ */
+async function assertValidParentLink(
+  ctx: AccessContext,
+  parentCertificateId: string,
+  vesselId: string,
+  selfId?: string,
+): Promise<void> {
+  if (selfId && parentCertificateId === selfId) {
+    throw new CertificateConflictError(
+      "A certificate cannot be its own parent.",
+    );
+  }
+  const parent = await requireCertificateById(ctx, parentCertificateId);
+  if (parent.vesselId !== vesselId) {
+    throw new CertificateConflictError(
+      "Parent certificate must belong to the same vessel.",
+    );
+  }
+  if (parent.parentCertificateId) {
+    throw new CertificateConflictError(
+      "Parent certificate is itself a sub-item; nesting is limited to one level.",
+    );
+  }
+  if (selfId) {
+    const childCount = await countChildCertificates(selfId);
+    if (childCount > 0) {
+      throw new CertificateConflictError(
+        "A certificate with sub-items cannot itself become a sub-item.",
+      );
+    }
+  }
+}
+
+function toListItem(
+  certificate: CertificateRow,
+  extras: {
+    vesselName: string;
+    typeName: string;
+    authority: CertificateTypeRow["authority"];
+    ruleKind: CertificateTypeRow["ruleKind"];
+    typeOffsetDays: number | null;
+    issuingAuthorityName: string | null;
+    parentCertificateName: string | null;
+    subItemCount: number;
+  },
+): CertificateListItem {
+  const compliance = deriveForCertificate(certificate, {
+    ruleKind: extras.ruleKind,
+    offsetDays: extras.typeOffsetDays,
+  });
+  return {
+    ...certificate,
+    vesselName: extras.vesselName,
+    typeName: extras.typeName,
+    authority: extras.authority,
+    ruleKind: extras.ruleKind,
+    typeOffsetDays: extras.typeOffsetDays,
+    issuingAuthorityName: extras.issuingAuthorityName,
+    parentCertificateName: extras.parentCertificateName,
+    subItemCount: extras.subItemCount,
+    compliance,
+  };
 }
 
 /** Recomputes and persists non-authoritative `cachedStatus`. */
@@ -463,6 +548,8 @@ export async function listCertificates(
   const db = getDb();
 
   const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
+  const parentCertificates = alias(certificates, "parent_certificates");
+  const parentTypes = alias(certificateTypes, "parent_certificate_types");
 
   const conditions: SQL[] = [];
   if (scopedVesselId) {
@@ -486,6 +573,7 @@ export async function listCertificates(
       ruleKind: certificateTypes.ruleKind,
       typeOffsetDays: certificateTypes.offsetDays,
       issuingAuthorityName: issuingAuthorities.name,
+      parentTypeName: parentTypes.name,
     })
     .from(certificates)
     .innerJoin(vessels, eq(certificates.vesselId, vessels.id))
@@ -497,25 +585,52 @@ export async function listCertificates(
       issuingAuthorities,
       eq(certificates.issuingAuthorityId, issuingAuthorities.id),
     )
+    .leftJoin(
+      parentCertificates,
+      eq(certificates.parentCertificateId, parentCertificates.id),
+    )
+    .leftJoin(
+      parentTypes,
+      eq(parentCertificates.certificateTypeId, parentTypes.id),
+    )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(asc(vessels.name), asc(certificateTypes.name));
 
-  const items: CertificateListItem[] = rows.map((row) => {
-    const compliance = deriveForCertificate(row.certificate, {
-      ruleKind: row.ruleKind,
-      offsetDays: row.typeOffsetDays,
-    });
-    return {
-      ...row.certificate,
+  const parentIds = rows
+    .map((row) => row.certificate.id)
+    .filter((id, index, all) => all.indexOf(id) === index);
+
+  const countRows =
+    parentIds.length === 0
+      ? []
+      : await db
+          .select({
+            parentCertificateId: certificates.parentCertificateId,
+            n: count(),
+          })
+          .from(certificates)
+          .where(inArray(certificates.parentCertificateId, parentIds))
+          .groupBy(certificates.parentCertificateId);
+
+  const countByParent = new Map<string, number>();
+  for (const row of countRows) {
+    if (row.parentCertificateId) {
+      countByParent.set(row.parentCertificateId, Number(row.n));
+    }
+  }
+
+  const items: CertificateListItem[] = rows.map((row) =>
+    toListItem(row.certificate, {
       vesselName: row.vesselName,
       typeName: row.typeName,
       authority: row.authority,
       ruleKind: row.ruleKind,
       typeOffsetDays: row.typeOffsetDays,
       issuingAuthorityName: row.issuingAuthorityName,
-      compliance,
-    };
-  });
+      parentCertificateName: row.parentTypeName ?? null,
+      subItemCount: countByParent.get(row.certificate.id) ?? 0,
+    }),
+  );
 
   if (filters.status) {
     return items.filter((item) => item.compliance.status === filters.status);
@@ -583,6 +698,8 @@ export async function getCertificateById(
     ruleKind: row.certificateType.ruleKind,
     typeOffsetDays: row.certificateType.offsetDays,
     issuingAuthorityName: row.issuingAuthority?.name ?? null,
+    parentCertificateName: null,
+    subItemCount: 0,
     compliance,
     events,
     attachments,
@@ -605,6 +722,20 @@ export async function requireCertificateById(
 }
 
 /**
+ * Sub-items linked to a parent equipment certificate. Same RBAC as
+ * {@link listCertificates}; additionally asserts vessel scope from the parent.
+ */
+export async function listSubCertificates(
+  ctx: AccessContext,
+  parentCertificateId: string,
+): Promise<CertificateListItem[]> {
+  const parent = await requireCertificateById(ctx, parentCertificateId);
+  assertVesselScope(ctx, parent.vesselId);
+  const rows = await listCertificates(ctx, { vesselId: parent.vesselId });
+  return rows.filter((row) => row.parentCertificateId === parentCertificateId);
+}
+
+/**
  * Creates a certificate and writes `cachedStatus` from the engine.
  *
  * @throws {CertificateTypeNotFoundError}
@@ -618,6 +749,13 @@ export async function createCertificate(
   assertModuleAccess(ctx, "certificates", "write");
   assertVesselScope(ctx, input.vesselId);
   const type = await loadType(ctx, input.certificateTypeId);
+  if (input.parentCertificateId) {
+    await assertValidParentLink(
+      ctx,
+      input.parentCertificateId,
+      input.vesselId,
+    );
+  }
   const db = getDb();
   let result: CertificateRow;
 
@@ -627,6 +765,7 @@ export async function createCertificate(
       .values({
         vesselId: input.vesselId,
         certificateTypeId: input.certificateTypeId,
+        parentCertificateId: input.parentCertificateId ?? null,
         certificateNumber: input.certificateNumber ?? null,
         issuingAuthorityId: input.issuingAuthorityId ?? null,
         issueDate: input.issueDate ?? null,
@@ -651,7 +790,11 @@ export async function createCertificate(
       .limit(1);
     result = refreshed[0] ?? row;
   } catch (error) {
-    if (error instanceof CertificateTypeNotFoundError) {
+    if (
+      error instanceof CertificateTypeNotFoundError ||
+      error instanceof CertificateConflictError ||
+      error instanceof CertificateNotFoundError
+    ) {
       throw error;
     }
     if (isPgForeignKeyViolation(error)) {
@@ -704,12 +847,44 @@ export async function updateCertificate(
   }
   assertVesselScope(ctx, existing[0].vesselId);
 
+  const nextVesselId = input.vesselId ?? existing[0].vesselId;
+  if (nextVesselId !== existing[0].vesselId) {
+    assertVesselScope(ctx, nextVesselId);
+
+    const keepsExistingParentLink =
+      existing[0].parentCertificateId !== null &&
+      input.parentCertificateId === undefined;
+    if (keepsExistingParentLink) {
+      throw new CertificateConflictError(
+        "Certificate is linked to a parent on the current vessel — unlink it (set parentCertificateId to null) or move both certificates together.",
+      );
+    }
+
+    const childCount = await countChildCertificates(id);
+    if (childCount > 0) {
+      throw new CertificateConflictError(
+        "Certificate has linked sub-items on the current vessel — unlink or move them first.",
+      );
+    }
+  }
+  if (input.parentCertificateId) {
+    await assertValidParentLink(
+      ctx,
+      input.parentCertificateId,
+      nextVesselId,
+      id,
+    );
+  }
+
   const patch: Partial<typeof certificates.$inferInsert> = {
     updatedAt: new Date(),
   };
   if (input.vesselId !== undefined) patch.vesselId = input.vesselId;
   if (input.certificateTypeId !== undefined) {
     patch.certificateTypeId = input.certificateTypeId;
+  }
+  if (input.parentCertificateId !== undefined) {
+    patch.parentCertificateId = input.parentCertificateId;
   }
   if (input.issuingAuthorityId !== undefined) {
     patch.issuingAuthorityId = input.issuingAuthorityId;
@@ -760,7 +935,8 @@ export async function updateCertificate(
   } catch (error) {
     if (
       error instanceof CertificateNotFoundError ||
-      error instanceof CertificateTypeNotFoundError
+      error instanceof CertificateTypeNotFoundError ||
+      error instanceof CertificateConflictError
     ) {
       throw error;
     }

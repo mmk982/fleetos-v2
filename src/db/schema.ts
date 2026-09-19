@@ -21,6 +21,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -305,6 +306,16 @@ export const certificates = pgTable(
       () => issuingAuthorities.id,
       { onDelete: "restrict" },
     ),
+    /**
+     * Optional self-FK. A sub-item (e.g. "EPIRB Battery") points at its
+     * parent equipment certificate (e.g. "Radio Certificate"). SET NULL on
+     * delete so removing the parent orphans the sub-item rather than
+     * cascade-deleting it.
+     */
+    parentCertificateId: uuid("parent_certificate_id").references(
+      (): AnyPgColumn => certificates.id,
+      { onDelete: "set null" },
+    ),
     issueDate: date("issue_date"),
     expiryDate: date("expiry_date"),
     windowOpenDate: date("window_open_date"),
@@ -331,6 +342,7 @@ export const certificates = pgTable(
     index("certificates_expiry_date_idx").on(t.expiryDate),
     index("certificates_certificate_type_id_idx").on(t.certificateTypeId),
     index("certificates_lifecycle_status_idx").on(t.lifecycleStatus),
+    index("certificates_parent_certificate_id_idx").on(t.parentCertificateId),
   ],
 );
 

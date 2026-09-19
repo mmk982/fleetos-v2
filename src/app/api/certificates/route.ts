@@ -4,6 +4,7 @@ import { validateSession } from "@/lib/auth/session";
 import type { ComplianceStatus } from "@/lib/expiry";
 import {
   CertificateConflictError,
+  CertificateNotFoundError,
   createCertificate,
   listCertificates,
 } from "@/modules/certificates/certificate.controller";
@@ -69,6 +70,9 @@ export async function POST(request: Request) {
     }
     if (error instanceof CertificateConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof CertificateNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
     throw error;
   }
