@@ -109,11 +109,11 @@ export default async function VesselDetailPage(props: PageProps) {
         <div>
           <Link
             href="/dashboard/vessels"
-            className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-sm font-medium text-[var(--text-tertiary)] underline-offset-4 hover:underline"
           >
             ← Back to vessels
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             <Identifier>{vessel.name}</Identifier>
           </h1>
         </div>
@@ -210,10 +210,10 @@ function GeneralInfoPanel({ vessel }: { vessel: VesselRow }) {
           key={row.label}
           className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
         >
-          <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
             {row.label}
           </dt>
-          <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+          <dd className="mt-1 text-sm text-[var(--text-primary)]">
             {row.value}
           </dd>
         </div>
@@ -225,7 +225,7 @@ function GeneralInfoPanel({ vessel }: { vessel: VesselRow }) {
 function PanelHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-2">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">
         {title}
       </h2>
       <Link
@@ -240,7 +240,7 @@ function PanelHeader({ title, href }: { title: string; href: string }) {
 
 function EmptyHint({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+    <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-[var(--text-muted)] dark:border-zinc-700">
       {children}
     </p>
   );
@@ -264,7 +264,7 @@ function CertificatesPanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Expiry</th>
@@ -277,12 +277,12 @@ function CertificatesPanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/certificates/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.typeName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                     {row.expiryDate ?? "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -316,7 +316,7 @@ function ManualsPanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Type</th>
@@ -329,15 +329,15 @@ function ManualsPanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/manuals/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.manualType}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.currentRevision
                       ? `${row.currentRevision.revisionNumber} · ${row.currentRevision.revisionDate}`
                       : "—"}
@@ -356,7 +356,7 @@ function IsmFormsPanel({ rows }: { rows: IsmTemplateListItem[] }) {
   return (
     <section>
       <PanelHeader title="ISM Forms" href="/dashboard/ism-templates" />
-      <p className="mb-3 text-sm text-zinc-500">
+      <p className="mb-3 text-sm text-[var(--text-muted)]">
         Fleet-wide templates (not vessel-scoped).
       </p>
       {rows.length === 0 ? (
@@ -364,7 +364,7 @@ function IsmFormsPanel({ rows }: { rows: IsmTemplateListItem[] }) {
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Code</th>
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -378,15 +378,15 @@ function IsmFormsPanel({ rows }: { rows: IsmTemplateListItem[] }) {
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/ism-templates/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       <Identifier>{row.formCode}</Identifier>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.formName}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.categoryName}
                   </td>
                   <td className="px-4 py-3">
@@ -422,7 +422,7 @@ function ExecutedFormsPanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Form</th>
                 <th className="px-4 py-3 font-medium">Period</th>
@@ -435,12 +435,12 @@ function ExecutedFormsPanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/monthly-forms/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.formName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                     {row.month}/{row.year}
                   </td>
                   <td className="px-4 py-3">
@@ -478,7 +478,7 @@ function DrawingsPanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Number</th>
@@ -492,18 +492,18 @@ function DrawingsPanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/drawings/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.drawingName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     <Identifier>{row.drawingNumber ?? "—"}</Identifier>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.categoryName}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.revision ?? "—"}
                   </td>
                 </tr>
@@ -545,7 +545,7 @@ function ParticularsPanel({
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           Current particulars
         </h2>
         <Link
@@ -563,10 +563,10 @@ function ParticularsPanel({
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {fields.map((f) => (
               <div key={f.label}>
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <dt className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
                   {f.label}
                 </dt>
-                <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-50">
+                <dd className="mt-1 text-sm text-[var(--text-primary)]">
                   {f.value}
                 </dd>
               </div>
@@ -574,11 +574,11 @@ function ParticularsPanel({
           </dl>
 
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               Attachments
             </h3>
             {current.attachments.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-500">No attachments.</p>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">No attachments.</p>
             ) : (
               <ul className="mt-2 divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
                 {current.attachments.map((a) => (
@@ -600,10 +600,10 @@ function ParticularsPanel({
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           History
         </h3>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Past records (read-only).{" "}
           <Link
             href={`/dashboard/particulars/${vesselId}`}
@@ -613,11 +613,11 @@ function ParticularsPanel({
           </Link>
         </p>
         {history.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">No historical records.</p>
+          <p className="mt-3 text-sm text-[var(--text-muted)]">No historical records.</p>
         ) : (
           <div className="mt-3 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
                 <tr>
                   <th className="px-4 py-3 font-medium">Effective</th>
                   <th className="px-4 py-3 font-medium">Class</th>
@@ -628,16 +628,16 @@ function ParticularsPanel({
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {history.map((row) => (
                   <tr key={row.id} className="bg-white dark:bg-zinc-950">
-                    <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                       {row.effectiveDate ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {row.classSociety ?? "—"}
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                       {row.deadweightTonnage ?? "—"}
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                       {row.lengthOverall ?? "—"}
                     </td>
                   </tr>
@@ -669,7 +669,7 @@ function InsurancePanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Provider</th>
@@ -683,15 +683,15 @@ function InsurancePanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/insurance/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       {row.policyType}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.provider}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                     {row.expiryDate}
                   </td>
                   <td className="px-4 py-3">
@@ -725,7 +725,7 @@ function DeficienciesPanel({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Number</th>
                 <th className="px-4 py-3 font-medium">Title</th>
@@ -739,15 +739,15 @@ function DeficienciesPanel({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/deficiencies/${row.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+                      className="font-medium text-[var(--text-primary)] hover:underline"
                     >
                       <Identifier>{row.deficiencyNumber ?? "—"}</Identifier>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-[var(--text-tertiary)]">
                     {row.title}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-zinc-600 dark:text-zinc-400">
+                  <td className="px-4 py-3 tabular-nums text-[var(--text-tertiary)]">
                     {row.dueDate ?? "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -774,7 +774,7 @@ function NotesPanel({
 }) {
   return (
     <section className="max-w-3xl space-y-6">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+      <h2 className="text-base font-semibold text-[var(--text-primary)]">
         Notes
       </h2>
 
@@ -790,10 +790,10 @@ function NotesPanel({
               className="flex flex-col gap-3 bg-white px-4 py-4 dark:bg-zinc-950 sm:flex-row sm:items-start sm:justify-between"
             >
               <div className="min-w-0 flex-1">
-                <p className="whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-50">
+                <p className="whitespace-pre-wrap text-sm text-[var(--text-primary)]">
                   {note.body}
                 </p>
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
                   {note.authorName ?? "System"} ·{" "}
                   <time dateTime={note.createdAt.toISOString()}>
                     {note.createdAt.toISOString()}

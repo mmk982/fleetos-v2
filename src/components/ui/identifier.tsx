@@ -2,9 +2,11 @@
  * LTR-isolate wrapper for identifiers that must not reorder in RTL layouts.
  *
  * Vessel names, IMO numbers, certificate/policy numbers, and file names are
- * always LTR even when the page `dir` is `rtl`. Optional `mono` applies
- * Fira Code for regulation codes / policy IDs / audit reference numbers
- * (ComplianceOne Do's/Don'ts #1).
+ * always LTR even when the page `dir` is `rtl`. Optional `mono` applies the
+ * `--font-mono` token for regulation codes / policy IDs / audit reference
+ * numbers (ComplianceOne Do's/Don'ts #1). Since 6eb2690 that token resolves
+ * to Inter (see `globals.css`), so `mono` is currently a semantic hook with
+ * no visual difference; swap the token, not this component, to change that.
  */
 import type { ReactNode } from "react";
 

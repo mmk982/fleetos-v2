@@ -65,7 +65,7 @@ export default async function CertificateDetailPage(props: PageProps) {
         <span className="inline-flex items-center gap-2">
           <StatusPill status={cert.compliance.status} />
           {cert.compliance.daysRemaining != null ? (
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-[var(--text-muted)]">
               {cert.compliance.daysRemaining}d
             </span>
           ) : null}
@@ -80,14 +80,14 @@ export default async function CertificateDetailPage(props: PageProps) {
         <div>
           <Link
             href="/dashboard/certificates"
-            className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-sm font-medium text-[var(--text-tertiary)] underline-offset-4 hover:underline"
           >
             ← Back to certificates
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             {cert.typeName}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             <Identifier>{cert.vesselName}</Identifier>
           </p>
         </div>
@@ -113,17 +113,17 @@ export default async function CertificateDetailPage(props: PageProps) {
             key={row.label}
             className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
-            <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               {row.label}
             </dt>
-            <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{row.value}</dd>
+            <dd className="mt-1 text-sm text-[var(--text-primary)]">{row.value}</dd>
           </div>
         ))}
       </dl>
 
       {cert.remarks ? (
         <section className="mt-8 max-w-4xl">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Remarks</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Remarks</h2>
           <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {cert.remarks}
           </p>
@@ -131,20 +131,20 @@ export default async function CertificateDetailPage(props: PageProps) {
       ) : null}
 
       <section className="mt-10 max-w-4xl space-y-4">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Events</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Events</h2>
         <ol className="relative space-y-4 border-s border-zinc-200 ps-6 dark:border-zinc-800">
           {cert.events.length === 0 ? (
-            <li className="text-sm text-zinc-500">No events yet.</li>
+            <li className="text-sm text-[var(--text-muted)]">No events yet.</li>
           ) : (
             cert.events.map((ev) => (
               <li key={ev.id} className="relative">
                 <span className="absolute -start-[1.625rem] mt-1.5 h-2.5 w-2.5 rounded-md bg-[var(--accent)]" />
-                <p className="text-sm font-medium capitalize text-zinc-900 dark:text-zinc-100">
+                <p className="text-sm font-medium capitalize text-[var(--text-primary)]">
                   {ev.eventType}
-                  <span className="ms-2 font-normal text-zinc-500">{ev.eventDate}</span>
+                  <span className="ms-2 font-normal text-[var(--text-muted)]">{ev.eventDate}</span>
                 </p>
                 {ev.newExpiryDate ? (
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  <p className="text-xs text-[var(--text-tertiary)]">
                     New expiry: {ev.newExpiryDate}
                   </p>
                 ) : null}
@@ -159,7 +159,7 @@ export default async function CertificateDetailPage(props: PageProps) {
       </section>
 
       <section className="mt-10 max-w-4xl space-y-4">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Attachments</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Attachments</h2>
         <CertificateAttachments certificateId={cert.id} attachments={cert.attachments} />
       </section>
     </main>

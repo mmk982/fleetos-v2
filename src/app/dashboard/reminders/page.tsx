@@ -53,10 +53,10 @@ export default async function RemindersPage(props: {
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Reminders
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-[var(--text-tertiary)]">
           User-set nudges — separate from system Alerts.
         </p>
       </div>

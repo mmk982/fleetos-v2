@@ -49,14 +49,14 @@ export default async function IsmTemplateDetailPage(props: PageProps) {
         <div>
           <Link
             href="/dashboard/ism-templates"
-            className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-sm font-medium text-[var(--text-tertiary)] underline-offset-4 hover:underline"
           >
             ← Back to ISM templates
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             {row.formName}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             <Identifier>{row.formCode}</Identifier>
             {` · ${row.categoryName}`}
           </p>
@@ -80,10 +80,10 @@ export default async function IsmTemplateDetailPage(props: PageProps) {
       <dl className="mt-8 grid gap-4 sm:grid-cols-2">
         {fields.map((f) => (
           <div key={f.label}>
-            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <dt className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
               {f.label}
             </dt>
-            <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-50">
+            <dd className="mt-1 text-sm text-[var(--text-primary)]">
               {f.value}
             </dd>
           </div>
@@ -91,7 +91,7 @@ export default async function IsmTemplateDetailPage(props: PageProps) {
       </dl>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Attachments
         </h2>
         <div className="mt-4">

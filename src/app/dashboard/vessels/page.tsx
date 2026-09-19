@@ -41,10 +41,10 @@ export default async function VesselsPage() {
     <main className="flex flex-1 flex-col p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             Vessels
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             Register fleet units, identifiers, and operational status.
           </p>
         </div>
@@ -58,7 +58,7 @@ export default async function VesselsPage() {
 
       {vessels.length === 0 ? (
         <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="px-6 py-12 text-center text-sm text-[var(--text-tertiary)]">
             No vessels yet.{" "}
             <Link
               href="/dashboard/vessels/new"

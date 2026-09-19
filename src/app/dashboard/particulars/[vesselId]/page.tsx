@@ -59,14 +59,14 @@ export default async function ParticularsVesselPage(props: PageProps) {
         <div>
           <Link
             href="/dashboard/particulars"
-            className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-sm font-medium text-[var(--text-tertiary)] underline-offset-4 hover:underline"
           >
             ← Back to particulars
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             <Identifier>{detail.vesselName}</Identifier>
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             Current ship particulars
           </p>
         </div>
@@ -88,7 +88,7 @@ export default async function ParticularsVesselPage(props: PageProps) {
       </div>
 
       {!current ? (
-        <p className="mt-8 rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="mt-8 rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-[var(--text-muted)] dark:border-zinc-700">
           No current particulars for this vessel yet.
         </p>
       ) : (
@@ -96,10 +96,10 @@ export default async function ParticularsVesselPage(props: PageProps) {
           <dl className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {fields.map((f) => (
               <div key={f.label}>
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <dt className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
                   {f.label}
                 </dt>
-                <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-50">
+                <dd className="mt-1 text-sm text-[var(--text-primary)]">
                   {f.value}
                 </dd>
               </div>
@@ -107,7 +107,7 @@ export default async function ParticularsVesselPage(props: PageProps) {
           </dl>
 
           <section className="mt-10">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
               Attachments
             </h2>
             <div className="mt-4">
@@ -122,19 +122,19 @@ export default async function ParticularsVesselPage(props: PageProps) {
       )}
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           History
         </h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Past records (read-only). Use &quot;Add new current record&quot; to
           supersede without losing history.
         </p>
         {history.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">No historical records.</p>
+          <p className="mt-4 text-sm text-[var(--text-muted)]">No historical records.</p>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-[var(--text-muted)] dark:border-zinc-800 dark:bg-zinc-900/50">
                 <tr>
                   <th className="px-4 py-3 font-medium">Effective</th>
                   <th className="px-4 py-3 font-medium">Class</th>
@@ -146,19 +146,19 @@ export default async function ParticularsVesselPage(props: PageProps) {
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {history.map((r) => (
                   <tr key={r.id} className="bg-white dark:bg-zinc-950">
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {r.effectiveDate ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {r.classSociety ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {r.deadweightTonnage ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {r.lengthOverall ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-[var(--text-tertiary)]">
                       {r.notes ?? "—"}
                     </td>
                   </tr>

@@ -81,14 +81,14 @@ export default async function DeficiencyDetailPage(props: PageProps) {
         <div>
           <Link
             href="/dashboard/deficiencies"
-            className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-sm font-medium text-[var(--text-tertiary)] underline-offset-4 hover:underline"
           >
             ← Back to deficiencies
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             {row.title}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             <Identifier>{row.vesselName}</Identifier>
           </p>
         </div>
@@ -148,10 +148,10 @@ export default async function DeficiencyDetailPage(props: PageProps) {
             key={f.label}
             className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
           >
-            <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               {f.label}
             </dt>
-            <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+            <dd className="mt-1 text-sm text-[var(--text-primary)]">
               {f.value}
             </dd>
           </div>
@@ -160,7 +160,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
 
       {row.description ? (
         <section className="mt-8 max-w-4xl">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Description
           </h2>
           <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -171,7 +171,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
 
       {row.correctiveAction ? (
         <section className="mt-6 max-w-4xl">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Corrective action
           </h2>
           <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -182,7 +182,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
 
       {row.notes ? (
         <section className="mt-6 max-w-4xl">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Notes
           </h2>
           <p className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -192,7 +192,7 @@ export default async function DeficiencyDetailPage(props: PageProps) {
       ) : null}
 
       <section className="mt-10 max-w-4xl space-y-4">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Attachments
         </h2>
         <DeficiencyAttachments

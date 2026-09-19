@@ -48,10 +48,10 @@ export default async function AlertsPage(props: {
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Alerts
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-[var(--text-tertiary)]">
           System-derived expiry feed — separate from user-set Reminders.
         </p>
       </div>
@@ -68,7 +68,7 @@ export default async function AlertsPage(props: {
       </div>
 
       <section className="mt-6 space-y-3">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           {statuses ? "Filtered" : "Actionable"}
         </h2>
         <AlertsList
@@ -78,10 +78,10 @@ export default async function AlertsPage(props: {
       </section>
 
       <section className="mt-10 space-y-3">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
           Missing dates
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-[var(--text-muted)]">
           Items that cannot derive an expiry status until a date is filled in.
         </p>
         <AlertsList
