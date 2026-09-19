@@ -24,6 +24,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -142,10 +143,7 @@ export type ManualListFilters = {
 export async function getManualCount(ctx: AccessContext): Promise<number> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "manuals", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : undefined;
+  const scopedVesselId = requireScopedVesselId(ctx);
   const rows = scopedVesselId
     ? await getDb()
         .select({ n: count() })
@@ -163,10 +161,7 @@ export async function listManuals(
   assertModuleAccess(ctx, "manuals", "read");
   const db = getDb();
   const conditions: SQL[] = [];
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   if (scopedVesselId) {
     conditions.push(eq(manuals.vesselId, scopedVesselId));
   }

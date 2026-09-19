@@ -32,6 +32,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -362,11 +363,9 @@ export async function getOpenDeficienciesCount(
   const conditions: SQL[] = [
     inArray(deficiencies.status, ["open", "in_progress", "monitoring"]),
   ];
-  if (
-    (ctx.role === "management_user" || ctx.role === "vessel_user") &&
-    ctx.vesselId
-  ) {
-    conditions.push(eq(deficiencies.vesselId, ctx.vesselId));
+  const scopedVesselId = requireScopedVesselId(ctx);
+  if (scopedVesselId) {
+    conditions.push(eq(deficiencies.vesselId, scopedVesselId));
   }
   const rows = await getDb()
     .select({ n: count() })
@@ -382,10 +381,7 @@ export async function listDeficiencies(
 ): Promise<DeficiencyListItem[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "deficiencies", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   const conditions: SQL[] = [];
   if (scopedVesselId) {
     conditions.push(eq(deficiencies.vesselId, scopedVesselId));

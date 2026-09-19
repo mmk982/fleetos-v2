@@ -23,6 +23,7 @@ import {
   assertModuleAccess,
   assertVesselScope,
   ForbiddenError,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
@@ -163,10 +164,7 @@ export async function listVesselParticularsSummary(
   assertModuleAccess(ctx, "particulars", "read");
   const db = getDb();
 
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : undefined;
+  const scopedVesselId = requireScopedVesselId(ctx);
 
   const vesselRows = await db
     .select({ id: vessels.id, name: vessels.name })
@@ -215,10 +213,7 @@ export async function listParticulars(
 ): Promise<VesselParticularsRow[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "particulars", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   const conditions: SQL[] = [];
   if (scopedVesselId) {
     conditions.push(eq(vesselParticulars.vesselId, scopedVesselId));

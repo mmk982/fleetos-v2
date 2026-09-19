@@ -24,6 +24,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { removeStoredAttachmentFile } from "@/lib/attachments/stream";
@@ -137,10 +138,7 @@ export async function listInsurancePolicies(
 ): Promise<InsuranceListItem[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "insurance", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
   if (scopedVesselId) {

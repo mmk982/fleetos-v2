@@ -36,6 +36,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -461,10 +462,7 @@ export async function listCertificates(
   assertModuleAccess(ctx, "certificates", "read");
   const db = getDb();
 
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
 
   const conditions: SQL[] = [];
   if (scopedVesselId) {

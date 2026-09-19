@@ -26,6 +26,7 @@ import {
   assertModuleAccess,
   assertVesselScope,
   ForbiddenError,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -243,10 +244,7 @@ export async function listDrawings(
   assertModuleAccess(ctx, "drawings", "read");
   const db = getDb();
   const conditions: SQL[] = [];
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   if (scopedVesselId) {
     conditions.push(eq(drawings.vesselId, scopedVesselId));
   }

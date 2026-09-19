@@ -20,6 +20,7 @@ import {
 import {
   assertAuthenticatedAccess,
   assertModuleAccess,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import {
@@ -287,9 +288,7 @@ export async function getAlerts(
     (ALERT_KINDS as readonly string[]).includes(k),
   );
   const vesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? (ctx.vesselId ?? undefined)
-      : options.vesselId || undefined;
+    requireScopedVesselId(ctx) ?? (options.vesselId || undefined);
   const criticalDays = await getCriticalDays();
 
   const batches = await Promise.all([

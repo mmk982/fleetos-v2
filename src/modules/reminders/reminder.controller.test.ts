@@ -9,6 +9,7 @@ vi.mock("@/lib/auth/access", () => ({
   assertAuthenticatedAccess: vi.fn(),
   assertModuleAccess: vi.fn(),
   assertVesselScope: vi.fn(),
+  requireScopedVesselId: vi.fn(() => undefined),
 }));
 
 vi.mock("@/lib/logging", () => ({

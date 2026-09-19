@@ -125,3 +125,35 @@ export function assertVesselScope(
     throw new ForbiddenError("Vessel scope mismatch.");
   }
 }
+
+/**
+ * Resolves the vessel id a list/count query must be filtered to. Returns
+ * `undefined` for office roles (`admin` / `superintendent` / `read_only`)
+ * and legacy null-role sessions, meaning "no vessel filter".
+ *
+ * Fails closed: a vessel-scoped caller (`management_user` / `vessel_user`)
+ * whose `ctx.vesselId` is null/empty gets a {@link ForbiddenError} rather
+ * than `undefined`. Returning `undefined` there would silently drop the
+ * `WHERE vesselId = ?` clause and expose every vessel's rows to an account
+ * that should see exactly one — a misprovisioned user must be denied, not
+ * granted fleet-wide read. Mirrors {@link assertVesselScope}, which throws
+ * on mismatch instead of no-op'ing.
+ *
+ * @param ctx - Caller identity from the Server Action / Route Handler.
+ * @returns The caller's vessel id for vessel-scoped roles; `undefined` when
+ *   no scoping applies.
+ * @throws {ForbiddenError} when a vessel-scoped role has no `vesselId`.
+ */
+export function requireScopedVesselId(ctx: AccessContext): string | undefined {
+  assertAuthenticatedAccess(ctx);
+  const role = ctx.role as UserRole | null;
+  if (role === null || OFFICE_ROLES.has(role)) {
+    return undefined;
+  }
+  if (!ctx.vesselId) {
+    throw new ForbiddenError(
+      "Vessel-scoped role has no assigned vessel — access denied.",
+    );
+  }
+  return ctx.vesselId;
+}

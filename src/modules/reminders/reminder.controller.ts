@@ -21,6 +21,7 @@ import {
   assertModuleAccess,
   assertVesselScope,
   ForbiddenError,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -68,10 +69,7 @@ export async function listReminders(
 ): Promise<ReminderListItem[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "reminders", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
   if (scopedVesselId) {

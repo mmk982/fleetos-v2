@@ -23,6 +23,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeAccessLog } from "@/lib/access-log/write";
@@ -315,10 +316,7 @@ export async function listCrewMembers(
 ): Promise<CrewMemberListItem[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "crew", "read");
-  const scopedVesselId =
-    ctx.role === "management_user" || ctx.role === "vessel_user"
-      ? ctx.vesselId ?? undefined
-      : filters.vesselId;
+  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
   const db = getDb();
   const conditions: SQL[] = [];
   if (scopedVesselId) {
