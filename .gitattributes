@@ -1,0 +1,3 @@
+# Enforce LF in the index and working tree for all text files.
+# Prevents Windows core.autocrlf=true from flipping the tree to CRLF.
+* text=auto eol=lf
