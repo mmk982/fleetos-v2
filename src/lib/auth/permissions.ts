@@ -14,6 +14,7 @@ export type ModuleKey =
   | "certificates"
   | "deficiencies"
   | "psc"
+  | "audits"
   | "crew"
   | "insurance"
   | "manuals"
@@ -34,6 +35,7 @@ const ALL_WRITE = {
   certificates: "write",
   deficiencies: "write",
   psc: "write",
+  audits: "write",
   crew: "write",
   insurance: "write",
   manuals: "write",
@@ -55,7 +57,8 @@ const ALL_WRITE = {
  *
  * `psc` was added later (PROJECT_PLAN.md §7b); defaults mirror `deficiencies`
  * (same table for PSC-sourced findings; inspections are the natural analog).
- * Confirm with Eng.MHD if vessel_user / read_only should differ.
+ * `audits` was added later; defaults mirror `deficiencies` / `psc` (vessel-side
+ * event log). Confirm with Eng.MHD if vessel_user / read_only should differ.
  */
 export const MODULE_PERMISSIONS: Record<
   UserRole,
@@ -67,6 +70,7 @@ export const MODULE_PERMISSIONS: Record<
     certificates: "write",
     deficiencies: "write",
     psc: "write",
+    audits: "write",
     crew: "write",
     insurance: "write",
     manuals: "write",
@@ -85,6 +89,7 @@ export const MODULE_PERMISSIONS: Record<
     certificates: "read",
     deficiencies: "write",
     psc: "write",
+    audits: "write",
     crew: "read",
     insurance: "read",
     manuals: "read",
@@ -103,6 +108,7 @@ export const MODULE_PERMISSIONS: Record<
     certificates: "read",
     deficiencies: "read",
     psc: "read",
+    audits: "read",
     crew: "read",
     insurance: "read",
     manuals: "read",
@@ -121,6 +127,7 @@ export const MODULE_PERMISSIONS: Record<
     certificates: "read",
     deficiencies: "read",
     psc: "read",
+    audits: "read",
     crew: "read",
     insurance: "read",
     manuals: "read",
@@ -146,6 +153,7 @@ export const VESSEL_SCOPED_MODULES: ReadonlySet<ModuleKey> = new Set([
   "certificates",
   "deficiencies",
   "psc",
+  "audits",
   "crew",
   "insurance",
   "manuals",

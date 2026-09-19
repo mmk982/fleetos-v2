@@ -10,6 +10,8 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   vessels: "Vessels",
   certificates: "Certificates",
   deficiencies: "Deficiencies",
+  psc: "PSC",
+  audits: "Audits",
   crew: "Crew",
   insurance: "Insurance",
   manuals: "Manuals",

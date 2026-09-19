@@ -11,6 +11,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   FileStack,
   FileText,
@@ -101,6 +102,7 @@ const NAV: readonly NavGroup[] = [
         icon: Bell,
       },
       { href: "/dashboard/psc", label: "PSC", icon: Anchor },
+      { href: "/dashboard/audits", label: "Audits", icon: ClipboardCheck },
     ],
   },
   {
