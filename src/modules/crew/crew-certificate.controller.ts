@@ -22,6 +22,8 @@ import {
 } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
+  assertModuleAccess,
+  assertVesselScope,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeAccessLog } from "@/lib/access-log/write";
@@ -121,11 +123,80 @@ function toListItem(
   };
 }
 
+/** Module + vessel scope for a crew member (parent of certificates). */
+async function assertCrewMemberAccess(
+  ctx: AccessContext,
+  crewMemberId: string,
+  access: "read" | "write",
+): Promise<void> {
+  assertModuleAccess(ctx, "crew", access);
+  const rows = await getDb()
+    .select({ vesselId: crewMembers.vesselId })
+    .from(crewMembers)
+    .where(eq(crewMembers.id, crewMemberId))
+    .limit(1);
+  if (!rows[0]) throw new CrewMemberNotFoundError(crewMemberId);
+  assertVesselScope(ctx, rows[0].vesselId);
+}
+
+/** Module + vessel scope via certificate → crew member. */
+async function assertCrewCertificateAccess(
+  ctx: AccessContext,
+  certificateId: string,
+  access: "read" | "write",
+): Promise<void> {
+  assertModuleAccess(ctx, "crew", access);
+  const rows = await getDb()
+    .select({ vesselId: crewMembers.vesselId })
+    .from(crewCertificates)
+    .innerJoin(
+      crewMembers,
+      eq(crewCertificates.crewMemberId, crewMembers.id),
+    )
+    .where(eq(crewCertificates.id, certificateId))
+    .limit(1);
+  if (!rows[0]) throw new CrewCertificateNotFoundError(certificateId);
+  assertVesselScope(ctx, rows[0].vesselId);
+}
+
+/** Module + vessel scope via attachment → certificate → crew member. */
+async function assertCrewCertificateAttachmentAccess(
+  ctx: AccessContext,
+  attachmentId: string,
+  access: "read" | "write",
+): Promise<CrewCertificateAttachmentRow> {
+  assertModuleAccess(ctx, "crew", access);
+  const rows = await getDb()
+    .select({
+      attachment: crewCertificateAttachments,
+      vesselId: crewMembers.vesselId,
+    })
+    .from(crewCertificateAttachments)
+    .innerJoin(
+      crewCertificates,
+      eq(
+        crewCertificateAttachments.crewCertificateId,
+        crewCertificates.id,
+      ),
+    )
+    .innerJoin(
+      crewMembers,
+      eq(crewCertificates.crewMemberId, crewMembers.id),
+    )
+    .where(eq(crewCertificateAttachments.id, attachmentId))
+    .limit(1);
+  const row = rows[0];
+  if (!row) throw new AttachmentNotFoundError(attachmentId);
+  assertVesselScope(ctx, row.vesselId);
+  return row.attachment;
+}
+
 export async function listCrewCertificates(
   ctx: AccessContext,
   crewMemberId: string,
 ): Promise<CrewCertificateListItem[]> {
   assertAuthenticatedAccess(ctx, crewMemberId);
+  await assertCrewMemberAccess(ctx, crewMemberId, "read");
   const db = getDb();
   const rows = await db
     .select({
@@ -153,6 +224,12 @@ export async function getCrewCertificateById(
   options: GetCrewCertificateOptions = {},
 ): Promise<CrewCertificateListItem | undefined> {
   assertAuthenticatedAccess(ctx, id);
+  try {
+    await assertCrewCertificateAccess(ctx, id, "read");
+  } catch (error) {
+    if (error instanceof CrewCertificateNotFoundError) return undefined;
+    throw error;
+  }
   const db = getDb();
   const rows = await db
     .select({
@@ -186,17 +263,11 @@ export async function createCrewCertificate(
   input: CrewCertificateCreateInput,
 ): Promise<CrewCertificateRow> {
   assertAuthenticatedAccess(ctx, input.crewMemberId);
+  await assertCrewMemberAccess(ctx, input.crewMemberId, "write");
   const db = getDb();
 
   let row: CrewCertificateRow;
   try {
-    const member = await db
-      .select({ id: crewMembers.id })
-      .from(crewMembers)
-      .where(eq(crewMembers.id, input.crewMemberId))
-      .limit(1);
-    if (!member[0]) throw new CrewMemberNotFoundError(input.crewMemberId);
-
     const inserted = await db
       .insert(crewCertificates)
       .values({
@@ -240,6 +311,7 @@ export async function updateCrewCertificate(
   input: CrewCertificateUpdateInput,
 ): Promise<CrewCertificateRow> {
   assertAuthenticatedAccess(ctx, id);
+  await assertCrewCertificateAccess(ctx, id, "write");
   const db = getDb();
 
   const existing = await db
@@ -305,6 +377,7 @@ export async function deleteCrewCertificate(
   id: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
+  await assertCrewCertificateAccess(ctx, id, "write");
   const db = getDb();
   const existing = await db
     .select({ name: crewCertificates.name })
@@ -349,6 +422,7 @@ export async function listCrewCertificateAttachments(
   crewCertificateId: string,
 ): Promise<CrewCertificateAttachmentRow[]> {
   assertAuthenticatedAccess(ctx, crewCertificateId);
+  await assertCrewCertificateAccess(ctx, crewCertificateId, "read");
   return getDb()
     .select()
     .from(crewCertificateAttachments)
@@ -369,6 +443,7 @@ export async function uploadCrewCertificateAttachment(
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<CrewCertificateAttachmentRow> {
   assertAuthenticatedAccess(ctx, crewCertificateId);
+  await assertCrewCertificateAccess(ctx, crewCertificateId, "write");
 
   if (!ALLOWED_MIME.has(file.type)) {
     throw new AttachmentValidationError(
@@ -444,15 +519,13 @@ export async function deleteCrewCertificateAttachment(
   attachmentId: string,
 ): Promise<void> {
   assertAuthenticatedAccess(ctx, attachmentId);
+  const row = await assertCrewCertificateAttachmentAccess(
+    ctx,
+    attachmentId,
+    "write",
+  );
   const db = getDb();
   try {
-    const rows = await db
-      .select()
-      .from(crewCertificateAttachments)
-      .where(eq(crewCertificateAttachments.id, attachmentId))
-      .limit(1);
-    const row = rows[0];
-    if (!row) throw new AttachmentNotFoundError(attachmentId);
     await db
       .delete(crewCertificateAttachments)
       .where(eq(crewCertificateAttachments.id, attachmentId));
@@ -479,12 +552,16 @@ export async function getCrewCertificateAttachmentById(
   | undefined
 > {
   assertAuthenticatedAccess(ctx, attachmentId);
-  const rows = await getDb()
-    .select()
-    .from(crewCertificateAttachments)
-    .where(eq(crewCertificateAttachments.id, attachmentId))
-    .limit(1);
-  return rows[0];
+  try {
+    return await assertCrewCertificateAttachmentAccess(
+      ctx,
+      attachmentId,
+      "read",
+    );
+  } catch (error) {
+    if (error instanceof AttachmentNotFoundError) return undefined;
+    throw error;
+  }
 }
 
 /** Opens a stream after path-escape check (module-local / tests). */

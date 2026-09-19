@@ -163,15 +163,30 @@ export async function listVesselParticularsSummary(
   assertModuleAccess(ctx, "particulars", "read");
   const db = getDb();
 
+  const scopedVesselId =
+    ctx.role === "management_user" || ctx.role === "vessel_user"
+      ? ctx.vesselId ?? undefined
+      : undefined;
+
   const vesselRows = await db
     .select({ id: vessels.id, name: vessels.name })
     .from(vessels)
+    .where(
+      scopedVesselId ? eq(vessels.id, scopedVesselId) : undefined,
+    )
     .orderBy(asc(vessels.name));
 
   const currentRows = await db
     .select()
     .from(vesselParticulars)
-    .where(eq(vesselParticulars.isCurrent, true));
+    .where(
+      scopedVesselId
+        ? and(
+            eq(vesselParticulars.isCurrent, true),
+            eq(vesselParticulars.vesselId, scopedVesselId),
+          )
+        : eq(vesselParticulars.isCurrent, true),
+    );
 
   const byVessel = new Map(currentRows.map((r) => [r.vesselId, r]));
 

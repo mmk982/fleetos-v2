@@ -545,6 +545,9 @@ export async function updateDeficiency(
     .limit(1);
   if (!existing[0]) throw new DeficiencyNotFoundError(id);
   assertVesselScope(ctx, existing[0].vesselId);
+  if (input.vesselId !== undefined) {
+    assertVesselScope(ctx, input.vesselId);
+  }
 
   const patch: Partial<typeof deficiencies.$inferInsert> = {
     updatedAt: new Date(),
