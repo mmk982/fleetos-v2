@@ -50,7 +50,7 @@ export default async function VesselsPage() {
         </div>
         <Link
           href="/dashboard/vessels/new"
-          className="inline-flex h-10 items-center justify-center rounded-md bg-[#0D2B45] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
         >
           Add vessel
         </Link>
@@ -62,7 +62,7 @@ export default async function VesselsPage() {
             No vessels yet.{" "}
             <Link
               href="/dashboard/vessels/new"
-              className="font-medium text-[#0D2B45] underline-offset-4 hover:underline dark:text-sky-300"
+              className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
             >
               Create your first vessel
             </Link>

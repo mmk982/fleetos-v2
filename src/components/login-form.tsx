@@ -3,7 +3,7 @@
 /**
  * Login form — client boundary for `useActionState` + `loginAction`.
  *
- * Styling follows the same zinc / `#0D2B45` token classes as
+ * Styling follows the same `--accent` / `--border` token classes as
  * `vessel-form.tsx` (current codebase design system), aligned with
  * DESIGN_HANDOFF.md §4 form-field structure (label above input, primary
  * filled action). Gap (explicit): light/dark polish pass and EN/AR locale
@@ -15,7 +15,7 @@ import { loginAction, type LoginActionState } from "@/modules/auth/actions";
 
 const labelClass = "mb-1 block text-sm font-medium text-[var(--text-secondary)]";
 const inputClass =
-  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[#0D2B45]";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]";
 const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 
 export function LoginForm() {
