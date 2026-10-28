@@ -18,7 +18,11 @@ import type { VesselParticularsRow, VesselRow } from "@/db/schema";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import { listCertificates } from "@/modules/certificates/certificate.controller";
-import type { CertificateListItem } from "@/modules/certificates/certificate.model";
+import {
+  worseActionableSubItemCompliance,
+  type CertificateListItem,
+} from "@/modules/certificates/certificate.model";
+import { STATUS_LABELS } from "@/lib/expiry";
 import { listDeficiencies } from "@/modules/deficiencies/deficiency.controller";
 import {
   deficiencyStatusLabel,
@@ -253,6 +257,14 @@ function CertificatesPanel({
   vesselId: string;
   rows: CertificateListItem[];
 }) {
+  const childrenByParent = new Map<string, CertificateListItem[]>();
+  for (const row of rows) {
+    if (!row.parentCertificateId) continue;
+    const list = childrenByParent.get(row.parentCertificateId) ?? [];
+    list.push(row);
+    childrenByParent.set(row.parentCertificateId, list);
+  }
+
   return (
     <section>
       <PanelHeader
@@ -274,7 +286,13 @@ function CertificatesPanel({
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {rows
                 .filter((row) => !row.parentCertificateId)
-                .map((row) => (
+                .map((row) => {
+                  const children = childrenByParent.get(row.id) ?? [];
+                  const worseChild = worseActionableSubItemCompliance(
+                    row.compliance,
+                    children,
+                  );
+                  return (
                 <tr key={row.id} className="bg-white dark:bg-zinc-950">
                   <td className="px-4 py-3">
                     <Link
@@ -284,9 +302,19 @@ function CertificatesPanel({
                       {row.typeName}
                     </Link>
                     {row.subItemCount > 0 ? (
-                      <span className="ms-2 text-xs text-[var(--text-tertiary)]">
+                      <span className="ms-2 inline-flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
                         {row.subItemCount} sub-item
                         {row.subItemCount === 1 ? "" : "s"}
+                        {worseChild ? (
+                          <span
+                            title={`Sub-item: ${STATUS_LABELS[worseChild.status]}`}
+                            className="inline-flex"
+                          >
+                            <StatusPill status={worseChild.status} dot={false}>
+                              Sub-item: {STATUS_LABELS[worseChild.status]}
+                            </StatusPill>
+                          </span>
+                        ) : null}
                       </span>
                     ) : null}
                   </td>
@@ -297,7 +325,8 @@ function CertificatesPanel({
                     <StatusPill status={row.compliance.status} />
                   </td>
                 </tr>
-              ))}
+                  );
+                })}
             </tbody>
           </table>
         </div>

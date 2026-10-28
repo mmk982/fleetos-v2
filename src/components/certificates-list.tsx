@@ -19,6 +19,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import {
   CERTIFICATE_AUTHORITIES,
   formatAuthority,
+  worseActionableSubItemCompliance,
 } from "@/modules/certificates/certificate.model";
 import type { CertificateListItem } from "@/modules/certificates/certificate.model";
 import type { IssuingAuthorityRow, VesselRow } from "@/db/schema";
@@ -40,6 +41,17 @@ function dateRef(row: CertificateListItem): string {
   return row.ruleKind === "window"
     ? (row.windowOpenDate ?? "—")
     : (row.expiryDate ?? "—");
+}
+
+/**
+ * Actionable sub-item status strictly worse than the parent — shown as a
+ * second pill. Logic lives in the model so the list and vessel page agree.
+ */
+function worseActionableChildStatus(
+  parent: CertificateListItem,
+  children: CertificateListItem[],
+) {
+  return worseActionableSubItemCompliance(parent.compliance, children);
 }
 
 export function CertificatesList({
@@ -260,6 +272,26 @@ export function CertificatesList({
     );
   }
 
+  function statusCell(row: CertificateListItem, nested: boolean) {
+    const children = nested ? [] : (childrenByParent.get(row.id) ?? []);
+    const worseChild = worseActionableChildStatus(row, children);
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatusPill status={row.compliance.status} />
+        {worseChild ? (
+          <span
+            title={`Sub-item: ${STATUS_LABELS[worseChild.status]}`}
+            className="inline-flex"
+          >
+            <StatusPill status={worseChild.status} dot={false}>
+              Sub-item: {STATUS_LABELS[worseChild.status]}
+            </StatusPill>
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
   function tableRow(row: CertificateListItem, nested: boolean) {
     return (
       <tr
@@ -280,9 +312,7 @@ export function CertificatesList({
           {row.issuingAuthorityName ?? "—"}
         </td>
         <td className="px-4 py-3 text-[var(--text-secondary)]">{dateRef(row)}</td>
-        <td className="px-4 py-3">
-          <StatusPill status={row.compliance.status} />
-        </td>
+        <td className="px-4 py-3">{statusCell(row, nested)}</td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-3">
             <CertificateQuickView row={row} />
@@ -372,14 +402,25 @@ export function CertificatesList({
               {topLevel.map((row) => {
                 const children = childrenByParent.get(row.id) ?? [];
                 const showChildren = isExpanded(row.id) && children.length > 0;
+                const worseChild = worseActionableChildStatus(row, children);
                 return (
                   <li key={row.id} className="p-4">
                     <div className="relative">
-                      <div className="absolute end-0 top-0">
+                      <div className="absolute end-0 top-0 flex max-w-[55%] flex-col items-end gap-1">
                         <StatusPill status={row.compliance.status} />
+                        {worseChild ? (
+                          <span
+                            title={`Sub-item: ${STATUS_LABELS[worseChild.status]}`}
+                            className="inline-flex"
+                          >
+                            <StatusPill status={worseChild.status} dot={false}>
+                              Sub-item: {STATUS_LABELS[worseChild.status]}
+                            </StatusPill>
+                          </span>
+                        ) : null}
                       </div>
                       {typeCell(row, false)}
-                      <dl className="mt-2 space-y-1 pe-24 text-xs text-[var(--text-secondary)]">
+                      <dl className="mt-2 space-y-1 pe-28 text-xs text-[var(--text-secondary)]">
                         <div>
                           <span className="text-[var(--text-tertiary)]">Vessel · </span>
                           <Identifier>{row.vesselName}</Identifier>

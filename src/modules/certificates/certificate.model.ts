@@ -16,6 +16,8 @@ import {
   type CertificateTypeRow,
 } from "@/db/schema";
 import {
+  compareBySeverity,
+  isActionable,
   STATUS_LABELS,
   STATUS_STYLES,
   type ComplianceResult,
@@ -76,6 +78,45 @@ export function effectiveOffsetDays(
     return 180;
   }
   return typeOffsetDays;
+}
+
+/**
+ * Worst compliance among a parent's sub-items, or null when there are none.
+ * Uses the expiry engine's severity ordering — do not re-implement it.
+ */
+export function worstSubItemCompliance(
+  children: Pick<CertificateListItem, "compliance">[],
+): ComplianceResult | null {
+  if (children.length === 0) {
+    return null;
+  }
+  const sorted = children
+    .map((child) => child.compliance)
+    .sort(compareBySeverity);
+  return sorted[0] ?? null;
+}
+
+/**
+ * The sub-item compliance worth surfacing on a parent row: the worst child,
+ * only when it is actionable (expiring / critical / expired) and its STATUS is
+ * strictly worse than the parent's own. Days remaining are deliberately
+ * ignored (nulled) so a same-status child with fewer days left does not
+ * trigger a redundant pill next to an equal parent status.
+ */
+export function worseActionableSubItemCompliance(
+  parent: ComplianceResult,
+  children: Pick<CertificateListItem, "compliance">[],
+): ComplianceResult | null {
+  const worst = worstSubItemCompliance(children);
+  if (!worst || !isActionable(worst.status)) {
+    return null;
+  }
+  const worseByStatus =
+    compareBySeverity(
+      { ...worst, daysRemaining: null },
+      { ...parent, daysRemaining: null },
+    ) < 0;
+  return worseByStatus ? worst : null;
 }
 
 /** Client-facing label for a live engine status (3-color + gray neutrals). */

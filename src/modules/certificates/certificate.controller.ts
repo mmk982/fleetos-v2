@@ -14,7 +14,16 @@ import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db/client";
 import {
@@ -686,6 +695,47 @@ export async function listCertificates(
   return items;
 }
 
+export type ParentCertificateCandidate = {
+  id: string;
+  vesselId: string;
+  typeName: string;
+  certificateNumber: string | null;
+};
+
+/**
+ * Lightweight top-level certificate options for the parent dropdown.
+ * No compliance derivation, child counts, or pagination.
+ */
+export async function listParentCandidates(
+  ctx: AccessContext,
+): Promise<ParentCertificateCandidate[]> {
+  assertAuthenticatedAccess(ctx);
+  assertModuleAccess(ctx, "certificates", "read");
+  const db = getDb();
+
+  const scopedVesselId = requireScopedVesselId(ctx);
+  const conditions: SQL[] = [isNull(certificates.parentCertificateId)];
+  if (scopedVesselId) {
+    conditions.push(eq(certificates.vesselId, scopedVesselId));
+  }
+
+  return db
+    .select({
+      id: certificates.id,
+      vesselId: certificates.vesselId,
+      typeName: certificateTypes.name,
+      certificateNumber: certificates.certificateNumber,
+    })
+    .from(certificates)
+    .innerJoin(
+      certificateTypes,
+      eq(certificates.certificateTypeId, certificateTypes.id),
+    )
+    .innerJoin(vessels, eq(certificates.vesselId, vessels.id))
+    .where(and(...conditions))
+    .orderBy(asc(vessels.name), asc(certificateTypes.name));
+}
+
 /**
  * Full certificate detail, or `undefined` if missing.
  */
@@ -920,6 +970,17 @@ export async function updateCertificate(
   let typeName: string | undefined;
   try {
     result = await db.transaction(async (tx) => {
+      // Lock self + new parent in ascending id order up front so opposite
+      // concurrent links (A→B and B→A) cannot deadlock on FOR UPDATE.
+      if (typeof input.parentCertificateId === "string") {
+        await tx
+          .select({ id: certificates.id })
+          .from(certificates)
+          .where(inArray(certificates.id, [id, input.parentCertificateId]))
+          .orderBy(asc(certificates.id))
+          .for("update");
+      }
+
       const existingRows = await tx
         .select()
         .from(certificates)

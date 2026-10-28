@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { CertificateForm } from "@/components/certificate-form";
 import {
   getCertificateById,
-  listCertificates,
   listCertificateTypes,
   listIssuingAuthorities,
+  listParentCandidates,
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
@@ -17,13 +17,14 @@ export default async function EditCertificatePage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
-  const [cert, vessels, types, authorities, certificates] = await Promise.all([
-    getCertificateById(access, id),
-    listSelectableVessels(access),
-    listCertificateTypes(access),
-    listIssuingAuthorities(access),
-    listCertificates(access),
-  ]);
+  const [cert, vessels, types, authorities, parentCandidates] =
+    await Promise.all([
+      getCertificateById(access, id),
+      listSelectableVessels(access),
+      listCertificateTypes(access),
+      listIssuingAuthorities(access),
+      listParentCandidates(access),
+    ]);
   if (!cert) {
     notFound();
   }
@@ -51,15 +52,8 @@ export default async function EditCertificatePage(props: PageProps) {
         vessels={vessels}
         types={types}
         authorities={authorities}
-        parentCandidates={certificates
-          .filter((row) => !row.parentCertificateId)
-          .map((row) => ({
-            id: row.id,
-            vesselId: row.vesselId,
-            typeName: row.typeName,
-            certificateNumber: row.certificateNumber,
-          }))}
-        hasSubItems={certificates.some((row) => row.parentCertificateId === cert.id)}
+        parentCandidates={parentCandidates}
+        hasSubItems={cert.subItemCount > 0}
       />
     </main>
   );

@@ -30,10 +30,12 @@ vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
 }));
 
+import { requireScopedVesselId } from "@/lib/auth/access";
 import {
   CertificateConflictError,
   createCertificate,
   getCertificateById,
+  listParentCandidates,
   updateCertificate,
 } from "./certificate.controller";
 
@@ -83,20 +85,33 @@ function baseCert(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** Select chain that supports `.for("update").limit()` and plain `.limit()`. */
+/** Select chain that supports dual-lock `.orderBy().for()` and `.for().limit()`. */
 function lockableSelect(rows: unknown[]) {
+  const whereChain = {
+    for: () => ({
+      limit: async () => rows,
+      then: (
+        onfulfilled?: (v: unknown) => unknown,
+        onrejected?: (e: unknown) => unknown,
+      ) => Promise.resolve(rows).then(onfulfilled, onrejected),
+    }),
+    orderBy: () => ({
+      for: () =>
+        Promise.resolve(rows.map((row) =>
+          typeof row === "object" && row !== null && "id" in row
+            ? { id: (row as { id: string }).id }
+            : row,
+        )),
+    }),
+    limit: async () => rows,
+    then: (
+      onfulfilled?: (v: unknown) => unknown,
+      onrejected?: (e: unknown) => unknown,
+    ) => Promise.resolve(rows).then(onfulfilled, onrejected),
+  };
   return () => ({
     from: () => ({
-      where: () => ({
-        for: () => ({
-          limit: async () => rows,
-        }),
-        limit: async () => rows,
-        then: (
-          onfulfilled?: (v: unknown) => unknown,
-          onrejected?: (e: unknown) => unknown,
-        ) => Promise.resolve(rows).then(onfulfilled, onrejected),
-      }),
+      where: () => whereChain,
     }),
   });
 }
@@ -329,6 +344,77 @@ describe("certificate parentCertificateId", () => {
   });
 });
 
+describe("listParentCandidates", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireScopedVesselId).mockReturnValue(undefined);
+  });
+
+  it("filters to top-level certificates only (parent_certificate_id IS NULL)", async () => {
+    const capturedWhere: unknown[] = [];
+    getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          innerJoin: () => ({
+            innerJoin: () => ({
+              where: (clause: unknown) => {
+                capturedWhere.push(clause);
+                return {
+                  orderBy: async () => [
+                    {
+                      id: PARENT_ID,
+                      vesselId: VESSEL_A,
+                      typeName: PARENT_TYPE_ROW.name,
+                      certificateNumber: null,
+                    },
+                  ],
+                };
+              },
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const rows = await listParentCandidates(CTX);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(PARENT_ID);
+    // Drizzle and() wraps isNull(parent) — ensure a WHERE was applied.
+    expect(capturedWhere).toHaveLength(1);
+    expect(capturedWhere[0]).toBeTruthy();
+  });
+
+  it("applies the scoped-vessel filter when requireScopedVesselId returns an id", async () => {
+    vi.mocked(requireScopedVesselId).mockReturnValue(VESSEL_A);
+    const capturedWhere: unknown[] = [];
+    getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          innerJoin: () => ({
+            innerJoin: () => ({
+              where: (clause: unknown) => {
+                capturedWhere.push(clause);
+                return {
+                  orderBy: async () => [],
+                };
+              },
+            }),
+          }),
+        }),
+      }),
+    });
+
+    await listParentCandidates({
+      userId: "user-1",
+      role: "captain",
+      vesselId: VESSEL_A,
+    });
+
+    expect(capturedWhere).toHaveLength(1);
+    expect(requireScopedVesselId).toHaveBeenCalled();
+  });
+});
+
 describe("getCertificateById parent / sub-item fields", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -435,23 +521,31 @@ function updateDbMock(opts: {
     vesselId: VESSEL_B,
   };
 
+  const whereChain = {
+    for: () => ({
+      limit: async () => [opts.existing],
+      then: (
+        onfulfilled?: (v: unknown) => unknown,
+        onrejected?: (e: unknown) => unknown,
+      ) => Promise.resolve([opts.existing]).then(onfulfilled, onrejected),
+    }),
+    orderBy: () => ({
+      for: () => Promise.resolve([{ id: opts.existing.id }]),
+    }),
+    limit: async () => [opts.existing],
+    then: (
+      onfulfilled?: (v: unknown) => unknown,
+      onrejected?: (e: unknown) => unknown,
+    ) =>
+      Promise.resolve([{ n: opts.childCount ?? 0 }]).then(
+        onfulfilled,
+        onrejected,
+      ),
+  };
   const tx = {
     select: () => ({
       from: () => ({
-        where: () => ({
-          for: () => ({
-            limit: async () => [opts.existing],
-          }),
-          limit: async () => [opts.existing],
-          then: (
-            onfulfilled?: (v: unknown) => unknown,
-            onrejected?: (e: unknown) => unknown,
-          ) =>
-            Promise.resolve([{ n: opts.childCount ?? 0 }]).then(
-              onfulfilled,
-              onrejected,
-            ),
-        }),
+        where: () => whereChain,
       }),
     }),
     update: () => ({
