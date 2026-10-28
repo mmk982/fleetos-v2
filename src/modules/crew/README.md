@@ -19,8 +19,9 @@ Read order: `crew.model.ts` (tones + list shapes) → `crew.controller.ts`
 ## Certificates
 
 Live status from `deriveComplianceStatus` with fixed
-`{ kind: "expiry_offset", offsetDays: 30 }`. `cachedStatus` is write-side
-only. Inline UI on the member detail page (no top-level cert routes).
+`{ kind: "expiry_offset", offsetDays: 30 }`, the company's "today" and the
+configured `criticalDays` (`src/lib/settings/business-time.ts`).
+`cachedStatus` is write-side only. Inline UI on the member detail page (no top-level cert routes).
 
 ## Attachments
 

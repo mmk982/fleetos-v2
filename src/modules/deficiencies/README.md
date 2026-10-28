@@ -15,6 +15,14 @@ handle transitions (`close` / `reopen` / `startProgress` / `setMonitoring`).
 Non-`closed` rows with a `dueDate` feed the future Alerts aggregator (§0.7)
 via the expiry engine; that wiring is Alerts' job, not this module's.
 
+## List filter
+
+`?status=` accepts any stored status plus the pseudo-status `active` (= not
+`closed`: `open`, `in_progress`, `monitoring`; `ACTIVE_DEFICIENCY_STATUSES`).
+`parseDeficiencyStatusFilter` validates it. The dashboard "Open defs" card
+links to `/dashboard/deficiencies?status=active`, and the Excel/PDF export
+honours the same filter, so card count, list and export agree.
+
 ## Attachments
 
 Files live under `data/attachments/` with generated names. Served through

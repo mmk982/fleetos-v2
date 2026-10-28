@@ -34,6 +34,14 @@ Read order: `validation.ts` → `actions.ts` → `src/lib/auth/password.ts` /
 `assertSameOriginMutation` rejects `Sec-Fetch-Site: cross-site` and Origin
 host mismatches. Used at the top of mutating Server Actions (including login).
 
+## Route Handlers
+
+`/api/*` mutations (`POST`/`PUT`/`PATCH`/`DELETE`) call `rejectCrossOrigin()`
+first: it wraps `assertSameOriginMutation` and returns a `403` JSON response
+for a cross-origin request. The cron endpoint is excluded — it authenticates
+with `CRON_SECRET` (`cron-auth.ts`). Requests with neither `Sec-Fetch-Site`
+nor `Origin` are rejected, so non-browser clients must send an `Origin`.
+
 ## Login rate limiting (`src/lib/auth/login-rate-limit.ts`)
 
 In-memory `Map`s **per Node process**:

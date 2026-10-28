@@ -24,3 +24,9 @@ Attachments are stored under `data/attachments/` with generated filenames and
 served only through `/api/attachments/[id]` (`SECURITY_PLAN.md` §6).
 
 Full spec: `PROJECT_PLAN.md` §1.
+
+## Status thresholds
+
+`deriveComplianceStatus` is called with the company's "today" and the
+configured `criticalDays` (`businessNow()` / `businessCriticalDays()` from
+`src/lib/settings/business-time.ts`), the same inputs the Alerts feed uses.

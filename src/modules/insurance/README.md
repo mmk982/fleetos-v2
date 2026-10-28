@@ -9,8 +9,9 @@ Read order: `insurance.model.ts` → `insurance.controller.ts` →
 ## Compliance
 
 Live status from `deriveComplianceStatus` with
-`INSURANCE_REMINDER_RULE` (`expiry_offset` 30d). `cachedStatus` is
-write-side only.
+`INSURANCE_REMINDER_RULE` (`expiry_offset` 30d), the company's "today" and the
+configured `criticalDays` (`src/lib/settings/business-time.ts`).
+`cachedStatus` is write-side only.
 
 ## Attachments
 

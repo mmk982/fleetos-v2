@@ -60,6 +60,25 @@ npm run db:seed:drawings
 
 `predev` / `prebuild` already call `db:migrate`.
 
+Migration `0024_notifications_cycle_key` adds `notifications.cycle_key` and a
+unique index; it first deletes duplicate notification rows (keeps the oldest),
+so it is safe on a database that already has duplicates.
+
+## Company time zone and critical days
+
+Set in Settings → Company profile (IANA id such as `Asia/Dubai`; empty = UTC)
+and Settings → critical days. Both are cached for up to 60 s per process and
+reset on save, so a change shows immediately for the saving process and within
+a minute elsewhere. Symptom of a wrong zone: a certificate flips to
+`expired`/`critical` hours early or late around midnight.
+
+## API clients
+
+`POST`/`PUT`/`PATCH`/`DELETE` under `/api` (except `/api/internal/email-digest`)
+return `403 Cross-origin mutating request blocked.` unless the request carries
+`Sec-Fetch-Site: same-origin|same-site|none` or an `Origin` matching the host.
+Scripts calling these endpoints must send `Origin: <APP_BASE_URL>`.
+
 ## Attachments on disk
 
 Uploaded files are stored under `data/attachments/` (see module controllers

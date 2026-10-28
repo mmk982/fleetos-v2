@@ -105,6 +105,21 @@ Required Action secrets (document only — never commit values):
 | `STAGING_SSH_KEY` | Private key for that user |
 | `STAGING_APP_PATH` | Optional remote compose project path |
 
+## Behaviour notes
+
+- **"Today"** for expiry status, due dates and reminders is the company's
+  calendar day, from the time zone in Settings → Company profile (empty =
+  UTC), and the critical threshold is the `criticalDays` setting. Both live in
+  `src/lib/settings/business-time.ts` (60 s cache, reset on save).
+- **Dashboard cards** deep-link to filtered lists whose rows match the card
+  count (e.g. Valid certs → `certificates?status=valid`, Open defs →
+  `deficiencies?status=active`, Due certs → `alerts?...status=critical,expiring`).
+- **`/api/*` mutations** reject cross-origin requests (`rejectCrossOrigin`);
+  non-browser clients must send an `Origin` header. The cron route uses
+  `CRON_SECRET` instead.
+- **URL filters** such as `?vesselId=` are sanitised with `uuidSearchParam`
+  (`src/lib/validation/search-params.ts`); a malformed id means "no filter".
+
 ## Documentation map
 
 | Doc | Role |
