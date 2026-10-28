@@ -133,7 +133,7 @@ export default async function DashboardPage() {
     {
       label: "Valid certs",
       value: validCertificates,
-      href: "/dashboard/certificates",
+      href: "/dashboard/certificates?status=valid",
       icon: Award,
       tone: "green",
     },
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
     {
       label: "Pending forms",
       value: missingMonthlyForms.length,
-      href: "/dashboard/monthly-forms",
+      href: `/dashboard/monthly-forms?month=${month}&year=${year}&displayStatus=pending`,
       icon: FileText,
       tone: "slate",
     },
