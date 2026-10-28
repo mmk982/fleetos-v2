@@ -13,6 +13,7 @@
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { contentDispositionInline } from "@/lib/attachments/content-disposition";
 import {
   AttachmentNotFoundError,
   resolveAttachmentStream,
@@ -42,7 +43,7 @@ export async function GET(_request: Request, context: RouteContext) {
       status: 200,
       headers: {
         "Content-Type": contentTypeForAttachment(filePath, fileName),
-        "Content-Disposition": `inline; filename="${fileName.replace(/"/g, "")}"`,
+        "Content-Disposition": contentDispositionInline(fileName),
         "Cache-Control": "private, no-store",
       },
     });
