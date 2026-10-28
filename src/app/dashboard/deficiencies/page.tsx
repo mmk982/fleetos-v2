@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { DeficienciesList } from "@/components/deficiencies-list";
 import {
   listDeficiencies,
@@ -32,9 +33,9 @@ export default async function DeficienciesPage(props: {
 
   const [rows, vessels, sources, pscInspections] = await Promise.all([
     listDeficiencies(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       status,
-      sourceId: sp.sourceId || undefined,
+      sourceId: uuidSearchParam(sp.sourceId),
       category: sp.category || undefined,
     }),
     listSelectableVessels(access),

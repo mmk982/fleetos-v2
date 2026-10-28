@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { CrewList } from "@/components/crew-list";
 import {
   listCrewCategories,
@@ -28,9 +29,9 @@ export default async function CrewPage(props: { searchParams: SearchParams }) {
 
   const [rows, vessels, categories] = await Promise.all([
     listCrewMembers(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       status,
-      categoryId: sp.categoryId || undefined,
+      categoryId: uuidSearchParam(sp.categoryId),
     }),
     listSelectableVessels(access),
     listCrewCategories(access),

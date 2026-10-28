@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { MonthlyFormsList } from "@/components/monthly-forms-list";
 import { listIsmTemplates } from "@/modules/ism-templates/ismTemplate.controller";
 import { listMonthlyFormRequirements } from "@/modules/monthly-forms/monthly-form-requirement.controller";
@@ -36,13 +37,13 @@ export default async function MonthlyFormsPage(props: {
 
   const [rows, requirements, vessels, templates] = await Promise.all([
     listMonthlyForms(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       month: Number.isFinite(month) ? month : undefined,
       year: Number.isFinite(year) ? year : undefined,
       status,
     }),
     listMonthlyFormRequirements(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
     }),
     listSelectableVessels(access),
     listIsmTemplates(access),

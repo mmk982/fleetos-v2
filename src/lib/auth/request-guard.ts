@@ -9,6 +9,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 
 /** Thrown when a mutating action looks cross-origin. */
 export class CrossOriginRequestError extends Error {
@@ -55,6 +56,25 @@ export async function assertSameOriginMutation(): Promise<void> {
 
   if (originHost.toLowerCase() !== host.toLowerCase()) {
     throw new CrossOriginRequestError();
+  }
+}
+
+/**
+ * Route Handler variant of {@link assertSameOriginMutation}: returns a ready
+ * `403` JSON response for a cross-origin mutating request, or `null` when the
+ * request may proceed. Call first in every `POST` / `PUT` / `PATCH` /
+ * `DELETE` handler under `/api` (cron endpoints authenticate by bearer secret
+ * instead and must not use this).
+ */
+export async function rejectCrossOrigin(): Promise<NextResponse | null> {
+  try {
+    await assertSameOriginMutation();
+    return null;
+  } catch (error) {
+    if (error instanceof CrossOriginRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    throw error;
   }
 }
 

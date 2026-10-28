@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { IsmTemplatesList } from "@/components/ism-templates-list";
 import {
   listIsmTemplateCategories,
@@ -28,7 +29,7 @@ export default async function IsmTemplatesPage(props: {
 
   const [rows, categories] = await Promise.all([
     listIsmTemplates(access, {
-      categoryId: sp.categoryId || undefined,
+      categoryId: uuidSearchParam(sp.categoryId),
       status,
     }),
     listIsmTemplateCategories(access),

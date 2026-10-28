@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import Link from "next/link";
 import { CertificatesList } from "@/components/certificates-list";
 import {
@@ -40,9 +41,9 @@ export default async function CertificatesPage(props: {
 
   const [rows, vessels, issuers] = await Promise.all([
     listCertificates(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       authority: sp.authority || undefined,
-      issuingAuthorityId: sp.issuingAuthorityId || undefined,
+      issuingAuthorityId: uuidSearchParam(sp.issuingAuthorityId),
       status,
     }),
     listSelectableVessels(access),

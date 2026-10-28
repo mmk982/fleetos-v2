@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { PscInspectionsList } from "@/components/psc-inspections-list";
 import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
@@ -29,7 +30,7 @@ export default async function PscPage(props: {
 
   const [rows, vessels] = await Promise.all([
     listPscInspections(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       result,
     }),
     listSelectableVessels(access),

@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { AlertsFilters } from "@/components/alerts-filters";
 import { AlertsList } from "@/components/alerts-list";
 import { toAccessContext } from "@/lib/auth/access";
@@ -29,7 +30,7 @@ export default async function AlertsPage(props: {
     ? (sp.kind as AlertKind)
     : undefined;
   const statuses = parseAlertStatusFilter(sp.status);
-  const vesselId = sp.vesselId || undefined;
+  const vesselId = uuidSearchParam(sp.vesselId);
 
   const [items, missingDates, vessels] = await Promise.all([
     getAlerts(access, {

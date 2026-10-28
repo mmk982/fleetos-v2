@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { ManualsList } from "@/components/manuals-list";
 import { listManuals } from "@/modules/manuals/manual.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
@@ -21,12 +22,12 @@ export default async function ManualsPage(props: {
 
   const [rows, vessels, optionRows] = await Promise.all([
     listManuals(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       manualType: sp.manualType || undefined,
       department: sp.department || undefined,
     }),
     listSelectableVessels(access),
-    listManuals(access, { vesselId: sp.vesselId || undefined }),
+    listManuals(access, { vesselId: uuidSearchParam(sp.vesselId) }),
   ]);
 
   const manualTypes = [

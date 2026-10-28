@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { RemindersList } from "@/components/reminders-list";
 import { listReminders } from "@/modules/reminders/reminder.controller";
 import {
@@ -42,7 +43,7 @@ export default async function RemindersPage(props: {
 
   const [rows, vessels] = await Promise.all([
     listReminders(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       type,
       priority,
       status,

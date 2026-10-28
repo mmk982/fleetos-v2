@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { DrawingsList } from "@/components/drawings-list";
 import {
   listDrawingCategories,
@@ -23,8 +24,8 @@ export default async function DrawingsPage(props: {
 
   const [rows, vessels, categories] = await Promise.all([
     listDrawings(access, {
-      vesselId: sp.vesselId || undefined,
-      categoryId: sp.categoryId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
+      categoryId: uuidSearchParam(sp.categoryId),
     }),
     listSelectableVessels(access),
     listDrawingCategories(access),

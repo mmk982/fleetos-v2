@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
@@ -29,6 +30,9 @@ export async function GET(_request: Request, context: RouteContext) {
 
 /** POST multipart upload (`file` field). Max 10 MB; PDF/JPEG/PNG. */
 export async function POST(request: Request, context: RouteContext) {
+  const crossOrigin = await rejectCrossOrigin();
+  if (crossOrigin) return crossOrigin;
+
   const session = await requireApiSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

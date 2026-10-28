@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { InsuranceList } from "@/components/insurance-list";
 import { listInsurancePolicies } from "@/modules/insurance/insurance.controller";
 import { INSURANCE_TYPES } from "@/modules/insurance/insurance.model";
@@ -26,7 +27,7 @@ export default async function InsurancePage(props: {
 
   const [rows, vessels] = await Promise.all([
     listInsurancePolicies(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       policyType,
     }),
     listSelectableVessels(access),

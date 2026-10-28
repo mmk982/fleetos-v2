@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
@@ -9,6 +10,9 @@ import {
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  const crossOrigin = await rejectCrossOrigin();
+  if (crossOrigin) return crossOrigin;
+
   const session = await validateSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,3 +1,4 @@
+import { uuidSearchParam } from "@/lib/validation/search-params";
 import { AuditsList } from "@/components/audits-list";
 import { listAudits } from "@/modules/audits/audit.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
@@ -27,7 +28,7 @@ export default async function AuditsPage(props: {
 
   const [rows, vessels] = await Promise.all([
     listAudits(access, {
-      vesselId: sp.vesselId || undefined,
+      vesselId: uuidSearchParam(sp.vesselId),
       auditType,
     }),
     listSelectableVessels(access),
