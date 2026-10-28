@@ -9,7 +9,7 @@
  *
  * Spec: PROJECT_PLAN.md §1.
  */
-import { businessNow } from "@/lib/settings/business-time";
+import { businessCriticalDays, businessNow } from "@/lib/settings/business-time";
 import "server-only";
 
 import { mkdir, writeFile } from "node:fs/promises";
@@ -171,6 +171,7 @@ function deriveForCertificate(
   const offsetDays = effectiveOffsetDays(cert, type.offsetDays);
   return deriveComplianceStatus({
     now: businessNow(),
+    criticalDays: businessCriticalDays(),
     rule: { kind: type.ruleKind, offsetDays },
     expiryDate: cert.expiryDate,
     windowOpenDate: cert.windowOpenDate,

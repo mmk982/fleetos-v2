@@ -5,7 +5,7 @@
  * Live status always comes from `deriveComplianceStatus` with the fixed
  * 30d offset rule — `cachedStatus` is a non-authoritative write-side cache.
  */
-import { businessNow } from "@/lib/settings/business-time";
+import { businessCriticalDays, businessNow } from "@/lib/settings/business-time";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -102,6 +102,7 @@ function deriveForPolicy(policy: {
 }): ComplianceResult {
   return deriveComplianceStatus({
     now: businessNow(),
+    criticalDays: businessCriticalDays(),
     rule: INSURANCE_REMINDER_RULE,
     expiryDate: policy.expiryDate,
   });

@@ -55,6 +55,7 @@ export async function setCriticalDaysAction(
   }
 
   await setCriticalDays(access, parsed.data.criticalDays);
+  resetBusinessTimezoneCache();
   revalidatePath("/dashboard/settings");
   return { ok: true, message: "Saved." };
 }
