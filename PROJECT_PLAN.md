@@ -256,6 +256,10 @@ awaiting confirmation.
    tiers. With 7, a 30d item is `expiring` at 30 days out and escalates to
    `critical` only in the final 7 days; a 180d renewal is `expiring` at 180 days
    out and `critical` in the final 7. Settings can later tune `criticalDays`.
+   (Implemented 2026-10-28: the setting is read once per process into a short
+   cache (`src/lib/settings/business-time.ts`, 60 s, reset on save) and passed
+   into every engine call — certificates, crew certificates, insurance and the
+   Alerts feed — so all surfaces classify critical vs expiring identically.)
 3. **Derived status vocabulary.** *(Decided.)* Single source of truth reused
    everywhere: `valid` → `expiring` → `critical` → `expired` → `unknown`, plus
    **`revoked`**, which overrides all others when a certificate's
@@ -988,7 +992,10 @@ every other module, per the file-attachments decision above.
 - `src/app/dashboard/deficiencies/` list / `[id]` / `new` / `[id]/edit`.
 - `src/components/deficiency-form.tsx`.
 - List shows vessel, deficiency number, source, status pill (4 colors now,
-  not 2), due date, responsible person; filter by status/source/category.
+  not 2), due date, responsible person; filter by status/source/category. The status filter also accepts the
+  pseudo-status `active` (= `open`, `in_progress`, `monitoring`, i.e. not
+  `closed`), which the dashboard "Open defs" card links to; the Excel/PDF
+  export honours it too (added 2026-10-28).
 
 ### Decisions
 
@@ -1257,7 +1264,9 @@ export async function getAlerts(options?: {
 ### Pages / UI
 
 - `src/app/dashboard/alerts/page.tsx` — full feed with kind/vessel/status
-  filters, grouped or sorted worst-first.
+  filters, grouped or sorted worst-first. The status filter accepts one status
+  or a comma-separated set (`?status=critical,expiring` = "due soon"; added
+  2026-10-28 so dashboard card counts and the list they open agree).
 - Reusable `src/components/alerts-list.tsx` used by both the full page and the
   dashboard preview.
 - Add **Alerts** to the sidebar.
@@ -1291,8 +1300,9 @@ specifies the summary cards precisely — this supersedes the earlier generic
   per controller.
 - Health: `getAlerts()` bucketed by `status` (expired / critical / expiring
   totals) and by `kind`.
-- Preview tables: `getAlerts({ kinds: ["certificate"], limit: N })` for
-  "Certificates due soon"; `getAlerts({ kinds: ["deficiency"], limit: N })`
+- Preview tables: `getAlerts({ kinds: ["certificate"], statuses: ["critical",
+  "expiring"], limit: N })` for "Certificates due soon" (expired certificates
+  are covered by the Expired card); `getAlerts({ kinds: ["deficiency"], limit: N })`
   for "Open deficiencies"; a small query against Monthly Executed Forms for
   "Missing monthly forms"; `getRecentActivity({ limit: N })` (see below) for
   "Recent activity."
@@ -1336,6 +1346,14 @@ specifies the summary cards precisely — this supersedes the earlier generic
   product feature); they serve different purposes even though both are
   append-only logs, and conflating them would make the GDPR log noisier
   than it needs to be.
+- **Card deep links (updated 2026-10-28):** every card opens a list whose rows
+  match its number — Valid certs → `/dashboard/certificates?status=valid`;
+  Expired certs → `/dashboard/alerts?kind=certificate&status=expired`; Due
+  certs → `/dashboard/alerts?kind=certificate&status=critical,expiring`;
+  Open defs → `/dashboard/deficiencies?status=active`; Pending forms (and the
+  missing-forms preview's "View all") →
+  `/dashboard/monthly-forms?month=M&year=Y&displayStatus=pending` for the
+  current month. Vessels and Manuals open their unfiltered lists.
 - `export const dynamic = "force-dynamic"` (live data).
 
 ### Drizzle schema — `access_logs` (GDPR access log — new, this session)
@@ -1466,6 +1484,11 @@ which reads write to it. It existed only as a name. This closes that gap.
   - **Company Profile** — company name, registration no., address,
     contact email/phone, timezone, date format, and the company logo
     (shown on the login page and top bar per both docs' layout sections).
+    **Time zone is applied (2026-10-28):** it must be a valid IANA id (empty =
+    UTC) and defines the company's "today" for every status, due-date,
+    reminder and digest comparison (`src/lib/settings/business-time.ts`,
+    60 s cache, reset on save). The date-format field is stored but not yet
+    used for rendering.
     Not previously modeled as its own settings row; add a
     `company_profile` key (or dedicated single-row table) alongside the
     existing key-value settings.
@@ -1965,6 +1988,24 @@ history rather than everything being recomputed live on every page load.
   an attachments-style table. Build order (below) reflects Auth preceding
   it, same as everything else.
 
+### Delivery, scoping and dedupe (implemented — updated 2026-10-28)
+
+- **Generation:** a lazy `syncNotifications(ctx)` sweep runs on dashboard load
+  (actionable alerts + due `pending` reminders) and fans out per user. The
+  enum also includes `crew_certificate_due`.
+- **Recipients:** only users with `alerts` access, and vessel-scoped roles
+  (`management_user` / `vessel_user`) receive items for their own vessel only
+  (`canReceiveNotification`). List and unread-count reads apply the same
+  vessel scope, so another vessel's titles are never visible.
+- **Dedupe:** key = (user, record, type, `cycle_key`). `cycle_key` is the
+  due/expiry date the item was raised for (empty for legacy rows and items
+  without a date), so extending or renewing a certificate raises a fresh
+  notification for its next cycle. A unique index
+  (`notifications_user_record_type_cycle_uq`, migration `0024`) plus
+  `ON CONFLICT DO NOTHING` makes concurrent sweeps idempotent. Legacy rows
+  (`cycle_key = ''`) suppress repeats for 60 days only.
+- **"Today"** for due reminders is the company's calendar day (see §7a).
+
 ### Zod / Server actions / API
 
 - `markNotificationReadAction(id)` / `markAllReadAction(userId)`.
@@ -2001,9 +2042,9 @@ bell are real and trusted, email just amplifies unfinished signal quality
   signal source — same `AlertItem` shape, same `criticalDays` resolution,
   same worst-first sort. There is no independent "should this email fire"
   logic to keep in sync with the in-app Alerts page.
-- **Digest only, v1** — one scheduled email per day (company/server
-  timezone, or UTC if no company timezone exists yet — document whichever
-  is chosen), not instant-per-alert. A handful of Admins receiving an
+- **Digest only, v1** — one scheduled email per day (the digest date is
+  the company's calendar day from the Settings time zone — `businessToday()` —
+  and UTC when none is set), not instant-per-alert. A handful of Admins receiving an
   instant email every time one item ticks into Critical trains people to
   ignore the inbox; a daily digest is one scannable brief. Instant delivery
   for `expired` certificates / overdue-and-open deficiencies specifically
@@ -2616,8 +2657,10 @@ the mockup pattern already used across the other module groups
   the two-option domain model above already covers. Not reopened unless the
   deployment model itself changes to a shared instance.
 - **Testing**: the expiry engine is pure and the prime candidate for unit tests.
-  No test runner is configured yet — a lightweight **Vitest** setup will be added
-  scoped to `src/lib/expiry` (decided). Module-level tests that touch the DB
+  **Vitest** is configured (`npm test` = `vitest run`, run in CI) with mock-based
+  unit tests across the expiry engine, controllers, auth helpers and models
+  (195 tests at 2026-10-28); there is still no real-DB test harness and no
+  coverage reporting. Module-level tests that touch the DB
   will need a test Postgres instance (e.g. via Docker in CI), unlike SQLite's
   trivial in-memory/file-based test setup — worth accounting for when the
   CI/CD phase (`MASTER_PLAN.md` Phase 2) is built out.
