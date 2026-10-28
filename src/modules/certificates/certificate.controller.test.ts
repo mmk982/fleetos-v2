@@ -2,7 +2,9 @@
  * Certificate parent-link rules (parentCertificateId).
  *
  * A sub-item must share the parent's vessel, cannot parent itself, and
- * cannot nest under another sub-item (one level only).
+ * cannot nest under another sub-item (one level only). Vessel reassignment
+ * while a link is live is rejected. getCertificateById exposes real parent
+ * name / sub-item count.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -31,6 +33,7 @@ vi.mock("@/db/client", () => ({
 import {
   CertificateConflictError,
   createCertificate,
+  getCertificateById,
   updateCertificate,
 } from "./certificate.controller";
 
@@ -52,16 +55,10 @@ const TYPE_ROW = {
   createdAt: new Date(),
 };
 
-function thenable<T>(value: T) {
-  return {
-    limit: async () => value,
-    orderBy: async () => value,
-    then: (
-      onfulfilled?: (v: T) => unknown,
-      onrejected?: (e: unknown) => unknown,
-    ) => Promise.resolve(value).then(onfulfilled, onrejected),
-  };
-}
+const PARENT_TYPE_ROW = {
+  ...TYPE_ROW,
+  name: "Radio / GMDSS Annual Certificate",
+};
 
 function baseCert(overrides: Record<string, unknown> = {}) {
   return {
@@ -86,44 +83,30 @@ function baseCert(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function parentJoinRow(overrides: Record<string, unknown> = {}) {
-  const certificate = baseCert(overrides);
-  return {
-    certificate,
-    vessel: { id: certificate.vesselId, name: "GLIMLIT" },
-    certificateType: TYPE_ROW,
-    issuingAuthority: null,
-  };
+/** Select chain that supports `.for("update").limit()` and plain `.limit()`. */
+function lockableSelect(rows: unknown[]) {
+  return () => ({
+    from: () => ({
+      where: () => ({
+        for: () => ({
+          limit: async () => rows,
+        }),
+        limit: async () => rows,
+        then: (
+          onfulfilled?: (v: unknown) => unknown,
+          onrejected?: (e: unknown) => unknown,
+        ) => Promise.resolve(rows).then(onfulfilled, onrejected),
+      }),
+    }),
+  });
 }
 
-function selectChain(opts: {
-  parentJoin: unknown;
-  inserted?: unknown;
-}) {
-  let simpleLimitCalls = 0;
-  const node = (joined: boolean): Record<string, unknown> => ({
-    from: () => node(joined),
-    innerJoin: () => node(true),
-    leftJoin: () => node(joined),
-    where: () => node(joined),
-    groupBy: () => node(joined),
-    orderBy: async () => [],
-    limit: async () => {
-      if (joined) {
-        return [opts.parentJoin];
-      }
-      simpleLimitCalls += 1;
-      if (simpleLimitCalls === 1) {
-        return [TYPE_ROW];
-      }
-      return opts.inserted ? [opts.inserted] : [TYPE_ROW];
-    },
-    then: (
-      onfulfilled?: (v: unknown) => unknown,
-      onrejected?: (e: unknown) => unknown,
-    ) => Promise.resolve([]).then(onfulfilled, onrejected),
-  });
-  return () => node(false);
+function withTransaction(tx: Record<string, unknown>, outer: Record<string, unknown> = {}) {
+  return {
+    ...outer,
+    transaction: async (fn: (t: Record<string, unknown>) => Promise<unknown>) =>
+      fn(tx),
+  };
 }
 
 describe("certificate parentCertificateId", () => {
@@ -134,26 +117,42 @@ describe("certificate parentCertificateId", () => {
   it("creates a sub-item when the parent is on the same vessel", async () => {
     const inserted = baseCert({ id: CHILD_ID, parentCertificateId: PARENT_ID });
     const captured: Record<string, unknown>[] = [];
+    const parent = baseCert({ id: PARENT_ID, parentCertificateId: null });
 
-    getDb.mockReturnValue({
-      select: selectChain({
-        parentJoin: parentJoinRow(),
-        inserted,
-      }),
-      insert: () => ({
-        values: (payload: Record<string, unknown>) => {
-          captured.push(payload);
-          return {
-            returning: async () => [inserted],
-          };
+    let outerSelectCalls = 0;
+    getDb.mockReturnValue(
+      withTransaction(
+        {
+          select: lockableSelect([parent]),
+          insert: () => ({
+            values: (payload: Record<string, unknown>) => {
+              captured.push(payload);
+              return {
+                returning: async () => [inserted],
+              };
+            },
+          }),
         },
-      }),
-      update: () => ({
-        set: () => ({
-          where: () => Promise.resolve(undefined),
-        }),
-      }),
-    });
+        {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: async () => {
+                  outerSelectCalls += 1;
+                  if (outerSelectCalls === 1) return [TYPE_ROW];
+                  return [inserted];
+                },
+              }),
+            }),
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => Promise.resolve(undefined),
+            }),
+          }),
+        },
+      ),
+    );
 
     const row = await createCertificate(CTX, {
       vesselId: VESSEL_A,
@@ -168,11 +167,24 @@ describe("certificate parentCertificateId", () => {
   });
 
   it("rejects a parentCertificateId on a different vessel", async () => {
-    getDb.mockReturnValue({
-      select: selectChain({
-        parentJoin: parentJoinRow({ vesselId: VESSEL_B }),
-      }),
-    });
+    getDb.mockReturnValue(
+      withTransaction(
+        {
+          select: lockableSelect([
+            baseCert({ id: PARENT_ID, vesselId: VESSEL_B }),
+          ]),
+        },
+        {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: async () => [TYPE_ROW],
+              }),
+            }),
+          }),
+        },
+      ),
+    );
 
     await expect(
       createCertificate(CTX, {
@@ -186,14 +198,27 @@ describe("certificate parentCertificateId", () => {
   });
 
   it("rejects a parent that is itself a sub-item", async () => {
-    getDb.mockReturnValue({
-      select: selectChain({
-        parentJoin: parentJoinRow({
-          id: PARENT_ID,
-          parentCertificateId: GRANDCHILD_ID,
-        }),
-      }),
-    });
+    getDb.mockReturnValue(
+      withTransaction(
+        {
+          select: lockableSelect([
+            baseCert({
+              id: PARENT_ID,
+              parentCertificateId: GRANDCHILD_ID,
+            }),
+          ]),
+        },
+        {
+          select: () => ({
+            from: () => ({
+              where: () => ({
+                limit: async () => [TYPE_ROW],
+              }),
+            }),
+          }),
+        },
+      ),
+    );
 
     await expect(
       createCertificate(CTX, {
@@ -207,13 +232,11 @@ describe("certificate parentCertificateId", () => {
   });
 
   it("rejects self-parenting on update", async () => {
-    getDb.mockReturnValue({
-      select: () => ({
-        from: () => ({
-          where: () => thenable([baseCert({ id: PARENT_ID })]),
-        }),
+    getDb.mockReturnValue(
+      withTransaction({
+        select: lockableSelect([baseCert({ id: PARENT_ID })]),
       }),
-    });
+    );
 
     await expect(
       updateCertificate(CTX, PARENT_ID, { parentCertificateId: PARENT_ID }),
@@ -306,6 +329,101 @@ describe("certificate parentCertificateId", () => {
   });
 });
 
+describe("getCertificateById parent / sub-item fields", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns parentCertificateName for a sub-item and subItemCount 0", async () => {
+    const child = baseCert({
+      id: CHILD_ID,
+      parentCertificateId: PARENT_ID,
+    });
+    getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          innerJoin: () => ({
+            innerJoin: () => ({
+              leftJoin: () => ({
+                leftJoin: () => ({
+                  leftJoin: () => ({
+                    where: () => ({
+                      limit: async () => [
+                        {
+                          certificate: child,
+                          vessel: { id: VESSEL_A, name: "GLIMLIT" },
+                          certificateType: TYPE_ROW,
+                          issuingAuthority: null,
+                          parentTypeName: PARENT_TYPE_ROW.name,
+                        },
+                      ],
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          where: () => ({
+            orderBy: async () => [],
+            then: (
+              onfulfilled?: (v: unknown) => unknown,
+              onrejected?: (e: unknown) => unknown,
+            ) =>
+              Promise.resolve([{ n: 0 }]).then(onfulfilled, onrejected),
+          }),
+        }),
+      }),
+    });
+
+    const detail = await getCertificateById(CTX, CHILD_ID);
+    expect(detail?.parentCertificateName).toBe(PARENT_TYPE_ROW.name);
+    expect(detail?.subItemCount).toBe(0);
+  });
+
+  it("returns subItemCount for a parent and null parentCertificateName", async () => {
+    const parent = baseCert({ id: PARENT_ID, parentCertificateId: null });
+    getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          innerJoin: () => ({
+            innerJoin: () => ({
+              leftJoin: () => ({
+                leftJoin: () => ({
+                  leftJoin: () => ({
+                    where: () => ({
+                      limit: async () => [
+                        {
+                          certificate: parent,
+                          vessel: { id: VESSEL_A, name: "GLIMLIT" },
+                          certificateType: PARENT_TYPE_ROW,
+                          issuingAuthority: null,
+                          parentTypeName: null,
+                        },
+                      ],
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+          where: () => ({
+            orderBy: async () => [],
+            then: (
+              onfulfilled?: (v: unknown) => unknown,
+              onrejected?: (e: unknown) => unknown,
+            ) =>
+              Promise.resolve([{ n: 2 }]).then(onfulfilled, onrejected),
+          }),
+        }),
+      }),
+    });
+
+    const detail = await getCertificateById(CTX, PARENT_ID);
+    expect(detail?.parentCertificateName).toBeNull();
+    expect(detail?.subItemCount).toBe(2);
+  });
+});
+
 function updateDbMock(opts: {
   existing: ReturnType<typeof baseCert>;
   updated?: ReturnType<typeof baseCert>;
@@ -316,21 +434,15 @@ function updateDbMock(opts: {
     ...opts.existing,
     vesselId: VESSEL_B,
   };
-  let limitCalls = 0;
-  return {
+
+  const tx = {
     select: () => ({
       from: () => ({
         where: () => ({
-          limit: async () => {
-            limitCalls += 1;
-            if (limitCalls === 1) {
-              return [opts.existing];
-            }
-            if (limitCalls === 2) {
-              return [TYPE_ROW];
-            }
-            return [updated];
-          },
+          for: () => ({
+            limit: async () => [opts.existing],
+          }),
+          limit: async () => [opts.existing],
           then: (
             onfulfilled?: (v: unknown) => unknown,
             onrejected?: (e: unknown) => unknown,
@@ -348,13 +460,29 @@ function updateDbMock(opts: {
         return {
           where: () => ({
             returning: async () => [updated],
-            then: (
-              onfulfilled?: (v: unknown) => unknown,
-              onrejected?: (e: unknown) => unknown,
-            ) => Promise.resolve(undefined).then(onfulfilled, onrejected),
           }),
         };
       },
     }),
   };
+
+  let outerLimitCalls = 0;
+  return withTransaction(tx, {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => {
+            outerLimitCalls += 1;
+            if (outerLimitCalls === 1) return [TYPE_ROW];
+            return [updated];
+          },
+        }),
+      }),
+    }),
+    update: () => ({
+      set: () => ({
+        where: () => Promise.resolve(undefined),
+      }),
+    }),
+  });
 }

@@ -114,6 +114,9 @@ export function CertificatesList({
   }, [matching]);
 
   const searchExpandedIds = useMemo(() => {
+    // Only auto-expand parents while a search is active — otherwise every
+    // parent with children would stay permanently expanded (matching === all).
+    if (!searchValue.trim()) return new Set<string>();
     const ids = new Set<string>();
     const topIds = new Set(topLevel.map((row) => row.id));
     for (const row of matching) {
@@ -122,7 +125,7 @@ export function CertificatesList({
       }
     }
     return ids;
-  }, [matching, topLevel]);
+  }, [matching, topLevel, searchValue]);
 
   function isExpanded(id: string): boolean {
     return expandedIds.has(id) || searchExpandedIds.has(id);

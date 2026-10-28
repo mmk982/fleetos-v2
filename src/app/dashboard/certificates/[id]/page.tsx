@@ -129,7 +129,11 @@ export default async function CertificateDetailPage(props: PageProps) {
           <ConfirmDeleteButton
             id={cert.id}
             title="Delete certificate?"
-            description="This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation."
+            description={
+              cert.subItemCount > 0
+                ? `This certificate has ${cert.subItemCount} sub-item${cert.subItemCount === 1 ? "" : "s"}. They will be kept as standalone certificates. This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation.`
+                : "This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation."
+            }
             action={deleteCertificateFormAction}
           />
         </div>

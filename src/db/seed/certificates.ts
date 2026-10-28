@@ -78,6 +78,7 @@ const CERTIFICATE_TYPE_SEEDS: TypeSeed[] = [
   { authority: "class", name: "IEEC", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "class", name: "Cargo Gear", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "class", name: "Grain", ruleKind: "expiry_offset", offsetDays: 30 },
+  { authority: "class", name: "Tailshaft Survey", ruleKind: "expiry_offset", offsetDays: 180 },
 
   { authority: "insurance", name: "H&M / War Risk", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "insurance", name: "P&I Certificate of Insurance", ruleKind: "expiry_offset", offsetDays: 30 },
@@ -133,6 +134,12 @@ const CERTIFICATE_TYPE_SEEDS: TypeSeed[] = [
   { authority: "safety", name: "Gyro / Magnetic Compass Service", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "safety", name: "Lifeboat / Rescue Boat Annual Service", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "safety", name: "Lifeboat / Rescue Boat Load Test", ruleKind: "expiry_offset", offsetDays: 30 },
+  // Separate types kept alongside the merged rows above — existing
+  // certificates still reference the merged names (ON DELETE RESTRICT).
+  { authority: "safety", name: "Lifeboat Annual Service", ruleKind: "expiry_offset", offsetDays: 30 },
+  { authority: "safety", name: "Rescue Boat Annual Service", ruleKind: "expiry_offset", offsetDays: 30 },
+  { authority: "safety", name: "Lifeboat Load Test", ruleKind: "expiry_offset", offsetDays: 30 },
+  { authority: "safety", name: "Rescue Boat Load Test", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "safety", name: "Davit / Winch / Hook Service", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "safety", name: "VDR / APT Annual", ruleKind: "expiry_offset", offsetDays: 30 },
   { authority: "safety", name: "VDR Battery", ruleKind: "expiry_offset", offsetDays: 30 },
