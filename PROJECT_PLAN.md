@@ -615,6 +615,24 @@ only seed data grows. Keeps one mental model (a vessel's compliance items
 are all rows in `certificates`) instead of a parallel "equipment items"
 concept.
 
+**Amendment (2026-10-28) — optional parent link added.** The decision above
+stands: sub-items are still ordinary `certificates` rows with their own type,
+dates and reminder rule, and nothing requires a link. On top of that, a
+nullable self-FK `certificates.parent_certificate_id` (`ON DELETE SET NULL`,
+migration `0023`) lets a sub-item be grouped under its equipment certificate
+(e.g. EPIRB Battery under the Radio/GMDSS certificate). It is a display and
+traceability aid only; it does not change reminder timing or the status engine
+(`src/lib/expiry` untouched). Server-enforced rules in
+`certificate.controller.ts`: a sub-item must be on the same vessel as its
+parent, cannot be its own parent, nesting is one level only, a certificate
+that has sub-items cannot become a sub-item, and `updateCertificate` rejects a
+vessel change that would leave a link spanning two vessels (unless the same
+call clears the link). Parent/self rows are locked in ascending id order when
+linking to avoid deadlocks. UI: the parent row shows a "Sub-item: <status>"
+pill when a sub-item is in a worse actionable status than the parent, so an
+expired battery under a valid parent is never hidden. Deleting a parent
+detaches its sub-items (they stay as standalone certificates).
+
 ### Certificate status vocabulary — corrected to 3-state after cross-checking both source docs
 
 **Superseding the previous 5-state proposal (Valid/Due/Expired/Missing/
