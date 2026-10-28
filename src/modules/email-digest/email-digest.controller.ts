@@ -1,6 +1,7 @@
 /**
  * Daily Admin email digest of actionable alerts (`PROJECT_PLAN.md` §12b).
  */
+import { businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
 import { and, eq } from "drizzle-orm";
@@ -15,7 +16,7 @@ import { getAlerts } from "@/modules/alerts/alerts.controller";
 import type { AlertItem } from "@/modules/alerts/alerts.model";
 
 function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessToday();
 }
 
 function appBaseUrl(): string {

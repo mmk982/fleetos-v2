@@ -27,6 +27,8 @@ export function exportContentType(format: ExportFormat): string {
 }
 
 export function exportFilename(moduleSlug: string, format: ExportFormat): string {
+  // This module is also imported by client components (`buildExportQuery`),
+  // so it must stay free of server-only imports — the filename uses the UTC day.
   const day = new Date().toISOString().slice(0, 10);
   return `${moduleSlug}-export-${day}.${format}`;
 }

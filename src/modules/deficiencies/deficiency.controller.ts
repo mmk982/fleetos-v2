@@ -8,6 +8,7 @@
  *
  * Spec: PROJECT_PLAN.md §2.
  */
+import { businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -122,7 +123,7 @@ function isPgUniqueViolation(error: unknown): boolean {
 }
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessToday();
 }
 
 export type DeficiencyListFilters = {

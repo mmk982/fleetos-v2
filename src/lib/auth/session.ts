@@ -18,6 +18,7 @@
  * Cookie value is `sessionId.hmac` (HMAC-SHA256 over the UUID with
  * `SESSION_SECRET`) so a forged UUID alone cannot authenticate.
  */
+import { primeBusinessTimezone } from "@/lib/settings/business-time";
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -258,6 +259,8 @@ export async function validateSession(
   if (touch) {
     await setSessionCookie(session.id, session.expiresAt);
   }
+
+  await primeBusinessTimezone();
 
   return { session, user: hit.user };
 }

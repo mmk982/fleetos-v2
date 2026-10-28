@@ -3,6 +3,8 @@
  */
 "use server";
 
+import { resetBusinessTimezoneCache } from "@/lib/settings/business-time";
+import { isValidTimeZone } from "@/lib/settings/timezone";
 import { revalidatePath } from "next/cache";
 import { toAccessContext } from "@/lib/auth/access";
 import { assertSameOriginMutation } from "@/lib/auth/request-guard";
@@ -76,7 +78,10 @@ const companyProfileSchema = z.object({
   address: optionalTrimmedString,
   contactEmail: optionalTrimmedString,
   contactPhone: optionalTrimmedString,
-  timezone: optionalTrimmedString,
+  timezone: optionalTrimmedString.refine(
+    (v) => v == null || isValidTimeZone(v),
+    "Enter a valid IANA time zone (e.g. Asia/Dubai).",
+  ),
   dateFormat: optionalTrimmedString,
 });
 
@@ -107,6 +112,7 @@ export async function updateCompanyProfileAction(
   }
 
   await updateCompanyProfile(access, parsed.data);
+  resetBusinessTimezoneCache();
   revalidatePath("/dashboard/settings/company-profile");
   revalidatePath("/dashboard");
   revalidatePath("/login");

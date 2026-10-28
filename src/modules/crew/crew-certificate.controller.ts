@@ -5,6 +5,7 @@
  * {@link deriveComplianceStatus} with a fixed 30d offset rule. Attachments
  * follow the same PDF/JPEG/PNG + 10 MB allow-list as other modules.
  */
+import { businessNow } from "@/lib/settings/business-time";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -97,6 +98,7 @@ function deriveForCrewCert(cert: {
   expiryDate: string | null;
 }): ComplianceResult {
   return deriveComplianceStatus({
+    now: businessNow(),
     rule: CREW_CERTIFICATE_REMINDER_RULE,
     expiryDate: cert.expiryDate,
   });

@@ -4,6 +4,7 @@
  * Checklist generation, ad-hoc create, submit (status mutation + attachment),
  * and attachment CRUD. Display "overdue" is derived, never stored.
  */
+import { businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -364,9 +365,9 @@ export async function generateMonthlyChecklist(
   if (options.vesselId) {
     assertVesselScope(ctx, options.vesselId);
   }
-  const now = new Date();
-  const month = options.month ?? now.getMonth() + 1;
-  const year = options.year ?? now.getFullYear();
+  const [todayYear = 0, todayMonth = 0] = businessToday().split("-").map(Number);
+  const month = options.month ?? todayMonth;
+  const year = options.year ?? todayYear;
   const db = getDb();
 
   const conditions: SQL[] = [

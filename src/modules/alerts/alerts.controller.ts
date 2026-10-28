@@ -4,6 +4,7 @@
  * Pure derivation at read time across certificates, crew certificates,
  * insurance, and unresolved deficiencies. No alerts table.
  */
+import { businessNow } from "@/lib/settings/business-time";
 import "server-only";
 
 import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
@@ -114,6 +115,7 @@ async function loadCertificateAlerts(
       row.typeOffsetDays,
     );
     const compliance = deriveComplianceStatus({
+      now: businessNow(),
       rule: { kind: row.ruleKind, offsetDays },
       expiryDate: row.expiryDate,
       windowOpenDate: row.windowOpenDate,
@@ -168,6 +170,7 @@ async function loadCrewCertificateAlerts(
 
   return rows.map((row) => {
     const compliance = deriveComplianceStatus({
+      now: businessNow(),
       rule: CREW_CERTIFICATE_REMINDER_RULE,
       expiryDate: row.expiryDate,
       criticalDays,
@@ -209,6 +212,7 @@ async function loadInsuranceAlerts(
 
   return rows.map((row) => {
     const compliance = deriveComplianceStatus({
+      now: businessNow(),
       rule: INSURANCE_REMINDER_RULE,
       expiryDate: row.expiryDate,
       criticalDays,
@@ -252,6 +256,7 @@ async function loadDeficiencyAlerts(
 
   return rows.map((row) => {
     const compliance = deriveComplianceStatus({
+      now: businessNow(),
       rule: DEFICIENCY_ALERT_REMINDER_RULE,
       expiryDate: row.dueDate,
       criticalDays,

@@ -4,6 +4,7 @@
  * `status === "closed"` without `closedDate` defaults closedDate to today
  * at parse time so controllers do not invent that rule ad hoc.
  */
+import { businessToday } from "@/lib/settings/business-time";
 import { z } from "zod";
 import { deficiencyStatusEnum } from "@/db/schema";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/lib/validation/form-fields";
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessToday();
 }
 
 export const deficiencyCreateSchema = z

@@ -1,3 +1,4 @@
+import { businessToday } from "@/lib/settings/business-time";
 import Link from "next/link";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
@@ -60,7 +61,7 @@ export async function DashboardTopBar() {
           items={items}
         />
         <time
-          dateTime={new Date().toISOString().slice(0, 10)}
+          dateTime={businessToday()}
           className="hidden text-[13px] text-[var(--text-tertiary)] sm:inline"
         >
           {today}
