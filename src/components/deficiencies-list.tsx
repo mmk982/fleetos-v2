@@ -113,6 +113,7 @@ export function DeficienciesList({
         onChange={(e) => pushFilters({ ...filters, status: e.target.value })}
       >
         <option value="">All statuses</option>
+        <option value="active">Open (not closed)</option>
         {DEFICIENCY_STATUSES.map((s) => (
           <option key={s} value={s}>
             {deficiencyStatusLabel(s)}

@@ -47,13 +47,19 @@ export function alertKindLabel(kind: AlertKind): string {
   return "Deficiency";
 }
 
-/** Parse main-list status query param (single actionable status or default). */
+/**
+ * Parse the main-list status query param: one actionable status, or a
+ * comma-separated set (e.g. `critical,expiring` — what the dashboard "Due
+ * certs" card links to). Unknown tokens are ignored; nothing valid → default
+ * (all actionable).
+ */
 export function parseAlertStatusFilter(
   raw: string | undefined,
 ): import("@/lib/expiry").ComplianceStatus[] | undefined {
   if (!raw) return undefined;
-  if (raw === "expired" || raw === "critical" || raw === "expiring") {
-    return [raw];
-  }
-  return undefined;
+  const wanted = new Set(raw.split(",").map((s) => s.trim()));
+  const statuses = (["expired", "critical", "expiring"] as const).filter((s) =>
+    wanted.has(s),
+  );
+  return statuses.length > 0 ? statuses : undefined;
 }

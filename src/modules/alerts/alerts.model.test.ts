@@ -36,4 +36,17 @@ describe("alerts.model", () => {
     expect(parseAlertStatusFilter("critical")).toEqual(["critical"]);
     expect(parseAlertStatusFilter("expiring")).toEqual(["expiring"]);
   });
+
+  it("parseAlertStatusFilter accepts a comma-separated set (dashboard Due certs)", () => {
+    expect(parseAlertStatusFilter("critical,expiring")).toEqual([
+      "critical",
+      "expiring",
+    ]);
+    expect(parseAlertStatusFilter("expiring, critical")).toEqual([
+      "critical",
+      "expiring",
+    ]);
+    expect(parseAlertStatusFilter("valid,bogus")).toBeUndefined();
+    expect(parseAlertStatusFilter("bogus,expired")).toEqual(["expired"]);
+  });
 });

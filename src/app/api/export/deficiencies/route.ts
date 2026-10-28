@@ -3,7 +3,6 @@
  * Session-authenticated list export with activity_logs audit row.
  */
 import { NextResponse } from "next/server";
-import type { DeficiencyStatus } from "@/db/schema";
 import {
   assertModuleAccess,
   ForbiddenError,
@@ -23,9 +22,9 @@ import {
 } from "@/lib/export/http";
 import { listDeficiencies } from "@/modules/deficiencies/deficiency.controller";
 import {
-  DEFICIENCY_STATUSES,
   deficiencySourceLabel,
   deficiencyStatusLabel,
+  parseDeficiencyStatusFilter,
 } from "@/modules/deficiencies/deficiency.model";
 
 type DefExportRow = {
@@ -65,9 +64,7 @@ export async function GET(request: Request) {
   }
 
   const statusRaw = url.searchParams.get("status") ?? "";
-  const status = DEFICIENCY_STATUSES.includes(statusRaw as DeficiencyStatus)
-    ? (statusRaw as DeficiencyStatus)
-    : undefined;
+  const status = parseDeficiencyStatusFilter(statusRaw);
 
   const sourceIdRaw = url.searchParams.get("sourceId") ?? "";
   const sourceId = UUID_RE.test(sourceIdRaw) ? sourceIdRaw : undefined;

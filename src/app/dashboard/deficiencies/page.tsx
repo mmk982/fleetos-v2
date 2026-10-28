@@ -8,8 +8,7 @@ import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
-import type { DeficiencyStatus } from "@/db/schema";
-import { DEFICIENCY_STATUSES } from "@/modules/deficiencies/deficiency.model";
+import { parseDeficiencyStatusFilter } from "@/modules/deficiencies/deficiency.model";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +26,7 @@ export default async function DeficienciesPage(props: {
   const access = toAccessContext(session);
   const sp = await props.searchParams;
 
-  const status = DEFICIENCY_STATUSES.includes(sp.status as DeficiencyStatus)
-    ? (sp.status as DeficiencyStatus)
-    : undefined;
+  const status = parseDeficiencyStatusFilter(sp.status);
 
   const [rows, vessels, sources, pscInspections] = await Promise.all([
     listDeficiencies(access, {

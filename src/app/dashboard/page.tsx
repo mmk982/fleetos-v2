@@ -78,7 +78,11 @@ export default async function DashboardPage() {
       kinds: ["certificate"],
       statuses: CERT_COUNT_STATUSES,
     }),
-    getAlerts(access, { kinds: ["certificate"], limit: PREVIEW_LIMIT }),
+    getAlerts(access, {
+      kinds: ["certificate"],
+      statuses: ["critical", "expiring"],
+      limit: PREVIEW_LIMIT,
+    }),
     getAlerts(access, { kinds: ["deficiency"], limit: PREVIEW_LIMIT }),
     listMonthlyForms(access, { month, year, status: "pending" }),
     listSelectableVessels(access).then((v) => v.length),
@@ -147,7 +151,7 @@ export default async function DashboardPage() {
     {
       label: "Open defs",
       value: openDeficienciesCount,
-      href: "/dashboard/deficiencies",
+      href: "/dashboard/deficiencies?status=active",
       icon: AlertTriangle,
       tone: "orange",
       valueTone: "red",
@@ -155,7 +159,7 @@ export default async function DashboardPage() {
     {
       label: "Due certs",
       value: dueSoonCertificates,
-      href: "/dashboard/alerts?kind=certificate",
+      href: "/dashboard/alerts?kind=certificate&status=critical,expiring",
       icon: Clock,
       tone: "amber",
     },
@@ -328,7 +332,7 @@ export default async function DashboardPage() {
               Certificates due soon
             </h2>
             <Link
-              href="/dashboard/alerts?kind=certificate"
+              href="/dashboard/alerts?kind=certificate&status=critical,expiring"
               className="text-[13px] font-medium text-[var(--accent)] hover:underline"
             >
               View all
@@ -364,7 +368,7 @@ export default async function DashboardPage() {
               Missing monthly forms
             </h2>
             <Link
-              href="/dashboard/monthly-forms"
+              href={`/dashboard/monthly-forms?month=${month}&year=${year}&displayStatus=pending`}
               className="text-[13px] font-medium text-[var(--accent)] hover:underline"
             >
               View all

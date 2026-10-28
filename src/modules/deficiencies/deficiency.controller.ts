@@ -42,7 +42,11 @@ import {
   removeStoredAttachmentFile,
 } from "@/lib/attachments/stream";
 import { logError } from "@/lib/logging";
-import type { DeficiencyListItem } from "./deficiency.model";
+import {
+  ACTIVE_DEFICIENCY_STATUSES,
+  type DeficiencyListItem,
+  type DeficiencyStatusFilter,
+} from "./deficiency.model";
 import type {
   DeficiencyCreateInput,
   DeficiencyUpdateInput,
@@ -128,7 +132,7 @@ function todayIso(): string {
 
 export type DeficiencyListFilters = {
   vesselId?: string;
-  status?: DeficiencyStatus;
+  status?: DeficiencyStatusFilter;
   sourceId?: string;
   category?: string;
 };
@@ -362,7 +366,7 @@ export async function getOpenDeficienciesCount(
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "deficiencies", "read");
   const conditions: SQL[] = [
-    inArray(deficiencies.status, ["open", "in_progress", "monitoring"]),
+    inArray(deficiencies.status, [...ACTIVE_DEFICIENCY_STATUSES]),
   ];
   const scopedVesselId = requireScopedVesselId(ctx);
   if (scopedVesselId) {
@@ -387,7 +391,11 @@ export async function listDeficiencies(
   if (scopedVesselId) {
     conditions.push(eq(deficiencies.vesselId, scopedVesselId));
   }
-  if (filters.status) {
+  if (filters.status === "active") {
+    conditions.push(
+      inArray(deficiencies.status, [...ACTIVE_DEFICIENCY_STATUSES]),
+    );
+  } else if (filters.status) {
     conditions.push(eq(deficiencies.status, filters.status));
   }
   if (filters.sourceId) {

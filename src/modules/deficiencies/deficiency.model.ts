@@ -31,6 +31,30 @@ export const DEFICIENCY_SOURCES = deficiencySourceEnum;
 /** Status options for forms / filters. */
 export const DEFICIENCY_STATUSES = deficiencyStatusEnum;
 
+/** Statuses that count as "still open" (everything except `closed`). */
+export const ACTIVE_DEFICIENCY_STATUSES: readonly DeficiencyStatus[] = [
+  "open",
+  "in_progress",
+  "monitoring",
+];
+
+/** List filter: one status, or `"active"` = any of {@link ACTIVE_DEFICIENCY_STATUSES}. */
+export type DeficiencyStatusFilter = DeficiencyStatus | "active";
+
+/**
+ * Parses a `?status=` value into a list filter; unknown values → `undefined`
+ * (no filter). `"active"` is what the dashboard "Open defs" card links to, so
+ * its count and the list it opens agree.
+ */
+export function parseDeficiencyStatusFilter(
+  raw: string | null | undefined,
+): DeficiencyStatusFilter | undefined {
+  if (raw === "active") return "active";
+  return (DEFICIENCY_STATUSES as readonly string[]).includes(raw ?? "")
+    ? (raw as DeficiencyStatus)
+    : undefined;
+}
+
 /**
  * StatusPill tone mapping for the 4-state deficiency lifecycle.
  *

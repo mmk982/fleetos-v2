@@ -21,6 +21,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: "expired", label: "Expired" },
   { value: "critical", label: "Critical" },
   { value: "expiring", label: "Expiring" },
+  { value: "critical,expiring", label: "Due soon (critical + expiring)" },
 ];
 
 export function AlertsFilters({
