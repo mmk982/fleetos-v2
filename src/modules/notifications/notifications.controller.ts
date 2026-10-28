@@ -2,6 +2,7 @@
  * Notifications data-access — lazy sync from Alerts + due Reminders,
  * list/unread, mark-read. Spec: PROJECT_PLAN.md §12a.
  */
+import { businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
 import { and, count, desc, eq, inArray, lte, type SQL } from "drizzle-orm";
@@ -17,11 +18,16 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   ForbiddenError,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { logError } from "@/lib/logging";
 import { getAlerts } from "@/modules/alerts/alerts.controller";
 import type { AlertItem } from "@/modules/alerts/alerts.model";
+import {
+  canReceiveNotification,
+  isDuplicateNotification,
+} from "./notifications.model";
 
 export class NotificationNotFoundError extends Error {
   readonly code = "NOTIFICATION_NOT_FOUND" as const;
@@ -43,10 +49,12 @@ type SyncCandidate = {
   notificationType: NotificationType;
   title: string;
   message: string;
+  /** Due/expiry date this item was raised for; `""` when it has none. */
+  cycleKey: string;
 };
 
 function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessToday();
 }
 
 function dedupeKey(
@@ -106,7 +114,7 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
     const [alerts, activeUsers, dueReminders] = await Promise.all([
       getAlerts(ctx),
       db
-        .select({ id: users.id })
+        .select({ id: users.id, role: users.role, vesselId: users.vesselId })
         .from(users)
         .where(eq(users.isActive, true)),
       db
@@ -138,6 +146,7 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
         notificationType,
         title: titleFromAlert(alert),
         message: messageFromAlert(alert),
+        cycleKey: alert.expiresAt ?? "",
       });
     }
 
@@ -148,6 +157,7 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
         notificationType: "reminder",
         title: reminder.title,
         message: `Reminder due ${reminder.reminderDate}.`,
+        cycleKey: reminder.reminderDate ?? "",
       });
     }
 
@@ -159,16 +169,23 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
         userId: notifications.userId,
         recordId: notifications.recordId,
         notificationType: notifications.notificationType,
+        cycleKey: notifications.cycleKey,
+        createdAt: notifications.createdAt,
       })
       .from(notifications)
       .where(inArray(notifications.recordId, recordIds));
 
-    const seen = new Set<string>();
+    // (user, record, type) → every notification already raised for it.
+    const seen = new Map<string, { cycleKey: string; createdAt: Date }[]>();
     for (const row of existing) {
       if (!row.userId || !row.recordId) continue;
-      seen.add(dedupeKey(row.userId, row.recordId, row.notificationType));
+      const key = dedupeKey(row.userId, row.recordId, row.notificationType);
+      const bucket = seen.get(key) ?? [];
+      bucket.push({ cycleKey: row.cycleKey, createdAt: row.createdAt });
+      seen.set(key, bucket);
     }
 
+    const now = new Date();
     const toInsert: {
       userId: string;
       vesselId: string | null;
@@ -176,17 +193,28 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
       title: string;
       message: string;
       notificationType: NotificationType;
+      cycleKey: string;
     }[] = [];
 
     for (const user of activeUsers) {
       for (const candidate of candidates) {
+        // Vessel-scoped / no-alerts-access recipients never get other vessels' items.
+        if (!canReceiveNotification(user, candidate.vesselId)) continue;
         const key = dedupeKey(
           user.id,
           candidate.recordId,
           candidate.notificationType,
         );
-        if (seen.has(key)) continue;
-        seen.add(key);
+        const bucket = seen.get(key) ?? [];
+        if (
+          bucket.some((e) =>
+            isDuplicateNotification(e, candidate.cycleKey, now),
+          )
+        ) {
+          continue;
+        }
+        bucket.push({ cycleKey: candidate.cycleKey, createdAt: now });
+        seen.set(key, bucket);
         toInsert.push({
           userId: user.id,
           vesselId: candidate.vesselId,
@@ -194,16 +222,21 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
           title: candidate.title,
           message: candidate.message,
           notificationType: candidate.notificationType,
+          cycleKey: candidate.cycleKey,
         });
       }
     }
 
     if (toInsert.length === 0) return;
 
-    // Chunk inserts to keep payload sizes reasonable.
+    // Chunk inserts to keep payload sizes reasonable. The unique index on
+    // (user, record, type, cycle) makes concurrent sweeps idempotent.
     const CHUNK = 200;
     for (let i = 0; i < toInsert.length; i += CHUNK) {
-      await db.insert(notifications).values(toInsert.slice(i, i + CHUNK));
+      await db
+        .insert(notifications)
+        .values(toInsert.slice(i, i + CHUNK))
+        .onConflictDoNothing();
     }
   } catch (error) {
     logError("NOTIFICATION_SYNC_FAILED", { error });
@@ -219,6 +252,12 @@ export async function listNotifications(
   assertOwnUser(ctx, filters.userId);
 
   const conditions: SQL[] = [eq(notifications.userId, filters.userId)];
+  // Vessel-scoped roles only see their own vessel (also hides rows fanned out
+  // before the sync fix); throws for a misprovisioned scoped user (fail-closed).
+  const scopedVesselId = requireScopedVesselId(ctx);
+  if (scopedVesselId) {
+    conditions.push(eq(notifications.vesselId, scopedVesselId));
+  }
   if (filters.isRead !== undefined) {
     conditions.push(eq(notifications.isRead, filters.isRead));
   }
@@ -243,12 +282,18 @@ export async function getUnreadCount(
   assertModuleAccess(ctx, "alerts", "read");
   assertOwnUser(ctx, userId);
 
+  const conditions: SQL[] = [
+    eq(notifications.userId, userId),
+    eq(notifications.isRead, false),
+  ];
+  const scopedVesselId = requireScopedVesselId(ctx);
+  if (scopedVesselId) {
+    conditions.push(eq(notifications.vesselId, scopedVesselId));
+  }
   const rows = await getDb()
     .select({ n: count() })
     .from(notifications)
-    .where(
-      and(eq(notifications.userId, userId), eq(notifications.isRead, false)),
-    );
+    .where(and(...conditions));
   return rows[0]?.n ?? 0;
 }
 

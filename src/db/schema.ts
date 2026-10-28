@@ -880,12 +880,24 @@ export const notifications = pgTable(
     notificationType: text("notification_type", {
       enum: notificationTypeEnum,
     }).notNull(),
+    /**
+     * Dedupe "cycle" — the due/expiry date the notification was raised for
+     * (`""` for legacy rows and items without a date). A renewed certificate
+     * gets a new date, hence a new cycle, hence a fresh notification.
+     */
+    cycleKey: text("cycle_key").notNull().default(""),
     isRead: boolean("is_read").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [
+    uniqueIndex("notifications_user_record_type_cycle_uq").on(
+      t.userId,
+      t.recordId,
+      t.notificationType,
+      t.cycleKey,
+    ),
     index("notifications_user_id_idx").on(t.userId),
     index("notifications_user_read_idx").on(t.userId, t.isRead),
     index("notifications_created_at_idx").on(t.createdAt),
