@@ -35,6 +35,50 @@ export type RlsFixtures = {
   accessLogA: string;
   accessLogB: string;
   certificateTypeId: string;
+  // Phase 2
+  certEventA: string;
+  certEventB: string;
+  certAttachA: string;
+  certAttachB: string;
+  deficiencyA: string;
+  deficiencyB: string;
+  deficiencyAttachA: string;
+  deficiencyAttachB: string;
+  insuranceA: string;
+  insuranceB: string;
+  insuranceAttachA: string;
+  insuranceAttachB: string;
+  manualA: string;
+  manualB: string;
+  manualRevisionA: string;
+  manualRevisionB: string;
+  drawingA: string;
+  drawingB: string;
+  drawingAttachA: string;
+  drawingAttachB: string;
+  monthlyReqA: string;
+  monthlyReqB: string;
+  monthlyFormA: string;
+  monthlyFormB: string;
+  monthlyAttachA: string;
+  monthlyAttachB: string;
+  particularsA: string;
+  particularsB: string;
+  particularsAttachA: string;
+  particularsAttachB: string;
+  noteA: string;
+  noteB: string;
+  reminderA: string;
+  reminderB: string;
+  reminderFleet: string;
+  auditA: string;
+  auditB: string;
+  pscA: string;
+  pscB: string;
+  notifA: string;
+  notifB: string;
+  ismTemplateId: string;
+  deficiencySourceId: string;
 };
 
 function ownerAdminUrl(database: string): string {
@@ -306,6 +350,378 @@ async function seedFixtures(
     },
   ]);
 
+  // --- Phase 2 fixtures ---
+  const certEventA = randomUUID();
+  const certEventB = randomUUID();
+  await db.insert(schema.certificateEvents).values([
+    {
+      id: certEventA,
+      certificateId: certA,
+      eventType: "issued",
+      eventDate: "2024-01-01",
+    },
+    {
+      id: certEventB,
+      certificateId: certB,
+      eventType: "issued",
+      eventDate: "2024-01-01",
+    },
+  ]);
+
+  const certAttachA = randomUUID();
+  const certAttachB = randomUUID();
+  await db.insert(schema.certificateAttachments).values([
+    {
+      id: certAttachA,
+      certificateId: certA,
+      fileName: "cert-a.pdf",
+      filePath: "cert-a.pdf",
+    },
+    {
+      id: certAttachB,
+      certificateId: certB,
+      fileName: "cert-b.pdf",
+      filePath: "cert-b.pdf",
+    },
+  ]);
+
+  const [sourceRow] = await db
+    .select({ id: schema.deficiencySources.id })
+    .from(schema.deficiencySources)
+    .limit(1);
+  const deficiencySourceId = sourceRow!.id;
+
+  const deficiencyA = randomUUID();
+  const deficiencyB = randomUUID();
+  await db.insert(schema.deficiencies).values([
+    {
+      id: deficiencyA,
+      vesselId: vesselA,
+      title: "Def A",
+      sourceId: deficiencySourceId,
+      status: "open",
+    },
+    {
+      id: deficiencyB,
+      vesselId: vesselB,
+      title: "Def B",
+      sourceId: deficiencySourceId,
+      status: "open",
+    },
+  ]);
+
+  const deficiencyAttachA = randomUUID();
+  const deficiencyAttachB = randomUUID();
+  await db.insert(schema.deficiencyAttachments).values([
+    {
+      id: deficiencyAttachA,
+      deficiencyId: deficiencyA,
+      fileName: "def-a.pdf",
+      filePath: "def-a.pdf",
+    },
+    {
+      id: deficiencyAttachB,
+      deficiencyId: deficiencyB,
+      fileName: "def-b.pdf",
+      filePath: "def-b.pdf",
+    },
+  ]);
+
+  const insuranceA = randomUUID();
+  const insuranceB = randomUUID();
+  await db.insert(schema.insurancePolicies).values([
+    {
+      id: insuranceA,
+      vesselId: vesselA,
+      policyType: "hm",
+      expiryDate: "2030-01-01",
+    },
+    {
+      id: insuranceB,
+      vesselId: vesselB,
+      policyType: "hm",
+      expiryDate: "2030-01-01",
+    },
+  ]);
+
+  const insuranceAttachA = randomUUID();
+  const insuranceAttachB = randomUUID();
+  await db.insert(schema.insuranceAttachments).values([
+    {
+      id: insuranceAttachA,
+      insurancePolicyId: insuranceA,
+      fileName: "ins-a.pdf",
+      filePath: "ins-a.pdf",
+    },
+    {
+      id: insuranceAttachB,
+      insurancePolicyId: insuranceB,
+      fileName: "ins-b.pdf",
+      filePath: "ins-b.pdf",
+    },
+  ]);
+
+  const [ismCat] = await db
+    .insert(schema.ismTemplateCategories)
+    .values({ id: randomUUID(), name: "RLS Cat", isCustom: true })
+    .returning({ id: schema.ismTemplateCategories.id });
+
+  const [ismTemplate] = await db
+    .insert(schema.ismTemplates)
+    .values({
+      id: randomUUID(),
+      formCode: "RLS-T1",
+      formName: "RLS Template",
+      categoryId: ismCat.id,
+      status: "active",
+    })
+    .returning({ id: schema.ismTemplates.id });
+  const ismTemplateId = ismTemplate.id;
+
+  const manualA = randomUUID();
+  const manualB = randomUUID();
+  await db.insert(schema.manuals).values([
+    { id: manualA, vesselId: vesselA, title: "Manual A" },
+    { id: manualB, vesselId: vesselB, title: "Manual B" },
+  ]);
+
+  const manualRevisionA = randomUUID();
+  const manualRevisionB = randomUUID();
+  await db.insert(schema.manualRevisions).values([
+    {
+      id: manualRevisionA,
+      manualId: manualA,
+      fileName: "man-a.pdf",
+      filePath: "man-a.pdf",
+      isCurrentVersion: true,
+    },
+    {
+      id: manualRevisionB,
+      manualId: manualB,
+      fileName: "man-b.pdf",
+      filePath: "man-b.pdf",
+      isCurrentVersion: true,
+    },
+  ]);
+
+  const [drawingCat] = await db
+    .insert(schema.drawingCategories)
+    .values({ id: randomUUID(), name: "RLS Drawing Cat", isCustom: true })
+    .returning({ id: schema.drawingCategories.id });
+
+  const drawingA = randomUUID();
+  const drawingB = randomUUID();
+  await db.insert(schema.drawings).values([
+    {
+      id: drawingA,
+      vesselId: vesselA,
+      categoryId: drawingCat.id,
+      drawingName: "Drawing A",
+    },
+    {
+      id: drawingB,
+      vesselId: vesselB,
+      categoryId: drawingCat.id,
+      drawingName: "Drawing B",
+    },
+  ]);
+
+  const drawingAttachA = randomUUID();
+  const drawingAttachB = randomUUID();
+  await db.insert(schema.drawingAttachments).values([
+    {
+      id: drawingAttachA,
+      drawingId: drawingA,
+      fileName: "drw-a.pdf",
+      filePath: "drw-a.pdf",
+    },
+    {
+      id: drawingAttachB,
+      drawingId: drawingB,
+      fileName: "drw-b.pdf",
+      filePath: "drw-b.pdf",
+    },
+  ]);
+
+  const monthlyReqA = randomUUID();
+  const monthlyReqB = randomUUID();
+  await db.insert(schema.monthlyFormRequirements).values([
+    {
+      id: monthlyReqA,
+      vesselId: vesselA,
+      ismTemplateId,
+      frequency: "monthly",
+    },
+    {
+      id: monthlyReqB,
+      vesselId: vesselB,
+      ismTemplateId,
+      frequency: "monthly",
+    },
+  ]);
+
+  const monthlyFormA = randomUUID();
+  const monthlyFormB = randomUUID();
+  await db.insert(schema.monthlyExecutedForms).values([
+    {
+      id: monthlyFormA,
+      vesselId: vesselA,
+      ismTemplateId,
+      formName: "Form A",
+      month: 1,
+      year: 2030,
+      status: "pending",
+    },
+    {
+      id: monthlyFormB,
+      vesselId: vesselB,
+      ismTemplateId,
+      formName: "Form B",
+      month: 1,
+      year: 2030,
+      status: "pending",
+    },
+  ]);
+
+  const monthlyAttachA = randomUUID();
+  const monthlyAttachB = randomUUID();
+  await db.insert(schema.monthlyExecutedFormAttachments).values([
+    {
+      id: monthlyAttachA,
+      executedFormId: monthlyFormA,
+      fileName: "mf-a.pdf",
+      filePath: "mf-a.pdf",
+    },
+    {
+      id: monthlyAttachB,
+      executedFormId: monthlyFormB,
+      fileName: "mf-b.pdf",
+      filePath: "mf-b.pdf",
+    },
+  ]);
+
+  const particularsA = randomUUID();
+  const particularsB = randomUUID();
+  await db.insert(schema.vesselParticulars).values([
+    { id: particularsA, vesselId: vesselA, isCurrent: true },
+    { id: particularsB, vesselId: vesselB, isCurrent: true },
+  ]);
+
+  const particularsAttachA = randomUUID();
+  const particularsAttachB = randomUUID();
+  await db.insert(schema.vesselParticularsAttachments).values([
+    {
+      id: particularsAttachA,
+      particularsId: particularsA,
+      fileName: "vp-a.pdf",
+      filePath: "vp-a.pdf",
+    },
+    {
+      id: particularsAttachB,
+      particularsId: particularsB,
+      fileName: "vp-b.pdf",
+      filePath: "vp-b.pdf",
+    },
+  ]);
+
+  const noteA = randomUUID();
+  const noteB = randomUUID();
+  await db.insert(schema.vesselNotes).values([
+    { id: noteA, vesselId: vesselA, body: "Note A", authorId: users.admin },
+    { id: noteB, vesselId: vesselB, body: "Note B", authorId: users.admin },
+  ]);
+
+  const reminderA = randomUUID();
+  const reminderB = randomUUID();
+  const reminderFleet = randomUUID();
+  await db.insert(schema.reminders).values([
+    {
+      id: reminderA,
+      vesselId: vesselA,
+      title: "Rem A",
+      type: "custom",
+      reminderDate: "2030-06-01",
+      status: "pending",
+    },
+    {
+      id: reminderB,
+      vesselId: vesselB,
+      title: "Rem B",
+      type: "custom",
+      reminderDate: "2030-06-01",
+      status: "pending",
+    },
+    {
+      id: reminderFleet,
+      vesselId: null,
+      title: "Fleet Rem",
+      type: "custom",
+      reminderDate: "2030-06-01",
+      status: "pending",
+    },
+  ]);
+
+  const auditA = randomUUID();
+  const auditB = randomUUID();
+  await db.insert(schema.audits).values([
+    {
+      id: auditA,
+      vesselId: vesselA,
+      auditType: "ISSC",
+      auditDate: "2024-01-01",
+    },
+    {
+      id: auditB,
+      vesselId: vesselB,
+      auditType: "ISSC",
+      auditDate: "2024-01-01",
+    },
+  ]);
+
+  const pscA = randomUUID();
+  const pscB = randomUUID();
+  await db.insert(schema.pscInspections).values([
+    {
+      id: pscA,
+      vesselId: vesselA,
+      port: "Port A",
+      inspectionDate: "2024-01-01",
+      authority: "PSC",
+      result: "no_deficiencies",
+    },
+    {
+      id: pscB,
+      vesselId: vesselB,
+      port: "Port B",
+      inspectionDate: "2024-01-01",
+      authority: "PSC",
+      result: "no_deficiencies",
+    },
+  ]);
+
+  const notifA = randomUUID();
+  const notifB = randomUUID();
+  await db.insert(schema.notifications).values([
+    {
+      id: notifA,
+      userId: users.vesselUserA,
+      vesselId: vesselA,
+      recordId: certA,
+      title: "Notif A",
+      notificationType: "certificate_due",
+      cycleKey: "2030-01-01",
+    },
+    {
+      id: notifB,
+      userId: users.vesselUserB,
+      vesselId: vesselB,
+      recordId: certB,
+      title: "Notif B",
+      notificationType: "certificate_due",
+      cycleKey: "2030-01-01",
+    },
+  ]);
+
   return {
     vesselA,
     vesselB,
@@ -321,6 +737,49 @@ async function seedFixtures(
     accessLogA,
     accessLogB,
     certificateTypeId: typeRow.id,
+    certEventA,
+    certEventB,
+    certAttachA,
+    certAttachB,
+    deficiencyA,
+    deficiencyB,
+    deficiencyAttachA,
+    deficiencyAttachB,
+    insuranceA,
+    insuranceB,
+    insuranceAttachA,
+    insuranceAttachB,
+    manualA,
+    manualB,
+    manualRevisionA,
+    manualRevisionB,
+    drawingA,
+    drawingB,
+    drawingAttachA,
+    drawingAttachB,
+    monthlyReqA,
+    monthlyReqB,
+    monthlyFormA,
+    monthlyFormB,
+    monthlyAttachA,
+    monthlyAttachB,
+    particularsA,
+    particularsB,
+    particularsAttachA,
+    particularsAttachB,
+    noteA,
+    noteB,
+    reminderA,
+    reminderB,
+    reminderFleet,
+    auditA,
+    auditB,
+    pscA,
+    pscB,
+    notifA,
+    notifB,
+    ismTemplateId,
+    deficiencySourceId,
   };
 }
 

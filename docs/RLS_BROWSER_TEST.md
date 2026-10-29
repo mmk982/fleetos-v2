@@ -333,3 +333,122 @@ rm -rf .next; npx next build --webpack
 | Attachment A 404 on first fetch | **Test-data** (`file_path` missing `data/attachments/` prefix); fixed in local DB; downloads work |
 
 No new RLS data-leak defects observed in this retest.
+
+---
+
+## 11. Phase 2 browser verification (2026-10-29, `cursor/rls-phase2`, no commit)
+
+**Method:** Playwright against `http://localhost:3000` + owner SQL seed + Cursor browser login smoke.  
+**Runtime:** `DATABASE_URL=fleetos_app`, migration `0026_rls_phase2` applied (`relrowsecurity=t` on all 20 phase-2 tables).
+
+### 11.1 Phase-2 RLS-TEST inventory (do not delete yet)
+
+| Kind | Id | Notes |
+|---|---|---|
+| ISM template | `11111111-1111-4111-8111-111111111101` | RLS-TEST Monthly Drill |
+| Def A/B | `d0aaaaaa-…aaa1` / `d0bbbbbb-…bbb1` | + attachments `d1aaaaaa` / `d1bbbbbb` |
+| Insurance A/B | `10aaaaaa-…aaa1` / `10bbbbbb-…bbb1` | + attachments `11aaaaaa` / `11bbbbbb` |
+| Manual A/B | `20aaaaaa-…aaa1` / `20bbbbbb-…bbb1` | revisions `21aaaaaa` / `21bbbbbb` |
+| Drawing A/B | `30aaaaaa-…aaa1` / `30bbbbbb-…bbb1` | attachments `31aaaaaa` / `31bbbbbb` |
+| Monthly req/exec A/B | `f0…` / `f1…` | attach A `f2aaaaaa-…` |
+| Particulars A/B | `40aaaaaa-…` / `40bbbbbb-…` | attach A `41aaaaaa-…` |
+| Notes A/B | `50aaaaaa-…` / `50bbbbbb-…` | |
+| Reminders A/B/Fleet | `60aaaaaa-…` / `60bbbbbb-…` / `60ffffff-…` | Fleet = `vessel_id` NULL |
+| Audits A/B | `70aaaaaa-…` / `70bbbbbb-…` | |
+| PSC A/B | `80aaaaaa-…` / `80bbbbbb-…` | |
+| Cert events A/B | `e0aaaaaa-…` / `e0bbbbbb-…` | on existing phase-1 certs |
+| Notifs vuA/vuB | `90aaaaaa-…` / `90bbbbbb-…` | own-user only |
+| Attachment files | `data/attachments/rls-test-*.pdf` | |
+
+### 11.2 Automated verify (this branch)
+
+```
+git log --oneline -3
+→ b09abf5 chore(deps): security upgrade next 16.4.3…
+→ 65de95c feat(rls): run phase-1 modules through withDb…
+→ 3a46c39 feat(db): row level security phase 1…
+
+npx tsc --noEmit → exit 0
+npx eslint . → exit 0
+npx vitest run → 33 files / 211 tests passed
+npm run test:integration → phase1 14 + phase2 12 = 26 passed
+npm run db:migrate && npm run db:check → ok
+npx next build --webpack → exit 0 (then .next removed)
+npm audit --omit=dev --audit-level=high → exit 0 (2 moderate uuid/exceljs only)
+```
+
+`relrowsecurity=t` confirmed for all 20 phase-2 tables; `\d+ deficiencies` and `\d+ notifications` show policies `TO fleetos_app`.
+
+### 11.3 User × module matrix (phase 2)
+
+Legend: **PASS** = A-only or both as expected; no B leak for scoped users.
+
+| User | Modules checked | Result | Evidence |
+|---|---|---|---|
+| `vuA` | Deficiencies, Insurance, Manuals, Drawings, Reminders, Audits, PSC, Particulars, Alerts, Notifications lists | **PASS** | `hasA: true`, `hasB: false` on each list; hits show only Vessel A / Def A / … |
+| `vuA` | Monthly form **detail** A | **PASS** | `/dashboard/monthly-forms/f1aaaaaa-…` **200**, Monthly Drill A |
+| `vuA` | Monthly form **detail** B | **PASS** | **404** |
+| `vuA` | Monthly forms **list** | **FAIL** (app) | **500** `ForbiddenError: Insufficient access for monthly form requirements (need full).` — page always loads requirements CRUD |
+| `vuA` | Vessel detail `?tab=notes` | **FAIL** (app) | **500** `Insufficient access for module "vessels" (need read).` (`vessel_user` has `vessels: none`) |
+| `vuB` | Deficiencies, Notifications | **PASS** | Only B; `RLS-TEST Notif vuB` present; no vuA notif title |
+| `mgmtA` | Deficiencies, Reminders | **PASS** | A only; no Fleet reminder; no B |
+| `ro1` | Deficiencies, Reminders | **PASS** | A **and** B visible (office) |
+| `admin1` | Deficiencies, Reminders, Notifications | **PASS** | A+B; Fleet reminder visible; sync notifs for both vessels |
+
+### 11.4 IDOR / attachments (`vuA`)
+
+| Attempt | Status / body | Result |
+|---|---|---|
+| Def/Ins/Man/Draw/Audit/PSC detail B URLs | **404** | **PASS** |
+| `GET /api/attachments/d1aaaaaa-…` (def A) | **200** `RLS-TEST deficiency attach A` | **PASS** |
+| Def/Ins/Man attach B | **404** Attachment not found | **PASS** (RLS hides row) |
+| `GET /api/export/deficiencies?format=xlsx` | **403** export module | **PASS** (`vessel_user` export:none) |
+
+### 11.5 Writes vs `MODULE_PERMISSIONS`
+
+| Actor | Action | Result |
+|---|---|---|
+| `vuA` | Monthly form **submit** on A | **PASS** | Dialog upload → status **Submitted**, attachment `rls-submit-a.pdf`; RLS write allowed for `vessel_user` |
+| `vuA` | Create vessel note | **Denied by design** — `particulars: read` only; RLS `app_can_write_particulars()` is admin/super. Prompt’s “create a note as vuA” conflicts with matrix; documented, not loosened |
+| Integration | `vessel_user` INSERT executed form on A; refused requirements/notes | **PASS** (see `rls-phase2.test.ts`) |
+
+### 11.10 Follow-up matrix (super1 / vuNone / dashboard)
+
+| User | Check | Result | Evidence |
+|---|---|---|---|
+| `super1` | Deficiencies / Manuals / Reminders / Monthly forms list | **PASS** | A **and** B; Fleet reminder visible; monthly list **200** (full access) |
+| `vuNone` | `/dashboard`, `/dashboard/notifications` | **PASS** | Notice UI; no A/B data |
+| `vuNone` | `/dashboard/deficiencies`, `/reminders` | **FAIL** (app) | **500** — phase-1 notice not wired on these phase-2 list pages |
+| `vuA` | Dashboard cards + links | **PASS** | Open defs / manuals / pending forms; Vessel A / Def A only; **no** B |
+| `vuA` | Monthly submit e2e | **PASS** | See §11.5 — Submitted + file attached |
+
+### 11.6 Exports (`mgmtA`)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `/api/export/deficiencies?format=xlsx` | **PASS** | HTTP 200, 6656 bytes; inflated `sharedStrings`/`sheet1`: `RLS-TEST Vessel A`, `RLS-DEF-A1`, `RLS-TEST Def A` only; **no** Def B / Vessel B |
+
+### 11.7 Concurrency / pool (`admin1`)
+
+| Check | Result | Evidence |
+|---|---|---|
+| 15 parallel fetches (deficiencies/reminders) | **PASS** | All **200**, ~6868 ms |
+| `pg_stat_activity` `fleetos_app` idle in transaction | **PASS** | `idle_in_tx = 0` (0 rows after stress) |
+
+### 11.8 Server console
+
+- Monthly-forms list: `ForbiddenError` for requirements (app) — no `row-level security` violation strings for happy paths.
+- No leaked `idle in transaction` after parallel load.
+- Login hydration warning on `login-form.tsx` (pre-existing app/noise).
+
+### 11.9 Defects found (phase 2 browser)
+
+| # | Finding | Class |
+|---|---|---|
+| 1 | `/dashboard/monthly-forms` always calls `listMonthlyFormRequirements` (full-only) → **500** for `vessel_user` / `management_user` / `read_only` | **App bug** (not RLS) |
+| 2 | Vessel detail tabs require `vessels` read → **500** for `vessel_user` even on own vessel notes | **App bug** (permissions/UI) |
+| 3 | Prompt expected vuA note create; matrix + RLS correctly refuse (`particulars` write = office) | **Test-expectation / product** — keep RLS aligned with `MODULE_PERMISSIONS` |
+| 4 | Login form React hydration overlay | **App bug unrelated to RLS** |
+
+No cross-vessel **data leak** observed for phase-2 modules on list/detail/attachment/export paths tested.
+
