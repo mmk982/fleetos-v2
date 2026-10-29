@@ -1,10 +1,13 @@
 import { defineConfig } from "drizzle-kit";
+import { resolveMigrateDatabaseUrl } from "./src/db/urls";
+
+const { url } = resolveMigrateDatabaseUrl();
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://fleetos:fleetos@localhost:5433/fleetos",
+    url,
   },
 });

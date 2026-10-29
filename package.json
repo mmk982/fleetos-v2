@@ -16,7 +16,10 @@
     "db:seed:drawings": "tsx scripts/seed-drawings.ts",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:ensure-app-role": "tsx scripts/ensure-app-role.ts",
+    "db:check": "drizzle-kit check"
   },
   "dependencies": {
     "@sentry/node": "^10.73.0",

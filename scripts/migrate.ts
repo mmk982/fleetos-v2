@@ -3,21 +3,32 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import * as schema from "../src/db/schema";
+import { resolveMigrateDatabaseUrl } from "../src/db/urls";
 import { seedCertificateReferenceData } from "../src/db/seed/certificates";
 import { seedCrewReferenceData } from "../src/db/seed/crew";
 import { seedDrawingReferenceData } from "../src/db/seed/drawings";
 import { seedIsmTemplateReferenceData } from "../src/db/seed/ism-templates";
-
-const defaultDatabaseUrl = "postgres://fleetos:fleetos@localhost:5433/fleetos";
+import { ensureAppRoleGrants } from "./ensure-app-role";
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
+  const { url: connectionString, usedFallback } = resolveMigrateDatabaseUrl();
+  if (usedFallback) {
+    console.log(
+      "db:migrate: DATABASE_MIGRATE_URL unset — falling back to DATABASE_URL (or local owner default).",
+    );
+  }
+
+  await ensureAppRoleGrants(connectionString);
+
   const pool = new Pool({ connectionString });
   const db = drizzle(pool, { schema });
 
   try {
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
     console.log("Migrations applied.");
+
+    // Re-apply grants for any tables created by this migrate run.
+    await ensureAppRoleGrants(connectionString);
 
     const certResult = await seedCertificateReferenceData(db);
     console.log(

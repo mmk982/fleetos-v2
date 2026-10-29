@@ -39,7 +39,8 @@ Variables read under `src/` (plus the documented legacy alias):
 
 | Name | Required? | Purpose | Notes |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | No (local default) | Postgres connection string | `src/db/client.ts` falls back to `postgres://fleetos:fleetos@localhost:5433/fleetos` when unset |
+| `DATABASE_URL` | No (local default) | Runtime Postgres URL (**`fleetos_app`**, RLS) | Default `postgres://fleetos_app:fleetos_app@localhost:5433/fleetos` (`src/db/urls.ts`). See `docs/RLS.md`. |
+| `DATABASE_MIGRATE_URL` | No | Owner URL for migrate/seed | Falls back to `DATABASE_URL` (logged). Local default `postgres://fleetos:fleetos@localhost:5433/fleetos` |
 | `SESSION_SECRET` | Yes (at session use) | HMAC key for the `fleetos_session` cookie | Must be ≥ 32 chars after trim (`src/lib/auth/session.ts` throws otherwise) |
 | `CRON_SECRET` | Yes (for cron) | Bearer token for `/api/internal/email-digest` | Must be ≥ 32 chars; missing/short secrets fail closed (`src/lib/auth/cron-auth.ts`) |
 | `APP_BASE_URL` | No | Absolute origin used in digest email links | Defaults to `http://localhost:3000` when unset (`email-digest.controller.ts`) |

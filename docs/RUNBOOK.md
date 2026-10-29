@@ -46,9 +46,22 @@ same time. Missing or short secrets cause the route to return **401**.
 npm run db:migrate
 ```
 
-Runs `tsx scripts/migrate.ts`: applies `drizzle/` migrations, then
+Runs `tsx scripts/migrate.ts`: ensures role `fleetos_app` + grants, applies
+`drizzle/` migrations (including RLS phase 1 — `docs/RLS.md`), then
 idempotent reference seeds (certificates, crew, ISM categories, drawing
 categories).
+
+Use **two** URLs in `.env.local` (see `.env.example`):
+
+- `DATABASE_MIGRATE_URL` — table owner (`fleetos` locally)
+- `DATABASE_URL` — runtime `fleetos_app` (RLS enforced)
+
+If `DATABASE_MIGRATE_URL` is unset, migrate falls back to `DATABASE_URL` and
+prints a log line. Fresh Docker volumes also run `docker/initdb/01-app-role.sql`.
+
+```bash
+npm run db:ensure-app-role   # grants only, if needed
+```
 
 Re-seed one catalog without migrate:
 
@@ -63,6 +76,9 @@ npm run db:seed:drawings
 Migration `0024_notifications_cycle_key` adds `notifications.cycle_key` and a
 unique index; it first deletes duplicate notification rows (keeps the oldest),
 so it is safe on a database that already has duplicates.
+
+Migration `0025_rls_phase1` enables RLS on `certificates`, `crew_members`,
+`crew_certificates`, `crew_certificate_attachments`, and `access_logs`.
 
 ## Company time zone and critical days
 

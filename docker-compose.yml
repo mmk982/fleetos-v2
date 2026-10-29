@@ -22,6 +22,9 @@ services:
       POSTGRES_DB: fleetos
     volumes:
       - fleetos_pg_data:/var/lib/postgresql/data
+      # Role bootstrap for fresh volumes only (existing volumes: npm run db:migrate
+      # calls scripts/ensure-app-role.ts).
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fleetos -d fleetos"]
       interval: 5s
