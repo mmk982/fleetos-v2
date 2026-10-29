@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: "Sign in — FleetOS",
 };
 
+// Company profile is DB-backed — must not be prerendered at image-build time
+// (no Postgres in the Docker build context). Same pattern as dashboard pages.
+export const dynamic = "force-dynamic";
+
 export default async function LoginPage() {
   const profile = await getCompanyProfile();
   const brand = profile.companyName?.trim() || "FleetOS";

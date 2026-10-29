@@ -100,6 +100,38 @@ Scripts calling these endpoints must send `Origin: <APP_BASE_URL>`.
 Uploaded files are stored under `data/attachments/` (see module controllers
 and `src/lib/attachments/stream.ts`). `/data/` is git-ignored (`.gitignore`).
 
-This directory must be backed up together with the database.
+This directory must be backed up together with the database (see below).
 
-TODO: backup procedure not defined yet (see MASTER_PLAN Phase 7).
+## Backups & restore
+
+**Procedure (production):** `scripts/backup/backup.sh` produces a timestamped
+bundle: `pg_dump -Fc` (owner/`DATABASE_MIGRATE_URL`) + tar of the attachments
+volume, encrypted with **age** (`AGE_RECIPIENT` = public key only on the
+server). SHA-256 checksum beside the bundle. Optional offsite copy via
+`rclone` (`RCLONE_REMOTE`, e.g. Backblaze B2) — if unset, the script logs a
+**loud warning** and continues (on-box only).
+
+**Retention (configurable defaults):** 7 daily / 4 weekly / 6 monthly
+(`BACKUP_RETENTION_DAILY|WEEKLY|MONTHLY`).
+
+**Restore:** `scripts/backup/restore.sh <bundle.tar.age>` into an explicit
+`TARGET_DATABASE_URL` + `TARGET_ATTACHMENTS_DIR`. Refuses targets that look
+like the live DB unless `--i-know-this-overwrites-production` is passed.
+Verifies checksum first; prints row counts + `relrowsecurity` for phase-1
+tables.
+
+**Monthly drill:** `scripts/backup/verify-restore.sh` (throwaway Postgres
+container). Scheduling units: `deploy/systemd/fleetos-backup.timer` — enable
+on the VPS (`docs/DEPLOY.md`); not applied by CI/agents.
+
+**age private key:** held **offline** by `[HUMAN_KEY_HOLDER — CHANGE_ME]`
+(password-manager vault / sealed backup). Never store the private key on the
+app VPS.
+
+**RPO / RTO:** *targets to be confirmed by the human* (not contractual
+promises in this repo). Starting points for discussion: RPO ≈ 24h (daily
+timer) unless more frequent backups are scheduled; RTO = time to provision
+restore host + run `restore.sh` + smoke tests (measure during the first
+drill).
+
+Full VPS ordering: `docs/DEPLOY.md`.

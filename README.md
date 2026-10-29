@@ -92,9 +92,25 @@ curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
 | `npm run db:migrate` | `tsx scripts/migrate.ts` |
 | `npm run dev` | `next dev` (after `predev` migrate) |
 
+## Production deploy (Phase 7)
+
+Authoritative runbook: **`docs/DEPLOY.md`**. Compose file:
+`docker-compose.prod.yml` (app + Postgres + Caddy; optional GlitchTip
+profile). Env template: `.env.production.example` → `.env.production` on the
+host (git-ignored). Backups: `scripts/backup/` + `docs/RUNBOOK.md`.
+
+Local image build (no secrets baked in):
+
+```bash
+docker build -t fleetos:local .
+```
+
+VPS hardening, DNS, TLS, LUKS, B2, and age key custody are **`[HUMAN]`** steps
+in `docs/DEPLOY.md` — this agent cannot reach the VPS.
+
 ## CI / staging deploy
 
-- **CI** (`.github/workflows/ci.yml`): lint (`npm run lint`), typecheck (`npx tsc --noEmit`), and tests (`npm test`) on every push/PR.
+- **CI** (`.github/workflows/ci.yml`): lint, typecheck, tests, `npm audit --omit=dev --audit-level=high`, and Trivy (filesystem + image after `docker build`) on every push/PR.
 - **Staging deploy** (`.github/workflows/deploy-staging.yml`): manual `workflow_dispatch`, gated on the GitHub Environment named `staging`. It is still a **scaffold**: when staging secrets are missing it prints warnings and **exits 0**.
 
 Required Action secrets (document only — never commit values):

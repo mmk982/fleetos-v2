@@ -102,7 +102,7 @@ Notes:
 | 268 | email_deliveries schema | **DONE** | `schema.ts` + migration | — |
 | 269 | sendEmail adapter | **DONE** | `src/lib/email/send.ts` Resend | — |
 | 270 | Digest job | **DONE** | `email-digest.controller.ts` `runEmailDigest` | — |
-| 271 | Cron in Phase 7 runbook | **PARTIAL** | App route + README curl; no `docker-compose.prod.yml` cron | Prod scheduler still missing |
+| 271 | Cron in Phase 7 runbook | **PARTIAL** | `deploy/systemd/fleetos-email-digest.timer` authored; not enabled on VPS | `[HUMAN]` enable timer |
 | 272 | Settings digest toggle | **DONE** | `src/lib/settings/email-digest.ts`; settings actions | — |
 | 273 | Deep links need session (no tokens) | **DONE** | Digest builds app URLs only (`email-digest.controller.ts`) | — |
 | 274 | email_deliveries logging | **DONE** | Inserts into `email_deliveries` | — |
@@ -116,7 +116,7 @@ Notes:
 | 346 | RLS policies after Phase 6 | **NOT DONE** | Same as L138 | — |
 | 347 | Sidebar visibility decision | **DONE** | `dashboard-sidebar.tsx` hides unauthorized leaves | Product choice: hide (not disable/403) |
 | 348 | Tool: Claude Code | **SUPERSEDED** | Process instruction | Not a code deliverable |
-| 356 | docker-compose.prod.yml + scripts | **NOT DONE** | `Test-Path docker-compose.prod.yml` → False | Only local `docker-compose.yml` |
+| 356 | docker-compose.prod.yml + scripts | **DONE** (local) | `docker-compose.prod.yml`, `scripts/backup/*`, `docs/DEPLOY.md` | VPS apply still `[HUMAN]` |
 | 357 | Eng.MHD Hetzner/B2/DNS | **CANNOT VERIFY** | Needs external accounts | — |
 | 358 | Trivy in CI | **NOT DONE** | `.github/workflows/ci.yml` has lint/typecheck/test only | — |
 | 359 | Email provider provisioning | **CANNOT VERIFY** / **PARTIAL** | Env wiring exists; account/DNS/DPA external | — |
@@ -178,7 +178,7 @@ Notes:
 | 212 | Data Integrity (FK delete policy) | **PARTIAL** | Schema annotations CASCADE/RESTRICT/SET NULL present | Full spot-check of every FK vs §0.9 not completed line-by-line |
 | 213 | Security logging & alerting | **PARTIAL** | `logError` → GlitchTip optional; login rate limit silent to user | No evidenced “5 fails → visible alert” end-to-end |
 | 214 | Exceptional conditions fail closed | **PARTIAL** | Auth helpers throw Forbidden; cron fail-closed | Prod stack-trace leakage: **CANNOT VERIFY** without prod `NODE_ENV` |
-| 215 | Backup restore drill | **CANNOT VERIFY** | `docs/RUNBOOK.md` still TODO backup procedure | — |
+| 215 | Backup restore drill | **PARTIAL** | Scripts + local age drill; prod monthly drill `[HUMAN]` | See prod-stack section |
 | 216 | Break-glass procedure known | **PARTIAL** | Script + RUNBOOK exist | “Known to more than one person” external |
 
 ### 2.4 Other docs (open items, not checkbox totals)
@@ -203,9 +203,9 @@ Notes:
 | # | Gap | Status | Smallest next action |
 |---:|---|---|---|
 | 1 | Postgres **RLS** + per-request `SET LOCAL` wrapper | NOT DONE | Decide: implement RLS wrapper in `getDb()` **or** formally document “app-layer only” and close MIP L74/L138/L346 |
-| 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | NOT DONE | Author prod compose + backup script stubs; Eng.MHD provisions VPS |
-| 3 | **Backup restore drill** + RUNBOOK backup TODO | CANNOT VERIFY / NOT DONE | Define backup procedure; run one restore on staging |
-| 4 | **Trivy / npm audit** gate in CI | NOT DONE | Add Trivy (or `npm audit --omit=dev`) step to `ci.yml` |
+| 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | **PARTIAL** (2026-10-29 `cursor/prod-stack`) | Compose/Dockerfile/Caddy/DEPLOY authored + local verify; `[HUMAN]` VPS/UFW/fail2ban/LUKS/DNS still open |
+| 3 | **Backup restore drill** + RUNBOOK backup TODO | **PARTIAL** | Scripts + local age drill OK (row counts matched; corrupt checksum fails); `[HUMAN]` enable timers + monthly drill on VPS + B2 |
+| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** | Steps in `ci.yml`; local `npm audit --omit=dev` **fails today** (see § below) — do not silence; upgrade Next/deps before relying on green CI |
 | 5 | **GDPR ROPA + breach notification** written artifacts | NOT DONE | Draft short docs under `docs/` before real crew PII |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
@@ -249,3 +249,72 @@ Notes:
 Controllers present under `src/modules/`: activity-log, alerts, audits, certificates, crew (+ crew-certificate), deficiencies, drawings, email-digest, insurance, ism-templates, manuals, monthly-forms (+ requirements), notifications, psc, reminders, settings (users, company-profile), ship-particulars (+ vessel-notes), vessels. Auth has actions only.
 
 Dashboard routes exist for: alerts, audits, certificates, crew, deficiencies, drawings, insurance, ism-templates, manuals, monthly-forms, notifications, particulars, psc, reminders, settings, vessels.
+
+---
+
+## Production stack (`cursor/prod-stack`) — 2026-10-29
+
+Branch created from `cursor/rls-phase1`. **No commit/push.** Placeholders only.
+
+### Files created / changed
+
+| Path | Notes |
+|---|---|
+| `Dockerfile`, `.dockerignore` | Multi-stage Node 22, non-root `fleetos`, healthcheck `/login` |
+| `docker-compose.prod.yml` | `app` / `postgres` (no host port) / `caddy` / one-shot `migrate`; GlitchTip profile optional |
+| `Caddyfile` | `{env.DOMAIN}`, body max **12MB** (app **10MB** `MAX_ATTACHMENT_BYTES` e.g. `certificate.controller.ts`) |
+| `.env.production.example`, `.env.example` | Placeholders; prod example gitignored pattern already |
+| `scripts/backup/{backup,restore,verify-restore}.sh` | age + pg_dump -Fc + attachments tar; retention; rclone optional |
+| `deploy/systemd/*` | backup + email-digest timers (not enabled here) |
+| `docs/DEPLOY.md`, `docs/RUNBOOK.md` | Runbook + backup procedure (RPO/RTO = targets to confirm) |
+| `.github/workflows/ci.yml` | `npm audit --omit=dev --audit-level=high` + Trivy fs/image |
+| `next.config.ts` | `output: "standalone"` (smaller image vs copy full `.next`; justified) |
+| `src/app/login/page.tsx` | `force-dynamic` so `next build` does not prerender against DB (build-only; no runtime behaviour change) |
+| `scripts/ensure-app-role.ts` | reads `FLEETOS_APP_PASSWORD` for compose migrate sync |
+| MIP / SECURITY_PLAN / README | Checkboxes only for delivered items |
+
+### Verification (real output)
+
+```
+docker images fleetos:local → fleetos:local ebf1f583530e 408MB
+docker compose -f docker-compose.prod.yml --env-file <temp from .env.production.example> config --quiet
+  → COMPOSE_CONFIG_EXIT:0
+
+# Earlier local stack (throwaway .env.production, since removed):
+# migrate Exited 0; app Healthy; caddy Up; postgres PORTS=5432/tcp (no 0.0.0.0 publish)
+curl/login via Caddy → HTTP 200, Sign in present
+docker compose … exec -T app id → uid=10001(fleetos) gid=10001(fleetos)
+docker compose … down -v → DOWN_EXIT:0
+
+Backup drill (postgres:17.4 container + throwaway age key on fleetos-v2_default):
+  source counts: access_logs=213 certificates=109 crew_members=4 users=9 vessels=3
+  bundle: fleetos-20261029T124950Z.tar.age + sha256
+  restore scratch: same counts; relrowsecurity=t on phase-1 tables
+  corrupt-copy checksum → FAILED; restore exit 1
+  bash -n scripts/backup/*.sh → OK
+  shellcheck → not installed in drill image (bash -n only)
+
+npx tsc --noEmit → 0
+npx eslint . → 0
+npx vitest run → 33 files / 211 tests passed
+
+npm audit --omit=dev → EXIT 1 (not silenced)
+  10 vulns (3 moderate, 6 high, 1 critical) — notable: next (critical range),
+  brace-expansion, nanoid, postcss, sharp, source-map-js, zod; also
+  baseline-browser-mapping, uuid/exceljs. Fixes may need next@16.4.3 --force
+  (outside stated range) — human must choose upgrade path.
+```
+
+### `[HUMAN]` / CANNOT VERIFY
+
+- VPS provision, LUKS decision, UFW, fail2ban, unattended-upgrades, Docker install on host
+- DNS / real TLS certs, GitHub environment secrets, B2 account + rclone remote
+- age **private** key custody (offline); enable systemd timers; first real monthly drill on staging/prod
+- Making CI audit/Trivy green after dependency upgrades
+
+### Risks / open decisions for human
+
+- Retention defaults 7/4/6; Caddy 12MB vs app 10MB headroom; Caddy vs other proxy
+- Single VPS = SPOF; backup storage region / privacy of crew PII off-box
+- `npm audit` currently red — CI will fail until Next/deps are upgraded deliberately
+- Offsite rclone skipped when unset (loud warning) — do not go live with on-box-only backups

@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.2.0
         with:
           node-version: 22
           cache: npm
@@ -27,3 +27,36 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: npm audit (production deps, high+)
+        run: npm audit --omit=dev --audit-level=high
+
+  trivy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.8.0
+
+      - name: Build image for scan
+        run: docker build -t fleetos:ci-${{ github.sha }} .
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: image
+          image-ref: fleetos:ci-${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: false

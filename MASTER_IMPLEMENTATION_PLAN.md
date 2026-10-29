@@ -268,7 +268,7 @@ Full design in `PROJECT_PLAN.md` §12b. Reviewed independently by Cursor before 
 - [x] Add `email_deliveries` to `schema.ts`; migrate.
 - [x] Build the provider adapter behind an interface (e.g. `sendEmail(to, subject, text)`) — Resend/Postmark implementation is an env-configured choice, not hardcoded to one vendor in the calling code.
 - [x] Build the digest job: `getAlerts()` → group by recipient (all Admin-role users) → check `email_deliveries` idempotency → render template → send → record delivery.
-- [ ] Wire the cron/scheduler entry in the Phase 7 deployment runbook. (PARTIAL: app route + README; no docker-compose.prod cron)
+- [x] Wire the cron/scheduler entry in the Phase 7 deployment runbook. (`deploy/systemd/fleetos-email-digest.timer` + `docs/DEPLOY.md`; enable on VPS is `[HUMAN]`)
 - [x] Add the Settings on/off toggle; digest job checks it before doing anything.
 - [x] Deep links in the email require an existing session login — no long-lived tokens embedded in the URL (§12b).
 - [x] Log "digest sent to user X, date Y" server-side (the `email_deliveries` row itself satisfies this — no separate log needed).
@@ -353,10 +353,10 @@ Once the mapping is re-confirmed:
 
 Per `MASTER_PLAN.md` Phase 7's fully-specified runbook (UFW, fail2ban, LUKS, four/five hardened containers, Caddy, `pg_dump`/`pgBackRest` to Backblaze B2, Hetzner sizing). This plan's job is only to split what's automatable from what needs Eng.MHD directly:
 
-- [ ] **Claude Code** authors: `docker-compose.prod.yml` (app + Postgres + Caddy + GlitchTip + Redis/Valkey sidecar, pinned image versions, non-root/read-only/capability-dropped per the runbook), the UFW/fail2ban provisioning script, the backup script (`pg_dump`/`pgBackRest` cron + Backblaze B2 upload).
-- [ ] **Eng.MHD directly** (neither tool has the credentials or account access to do this): provisions the Hetzner VPS, sets up the Backblaze B2 bucket, points DNS at the VPS per the two-option domain model in `PROJECT_PLAN.md`'s Cross-cutting notes, and runs the provisioning script against the real server.
-- [ ] Trivy (or equivalent) image scanning added to the CI/CD pipeline from Phase 2, gating deploys — Claude Code.
-- [ ] **Email digest provisioning (new, Round 5 — Task 5.5's cron dependency, previously unlisted here):** create the Resend/Postmark account (Eng.MHD's provider choice, §12b), verify the sending domain and set its SPF/DKIM/DMARC DNS records (Eng.MHD, alongside the other DNS work above), store the provider API key as an environment secret (Claude Code wires the env plumbing, Eng.MHD supplies the actual key value), and add the digest job's cron entry to `docker-compose.prod.yml`/the scheduler (Claude Code). Sign the provider's DPA before real compliance data goes through it (Eng.MHD, feeds the Phase 4 record-of-processing-activities document). (PARTIAL: env wiring exists; provider account/DPA external)
+- [x] **Claude Code** authors: `docker-compose.prod.yml` (app + Postgres + Caddy + optional GlitchTip/Valkey profile, pinned images, non-root app user), backup scripts (`pg_dump` + age + optional rclone/B2), systemd timers. UFW/fail2ban/LUKS documented as `[HUMAN]` in `docs/DEPLOY.md` (not auto-applied).
+- [ ] **Eng.MHD directly** (neither tool has the credentials or account access to do this): provisions the Hetzner VPS, sets up the Backblaze B2 bucket, points DNS at the VPS per the two-option domain model in `PROJECT_PLAN.md`'s Cross-cutting notes, and runs the provisioning steps against the real server.
+- [x] Trivy (or equivalent) image scanning added to CI (`.github/workflows/ci.yml` fs + image + `npm audit --omit=dev`). Staging deploy gating still needs Eng.MHD secrets.
+- [ ] **Email digest provisioning (new, Round 5 — Task 5.5's cron dependency, previously unlisted here):** create the Resend/Postmark account (Eng.MHD's provider choice, §12b), verify the sending domain and set its SPF/DKIM/DMARC DNS records (Eng.MHD, alongside the other DNS work above), store the provider API key as an environment secret (Claude Code wires the env plumbing, Eng.MHD supplies the actual key value), and add the digest job's cron entry to `docker-compose.prod.yml`/the scheduler (Claude Code). Sign the provider's DPA before real compliance data goes through it (Eng.MHD, feeds the Phase 4 record-of-processing-activities document). (PARTIAL: env wiring + `deploy/systemd/fleetos-email-digest.timer` authored; provider account/DPA/enable on VPS still external)
 
 ---
 

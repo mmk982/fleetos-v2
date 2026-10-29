@@ -1,0 +1,31 @@
+# FleetOS reverse proxy — automatic TLS via Let's Encrypt when DOMAIN is a
+# real public hostname. Local throwaway stacks may set DOMAIN=localhost and
+# rely on Caddy defaults / internal testing.
+#
+# Attachment limit: app enforces MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+# (10 MB) in e.g. src/modules/certificates/certificate.controller.ts.
+# Multipart overhead needs a little headroom → request_body max_size 12MB.
+
+{
+	email {$ACME_EMAIL:ops@example.com}
+}
+
+# Prod: DOMAIN=app.example.com (HTTPS + ACME).
+# Local throwaway: DOMAIN=http://localhost (plain HTTP, no ACME).
+{$DOMAIN:http://localhost} {
+	encode zstd gzip
+
+	header {
+		# App also sets HSTS in next.config.ts for production responses;
+		# keep proxy headers defensive without inventing new policy.
+		X-Content-Type-Options nosniff
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	request_body {
+		max_size 12MB
+	}
+
+	reverse_proxy app:3000
+}

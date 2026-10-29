@@ -1,0 +1,15 @@
+[Unit]
+Description=FleetOS daily Admin email digest trigger
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+# [HUMAN] /etc/fleetos/cron.env must contain CRON_SECRET and APP_BASE_URL
+# (placeholders only in repo docs). Header: Authorization: Bearer <CRON_SECRET>
+EnvironmentFile=-/etc/fleetos/cron.env
+ExecStart=/usr/bin/curl -fsS -X POST \
+  -H "Authorization: Bearer ${CRON_SECRET}" \
+  "${APP_BASE_URL}/api/internal/email-digest"
