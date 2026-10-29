@@ -118,7 +118,7 @@ Notes:
 | 348 | Tool: Claude Code | **SUPERSEDED** | Process instruction | Not a code deliverable |
 | 356 | docker-compose.prod.yml + scripts | **NOT DONE** | `Test-Path docker-compose.prod.yml` → False | Only local `docker-compose.yml` |
 | 357 | Eng.MHD Hetzner/B2/DNS | **CANNOT VERIFY** | Needs external accounts | — |
-| 358 | Trivy in CI | **NOT DONE** | `.github/workflows/ci.yml` has lint/typecheck/test only | — |
+| 358 | Trivy in CI | **NOT DONE** | `.github/workflows/ci.yml` on this lineage still lint/typecheck/test only | Audit high fixed locally; wire CI separately |
 | 359 | Email provider provisioning | **CANNOT VERIFY** / **PARTIAL** | Env wiring exists; account/DNS/DPA external | — |
 | 367 | Full OWASP skill review Phases 3–7 | **NOT DONE** | No Phase-8 review artifact in repo | Partial earlier reviews ≠ this gate |
 | 368 | Human sign-off before go-live | **CANNOT VERIFY** | External | — |
@@ -170,7 +170,7 @@ Notes:
 |---:|---|---|---|---|
 | 205 | Broken Access Control | **PARTIAL** | Session + `assertModuleAccess`/`assertVesselScope` widespread | No Postgres RLS; IDOR relies on app layer |
 | 206 | Security Misconfiguration | **PARTIAL** | Headers in `next.config.ts` | Prod defaults/credentials/debug: **CANNOT VERIFY** without prod |
-| 207 | Supply chain (`npm audit`/Trivy) | **NOT DONE** | No Trivy in CI; `npm audit` not evidenced this run | — |
+| 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | Local high+ clean on `cursor/deps-security`; residual moderate exceljs/uuid; CI audit/Trivy still absent on this base | See deps-security section |
 | 208 | Cryptographic Failures | **PARTIAL** | Argon2id in `password.ts` | TLS/backups: **CANNOT VERIFY** (needs prod/VPS) |
 | 209 | Injection | **DONE** | Drizzle builders; Zod on mutations; only `sql` template is singleton check in schema | Grep for raw string SQL interpolation: none found in controllers |
 | 210 | Insecure Design (whole-doc review) | **PARTIAL** | This review + prior docs | Formal Phase-8 pass still open |
@@ -205,7 +205,7 @@ Notes:
 | 1 | Postgres **RLS** + per-request `SET LOCAL` wrapper | NOT DONE | Decide: implement RLS wrapper in `getDb()` **or** formally document “app-layer only” and close MIP L74/L138/L346 |
 | 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | NOT DONE | Author prod compose + backup script stubs; Eng.MHD provisions VPS |
 | 3 | **Backup restore drill** + RUNBOOK backup TODO | CANNOT VERIFY / NOT DONE | Define backup procedure; run one restore on staging |
-| 4 | **Trivy / npm audit** gate in CI | NOT DONE | Add Trivy (or `npm audit --omit=dev`) step to `ci.yml` |
+| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** (2026-10-29 `cursor/deps-security`) | Local high+ audit **exit 0** (`next@16.4.3`, `zod@4.6.6`); residual moderate `exceljs→uuid`. **CI still missing** audit/Trivy on `rls-phase1` lineage — merge/add from prod-stack or add here |
 | 5 | **GDPR ROPA + breach notification** written artifacts | NOT DONE | Draft short docs under `docs/` before real crew PII |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
@@ -239,8 +239,38 @@ Notes:
 - Whether Eng.MHD completed human review gates / DPA / multi-person break-glass knowledge.
 - Formal light/dark × EN/AR × desktop/mobile QA matrices.
 - Full line-by-line FK ON DELETE audit vs PROJECT_PLAN §0.9 for every table.
-- `npm audit` / Trivy vulnerability inventory (not run this session beyond noting absence from CI).
 - Live GlitchTip alerting path with a forced login lockout visible in an ops channel.
+- Service worker / PWA: **not present** on `cursor/rls-phase1` / `cursor/deps-security` (no `@serwist/next`); N/A for SW generation check.
+
+---
+
+## Dependency security upgrade (`cursor/deps-security`) — 2026-10-29
+
+Branch from `cursor/rls-phase1`. **No commit/push.**
+
+### Before → after (`npm audit --omit=dev`)
+
+| | Before | After |
+|---|---|---|
+| Totals | 10 (3 mod, 6 high, 1 critical) | 2 moderate only (`exceljs`→`uuid`) |
+| `--audit-level=high` | exit 1 | **exit 0** |
+
+### Direct pins
+
+- `next` / `eslint-config-next`: `16.2.4` → `16.4.3` (exact)
+- `zod`: `^4.4.3` → `4.6.6` (exact)
+
+### Notable transitive (no major bumps)
+
+`@next/*` 16.2.4→16.4.3; `postcss` 8.5.10→8.5.23; `sharp` 0.34.5→0.35.5; `nanoid` 3.3.11→3.3.20; `source-map-js` 1.2.1→1.2.2; `brace-expansion` 1.1.14→1.1.21; `baseline-browser-mapping` 2.10.21→2.11.34
+
+### Residual
+
+- `uuid@8.3.2` via `exceljs@4.4.0` (moderate GHSA-w5hq-g745-h8pq). Plan: wait for exceljs release that bumps uuid; **do not** `npm audit fix --force` (would install exceljs@3.4.0).
+
+### Verify
+
+tsc / eslint / vitest 211 / integration 14 / db:check / `next build --webpack` — all exit 0. Browser smoke admin1 + vuA OK under `next start` with `DATABASE_URL=fleetos_app`. Unauth prefetch matrix: no protected data before or after (AFTER also redirects `/dashboard*.rsc` → `/login`).
 
 ---
 
