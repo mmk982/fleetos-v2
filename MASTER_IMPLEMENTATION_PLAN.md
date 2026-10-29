@@ -30,7 +30,7 @@
 
 **Status: mostly done.** `git remote -v` already points at `github.com/mmk982/fleetos-v2`, and `3d4ed67 ci: add GitHub Actions lint + typecheck workflow` is already in the log. Remaining work is exactly `DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 0 (commit the pending `PROJECT_PLAN.md`/`DESIGN_HANDOFF.md` work, add `.gitattributes`, normalize line endings) — not repeated here.
 
-- [ ] Additionally commit this session's new files (`CODE_CONVENTIONS.md`, `MASTER_IMPLEMENTATION_PLAN.md`, the doc-comment retrofit on `src/db/schema.ts`, `src/db/client.ts`, and every file under `src/modules/vessels/`) as part of that same Task 0 cleanup commit, not a separate one — they're all "catch up the repo" work of the same kind.
+- [x] Additionally commit this session's new files (`CODE_CONVENTIONS.md`, `MASTER_IMPLEMENTATION_PLAN.md`, the doc-comment retrofit on `src/db/schema.ts`, `src/db/client.ts`, and every file under `src/modules/vessels/`) as part of that same Task 0 cleanup commit, not a separate one — they're all "catch up the repo" work of the same kind.
 
 ```bash
 git add CODE_CONVENTIONS.md MASTER_IMPLEMENTATION_PLAN.md src/db/schema.ts src/db/client.ts src/modules/vessels/
@@ -65,14 +65,14 @@ Per `PROJECT_PLAN.md`'s "Database engine: PostgreSQL, not SQLite" section and "C
 
 **Tool:** Claude Code — this is exactly the "must be correct everywhere at once" class of change: every column type, every FK annotation, the driver swap, and the sync→async ripple through the controller/actions/pages all have to land together or the app doesn't build.
 
-- [ ] Stand up local Postgres via `docker-compose up -d` using the new `docker-compose.yml`.
-- [ ] Apply the schema/driver/config changes above to `vessels` (the only table that exists today).
-- [ ] Convert `vessel.controller.ts` to `async`/`await` throughout; update `actions.ts` call sites and the pages listed above to match.
-- [ ] Regenerate and run migrations: `npm run db:generate && npm run db:migrate`.
+- [x] Stand up local Postgres via `docker-compose up -d` using the new `docker-compose.yml`.
+- [x] Apply the schema/driver/config changes above to `vessels` (the only table that exists today).
+- [x] Convert `vessel.controller.ts` to `async`/`await` throughout; update `actions.ts` call sites and the pages listed above to match.
+- [x] Regenerate and run migrations: `npm run db:generate && npm run db:migrate`.
 - [ ] Manually verify the existing Vessels UI still lists/creates/edits/deletes correctly against Postgres (no automated DB tests exist yet — that's `PROJECT_PLAN.md`'s own noted deferral, see Cross-cutting notes).
-- [ ] Add TSDoc updates to `src/db/client.ts` per `CODE_CONVENTIONS.md` — the file header comment already anticipates this migration (see the retrofit done this session); update it to describe the Postgres implementation instead of "expected to change." Note in `vessel.controller.ts`'s header that the sync→async change is part of this migration, not a separate refactor.
+- [x] Add TSDoc updates to `src/db/client.ts` per `CODE_CONVENTIONS.md` — the file header comment already anticipates this migration (see the retrofit done this session); update it to describe the Postgres implementation instead of "expected to change." Note in `vessel.controller.ts`'s header that the sync→async change is part of this migration, not a separate refactor.
 - [ ] **New — RLS groundwork decision (raised in Cursor's review, not previously flagged anywhere):** Postgres RLS (planned for Phase 4/6) evaluates against database-session state, not application state. Under a shared connection-pool singleton (today's `getDb()` pattern, carried over from SQLite), there's no per-request place to set `SET LOCAL app.user_id = ...` for RLS policies to read via `current_setting()`. Decide now whether `getDb()` gains a per-request/per-transaction wrapper that sets this session context (the shape RLS actually needs) — deciding it during this migration is far cheaper than retrofitting it after 13 modules' controllers are written against a plain pooled `getDb()`. This doesn't block Task 2.1 itself (Vessels has no RLS policy yet), but the migration's `client.ts` design should leave room for it.
-- [ ] Commit: `git commit -m "feat(db): migrate Vessels + schema from SQLite to PostgreSQL"`.
+- [x] Commit: `git commit -m "feat(db): migrate Vessels + schema from SQLite to PostgreSQL"`.
 
 ### Task 2.2: Fuller CI/CD — staging environment, deploy approval gate
 
@@ -80,8 +80,8 @@ Per `PROJECT_PLAN.md`'s "Database engine: PostgreSQL, not SQLite" section and "C
 
 **Tool:** Claude Code for the workflow YAML; this needs Eng.MHD's actual staging host details to finish, so treat this task as "author the workflow shape now, plug in real secrets/host once Phase 7's Hetzner account exists."
 
-- [ ] Extend CI to run on every push (already exists); add a manually-triggered deploy job scoped to a `staging` environment in GitHub's environment protection rules.
-- [ ] Document required secrets (`STAGING_HOST`, `STAGING_SSH_KEY`, etc.) in `.env.example`/README without ever committing real values.
+- [x] Extend CI to run on every push (already exists); add a manually-triggered deploy job scoped to a `staging` environment in GitHub's environment protection rules.
+- [x] Document required secrets (`STAGING_HOST`, `STAGING_SSH_KEY`, etc.) in `.env.example`/README without ever committing real values.
 
 ### Task 2.3: Observability — logging seam + GlitchTip
 
@@ -94,9 +94,9 @@ Per `PROJECT_PLAN.md`'s "Logging seam" convention (`src/lib/logging.ts` exportin
 
 **Tool:** Claude Code.
 
-- [ ] Write `logError(code: string, context: Record<string, unknown>)` — structured console log now, GlitchTip SDK call once the container exists locally.
-- [ ] Retrofit `vessel.controller.ts`'s catch blocks (currently `createVessel`/`updateVessel` catch and rethrow without logging) to call `logError` before rethrowing — this becomes the pattern every Phase 5 module's controller follows from its first commit, per the convention.
-- [ ] Document `logError` per `CODE_CONVENTIONS.md` (it's shared/foundational code — full TSDoc, no exceptions, per that doc's §5).
+- [x] Write `logError(code: string, context: Record<string, unknown>)` — structured console log now, GlitchTip SDK call once the container exists locally.
+- [x] Retrofit `vessel.controller.ts`'s catch blocks (currently `createVessel`/`updateVessel` catch and rethrow without logging) to call `logError` before rethrowing — this becomes the pattern every Phase 5 module's controller follows from its first commit, per the convention.
+- [x] Document `logError` per `CODE_CONVENTIONS.md` (it's shared/foundational code — full TSDoc, no exceptions, per that doc's §5).
 
 ---
 
@@ -116,18 +116,18 @@ Per `MASTER_PLAN.md` Phase 3 (layered defense: edge `proxy.ts` for redirect UX o
 **Tool:** Claude Code for the schema/session/proxy layer (security-critical, must be consistent across every existing and future Server Action) and Cursor for wiring the already-built Login page's form to the real action (visual/interactive, and it's literally the reference screen Phase 1 already built).
 
 - [ ] Read `node_modules/next/dist/docs/` for the current `proxy.ts` conventions before writing it — per `AGENTS.md`, do not assume the Next-13/14-era `middleware.ts` API surface still applies verbatim.
-- [ ] Build `users`/`sessions` schema, migrate.
-- [ ] Build `password.ts` (argon2, per `MASTER_PLAN.md`'s explicit "argon2/bcrypt" call), `session.ts` (httpOnly signed cookie, reasonable `maxAge`, rotation on login — no `localStorage`, ever).
-- [ ] Build `proxy.ts` — redirects unauthenticated requests to `/login`, nothing more.
-- [ ] Add the session-verification call to every existing Server Action (`vessel.actions.ts` today) and require it in every Phase 5 module's `actions.ts` from here on — this becomes part of the Vessels/Certificates reference pattern for all later modules.
-- [ ] Wire `src/app/login/page.tsx`'s form to `loginAction`; on success, create a session and redirect to `/dashboard`.
-- [ ] Add a rate limit on the login endpoint, both per-IP and per-account (`SECURITY_PLAN.md` §2.4) — a bare "add rate limiting" note previously had no landing checklist item; this is it.
-- [ ] Check new passwords against a breached-password list (`SECURITY_PLAN.md` §2.2) before accepting them.
-- [ ] Write the break-glass admin-recovery script (`SECURITY_PLAN.md` §2.3) — a direct DB password-reset script kept in an operational runbook, not an app feature — before real accounts exist, since there's no self-service reset in v1.
-- [ ] Add the security headers from `SECURITY_PLAN.md` §8.1 (HSTS, CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `COOP`) to every response.
+- [x] Build `users`/`sessions` schema, migrate.
+- [x] Build `password.ts` (argon2, per `MASTER_PLAN.md`'s explicit "argon2/bcrypt" call), `session.ts` (httpOnly signed cookie, reasonable `maxAge`, rotation on login — no `localStorage`, ever).
+- [x] Build `proxy.ts` — redirects unauthenticated requests to `/login`, nothing more.
+- [x] Add the session-verification call to every existing Server Action (`vessel.actions.ts` today) and require it in every Phase 5 module's `actions.ts` from here on — this becomes part of the Vessels/Certificates reference pattern for all later modules.
+- [x] Wire `src/app/login/page.tsx`'s form to `loginAction`; on success, create a session and redirect to `/dashboard`.
+- [x] Add a rate limit on the login endpoint, both per-IP and per-account (`SECURITY_PLAN.md` §2.4) — a bare "add rate limiting" note previously had no landing checklist item; this is it.
+- [x] Check new passwords against a breached-password list (`SECURITY_PLAN.md` §2.2) before accepting them.
+- [x] Write the break-glass admin-recovery script (`SECURITY_PLAN.md` §2.3) — a direct DB password-reset script kept in an operational runbook, not an app feature — before real accounts exist, since there's no self-service reset in v1.
+- [x] Add the security headers from `SECURITY_PLAN.md` §8.1 (HSTS, CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `COOP`) to every response.
 - [x] Verify `Origin`/`Sec-Fetch-Site` server-side on every mutating Server Action (`SECURITY_PLAN.md` §3) as defense-in-depth alongside Next.js's own same-origin Server Action protections. (Done; extended 2026-10-28 to every mutating `/api` Route Handler via `rejectCrossOrigin()`.)
-- [ ] **New — the third defense layer has no task without this:** `MASTER_PLAN.md` and `auth-request-flow.mermaid` both name "the database access layer as the final gate," but nothing above builds it — proxy/session/password/per-action checks are layers one and two only. At minimum, add a role/ownership check inside the controller layer itself (not just the Server Action calling it), so a bug in one action's session check isn't the only thing standing between a request and the database. Once Phase 6 RBAC and the Task 2.1 RLS groundwork both exist, this is where they attach; until then, this step is the interim third layer.
-- [ ] Document every new file per `CODE_CONVENTIONS.md` — `session.ts`/`password.ts` are shared/foundational (§5 of that doc: full TSDoc, no exceptions).
+- [x] **New — the third defense layer has no task without this:** `MASTER_PLAN.md` and `auth-request-flow.mermaid` both name "the database access layer as the final gate," but nothing above builds it — proxy/session/password/per-action checks are layers one and two only. At minimum, add a role/ownership check inside the controller layer itself (not just the Server Action calling it), so a bug in one action's session check isn't the only thing standing between a request and the database. Once Phase 6 RBAC and the Task 2.1 RLS groundwork both exist, this is where they attach; until then, this step is the interim third layer.
+- [x] Document every new file per `CODE_CONVENTIONS.md` — `session.ts`/`password.ts` are shared/foundational (§5 of that doc: full TSDoc, no exceptions).
 
 ---
 
@@ -136,9 +136,9 @@ Per `MASTER_PLAN.md` Phase 3 (layered defense: edge `proxy.ts` for redirect UX o
 Per `MASTER_PLAN.md` Phase 4. Some of this is code, some is a written artifact, and one item is explicitly not something either tool can sign off on alone.
 
 - [ ] **Row-level security** (code, Claude Code): write Postgres RLS policies enforcing the Phase 6 vessel-scoping rules once RBAC exists — sequenced *after* Phase 6, not before. **This has a technical prerequisite beyond waiting for role data (raised in Cursor's review, not previously documented anywhere):** RLS policies evaluate against database-session state via `current_setting()`, which means every query needs to run inside a transaction that first sets `SET LOCAL app.user_id = ...`/`app.role = ...` for the current request. The plain pooled `getDb()` singleton (carried over from SQLite, and unchanged by the Task 2.1 Postgres migration unless addressed there) has no per-request place to do this. Confirm during Task 2.1 whether `getDb()` gained the per-transaction wrapper this needs — if not, that's a real blocker to resolve before writing a single RLS policy, not just a "wait for Phase 6" scheduling gap.
-- [ ] **Scrub-PII operation** (code, Claude Code): a documented function (e.g. `scrubCrewMemberPii(id)`) that nulls personal fields on a crew member without deleting the row. **Scope note (Cursor's review caught this): must also cover `crew_certificates`** — document numbers and dates on a crew member's certificates (passport, medical, visas) are that same person's PII, not just the fields on `crew_members` itself; an erasure that only scrubs the parent row is incomplete. Build alongside the Crew module in Phase 5, not as a bolt-on later, since it needs to know Crew's exact personal-data columns across both tables.
-- [ ] **GDPR access log** (code, Claude Code) — **new this session, closes a real gap:** `MASTER_PLAN.md`'s original Phase 4 text and `SECURITY_PLAN.md` §10 both referenced this log as already decided (and §9's incident-response steps cite it directly), but no schema or task ever existed for it — it was a name, not a design. Now specified in `PROJECT_PLAN.md` §6 (`access_logs` table): logs `view`/`download_attachment`/`export` events against `crew_members`/`crew_certificates`/`crew_certificate_attachments` only (data-minimization scope, matching `scrubCrewMemberPii`'s own scope) — not a general page-view log. Build alongside Crew for the same reason as scrub-PII: it needs Crew's exact read paths, and the export utility (Task 5.4) needs to call into it once it reaches Crew.
-- [ ] **Encryption at rest**: not application code — VPS disk-level LUKS, belongs in Phase 7's runbook. Don't attempt to implement this in the app layer.
+- [x] **Scrub-PII operation** (code, Claude Code): a documented function (e.g. `scrubCrewMemberPii(id)`) that nulls personal fields on a crew member without deleting the row. **Scope note (Cursor's review caught this): must also cover `crew_certificates`** — document numbers and dates on a crew member's certificates (passport, medical, visas) are that same person's PII, not just the fields on `crew_members` itself; an erasure that only scrubs the parent row is incomplete. Build alongside the Crew module in Phase 5, not as a bolt-on later, since it needs to know Crew's exact personal-data columns across both tables.
+- [x] **GDPR access log** (code, Claude Code) — **new this session, closes a real gap:** `MASTER_PLAN.md`'s original Phase 4 text and `SECURITY_PLAN.md` §10 both referenced this log as already decided (and §9's incident-response steps cite it directly), but no schema or task ever existed for it — it was a name, not a design. Now specified in `PROJECT_PLAN.md` §6 (`access_logs` table): logs `view`/`download_attachment`/`export` events against `crew_members`/`crew_certificates`/`crew_certificate_attachments` only (data-minimization scope, matching `scrubCrewMemberPii`'s own scope) — not a general page-view log. Build alongside Crew for the same reason as scrub-PII: it needs Crew's exact read paths, and the export utility (Task 5.4) needs to call into it once it reaches Crew.
+- [ ] **Encryption at rest**: not application code — VPS disk-level LUKS, belongs in Phase 7's runbook. Don't attempt to implement this in the app layer. (SUPERSEDED: Phase 7 VPS LUKS, not app code)
 - [ ] **Breach notification procedure & record of processing activities** (written artifacts, not code): draft these as short docs once real crew data is close to existing (end of Phase 5's Crew module), and have Eng.MHD review — per `MASTER_PLAN.md`'s own caveat, whether these add up to actual GDPR compliance is a legal determination neither tool can make; both tools can draft the technical-controls description, not sign off on compliance.
 
 ---
@@ -186,11 +186,11 @@ Per `MASTER_PLAN.md` Phase 4. Some of this is code, some is a written artifact, 
 
 **Tool:** Claude Code — pure functions, no DB, the textbook case for writing-plans-style TDD.
 
-- [ ] Write failing tests for each derivation rule already enumerated in `PROJECT_PLAN.md` (`lifecycleStatus !== "active"` → `revoked` overrides everything; `expiry_offset` kind's `expired`/`critical`/`expiring`/`valid` thresholds; `window` kind's `valid`/`expiring`/`expired`/`critical` thresholds including the "expired, never critical" rule when a survey window closes without completion; `rule.kind === "none"` → always `valid`).
-- [ ] Implement `deriveComplianceStatus` and the helpers to make the tests pass, per every rule already listed in `PROJECT_PLAN.md`'s "Derivation rules" — don't invent different thresholds; that section is the spec, not a starting point to refine.
-- [ ] Run `npx vitest run src/lib/expiry` — all green.
-- [ ] Full TSDoc on every export per `CODE_CONVENTIONS.md` §5 (shared/foundational — no exceptions) — in particular, document *why* `criticalDays` defaults to 7 (already drafted as the worked example in `CODE_CONVENTIONS.md` §3) and why the engine never reads Settings directly (`getCriticalDays()` resolves that one layer up, in each consumer's controller).
-- [ ] Commit.
+- [x] Write failing tests for each derivation rule already enumerated in `PROJECT_PLAN.md` (`lifecycleStatus !== "active"` → `revoked` overrides everything; `expiry_offset` kind's `expired`/`critical`/`expiring`/`valid` thresholds; `window` kind's `valid`/`expiring`/`expired`/`critical` thresholds including the "expired, never critical" rule when a survey window closes without completion; `rule.kind === "none"` → always `valid`).
+- [x] Implement `deriveComplianceStatus` and the helpers to make the tests pass, per every rule already listed in `PROJECT_PLAN.md`'s "Derivation rules" — don't invent different thresholds; that section is the spec, not a starting point to refine.
+- [x] Run `npx vitest run src/lib/expiry` — all green.
+- [x] Full TSDoc on every export per `CODE_CONVENTIONS.md` §5 (shared/foundational — no exceptions) — in particular, document *why* `criticalDays` defaults to 7 (already drafted as the worked example in `CODE_CONVENTIONS.md` §3) and why the engine never reads Settings directly (`getCriticalDays()` resolves that one layer up, in each consumer's controller).
+- [x] Commit.
 
 ### Task 5.2: Certificates (step 3 — the largest module, first real engine consumer)
 
@@ -206,14 +206,14 @@ Per `MASTER_PLAN.md` Phase 4. Some of this is code, some is a written artifact, 
 
 **Tool split:** Claude Code builds schema → model → controller → validation → actions → API (backend layer, must exactly match §1's field list and delete-policy annotations) and scaffolds the pages using the canonical pattern (this is "apply a known pattern to a new module," the same repeatable job as Phase 1's Task 10). Cursor takes the scaffolded pages and does the interactive polish — the events timeline UI, the attachment upload dropzone interaction, live-checking against the Certificates mockups referenced in `DESIGN_HANDOFF.md` §8.
 
-- [ ] Add the five tables to `schema.ts` exactly as specified in §1 (including the `(authority, name)` unique index on `certificate_types`, and the RESTRICT/CASCADE annotations per §0.9).
-- [ ] Seed `certificate_types` and `issuing_authorities` per §1's Seeding subsection (source: `CERTIFICATES_SPEC.md` §4 plus the client's reminder-rule spec already folded into §1's "Reminder rule model" table) — add a seed step to the migration workflow.
-- [ ] Build the backend layer, including the `linkedToDryDock`/`customOffsetDays` precedence logic for effective `offsetDays` (§1: `customOffsetDays` if set → else 180 if `linkedToDryDock` → else the type's `offsetDays`) — this precedence rule gets its own inline comment per `CODE_CONVENTIONS.md` §3, citing §1, since it's exactly the kind of easy-to-quietly-break business rule that standard calls out.
-- [ ] Wire `logError` into every catch block in `certificate.controller.ts` (Phase 2.3's convention).
-- [ ] Build the API routes with the `{ data }` / `{ error, issues }` envelope and status codes per the Conventions section.
-- [ ] Scaffold and then polish the pages; verify the live status badge (from `deriveComplianceStatus`) against §1's 3-state client mapping in all 8 combinations (light/dark × EN/AR × desktop/mobile), same QA discipline as `DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 9.
-- [ ] Full doc-comment pass (file headers, exported-symbol TSDoc, the module README) per `CODE_CONVENTIONS.md`.
-- [ ] Commit in scoped steps (schema → backend → API → UI), not one giant commit.
+- [x] Add the five tables to `schema.ts` exactly as specified in §1 (including the `(authority, name)` unique index on `certificate_types`, and the RESTRICT/CASCADE annotations per §0.9).
+- [x] Seed `certificate_types` and `issuing_authorities` per §1's Seeding subsection (source: `CERTIFICATES_SPEC.md` §4 plus the client's reminder-rule spec already folded into §1's "Reminder rule model" table) — add a seed step to the migration workflow.
+- [x] Build the backend layer, including the `linkedToDryDock`/`customOffsetDays` precedence logic for effective `offsetDays` (§1: `customOffsetDays` if set → else 180 if `linkedToDryDock` → else the type's `offsetDays`) — this precedence rule gets its own inline comment per `CODE_CONVENTIONS.md` §3, citing §1, since it's exactly the kind of easy-to-quietly-break business rule that standard calls out.
+- [x] Wire `logError` into every catch block in `certificate.controller.ts` (Phase 2.3's convention).
+- [x] Build the API routes with the `{ data }` / `{ error, issues }` envelope and status codes per the Conventions section.
+- [ ] Scaffold and then polish the pages; verify the live status badge (from `deriveComplianceStatus`) against §1's 3-state client mapping in all 8 combinations (light/dark × EN/AR × desktop/mobile), same QA discipline as `DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 9. (PARTIAL: UI exists; formal EN/AR×theme QA not evidenced)
+- [x] Full doc-comment pass (file headers, exported-symbol TSDoc, the module README) per `CODE_CONVENTIONS.md`.
+- [x] Commit in scoped steps (schema → backend → API → UI), not one giant commit.
 
 ### Task 5.3: Remaining modules (steps 1, 4–9, 12, 14 — CRUD modules) — repeatable delegation
 
@@ -235,21 +235,21 @@ Deficiencies, Crew, Insurance, ISM Templates, Manuals, Drawings, Monthly Execute
 
 **Note on scope (corrected — Cursor's review caught that the original version of this task lumped in four items that don't fit this shape at all):** the vessel-detail integration pass (step 10), the Alerts aggregator (step 11), Dashboard (step 13), and Export to Excel/PDF (step 15) are **not** CRUD modules — no new tables of their own (Alerts/Export) or a cross-module presentation pass rather than a module (the integration pass, Dashboard). "Match Certificates file-for-file" doesn't apply to them; see Task 5.4 below for their own task shape instead.
 
-- [ ] For each module, in the build-order sequence from the table above: dispatch one Claude Code subagent (per `dispatching-parallel-agents`/`subagent-driven-development`) given (a) that module's exact `PROJECT_PLAN.md` section, (b) the finished Certificates module (Task 5.2) as the literal pattern to match file-for-file, (c) `CODE_CONVENTIONS.md`, and (d) the Phase 1 design primitives.
-- [ ] Cursor takes each scaffolded module for interactive UI polish and visual QA, same division as Task 5.2.
+- [ ] For each module, in the build-order sequence from the table above: dispatch one Claude Code subagent (per `dispatching-parallel-agents`/`subagent-driven-development`) given (a) that module's exact `PROJECT_PLAN.md` section, (b) the finished Certificates module (Task 5.2) as the literal pattern to match file-for-file, (c) `CODE_CONVENTIONS.md`, and (d) the Phase 1 design primitives. (SUPERSEDED: process/tooling; modules already in src/modules)
+- [ ] Cursor takes each scaffolded module for interactive UI polish and visual QA, same division as Task 5.2. (SUPERSEDED: process/tooling)
 - [ ] Eng.MHD reviews each module's diff before merging — same review gate as `DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 10.
-- [ ] Respect the dependency column in the build-order table above — don't start Alerts before Deficiencies/Crew/Insurance/Certificates all exist; don't start Monthly Executed Forms before ISM Templates.
-- [ ] The Crew module's task additionally includes Phase 4's scrub-PII operation (see Phase 4 above) — don't ship Crew without it, since that's the module GDPR personal-data handling is scoped to. **Also includes `crew_certificate_attachments`** (new this session, `PROJECT_PLAN.md` §3) — passport/visa scans and similar sensitive documents, following `certificate_attachments`' file-upload pattern and `SECURITY_PLAN.md` §6's security procedure (magic-byte validation, UUID storage filenames, authenticated serving route). Scrub-PII must void/remove a member's stored attachments too, not just their text fields.
-- [ ] The Settings module's task additionally includes the certificate-type/issuing-authority/system-lists management UI referenced across several earlier modules' "add a new type" links (`DESIGN_HANDOFF.md` §8's Settings row) — build Settings before or alongside whichever module first needs to link to it, not strictly last, despite its §7a build-order position. **Only Users & Roles (§7a) within Settings depends on Auth existing** — System Lists, General, Company Profile, and Form Requirements don't need `users` at all; don't defer the whole Settings module behind Phase 3 — `module-build-order.mermaid` reflects this already (`AUTH --> USERROLES` only, not `AUTH --> SET`; this bullet just restates the reasoning for that edge, not a pending fix).
+- [x] Respect the dependency column in the build-order table above — don't start Alerts before Deficiencies/Crew/Insurance/Certificates all exist; don't start Monthly Executed Forms before ISM Templates.
+- [x] The Crew module's task additionally includes Phase 4's scrub-PII operation (see Phase 4 above) — don't ship Crew without it, since that's the module GDPR personal-data handling is scoped to. **Also includes `crew_certificate_attachments`** (new this session, `PROJECT_PLAN.md` §3) — passport/visa scans and similar sensitive documents, following `certificate_attachments`' file-upload pattern and `SECURITY_PLAN.md` §6's security procedure (magic-byte validation, UUID storage filenames, authenticated serving route). Scrub-PII must void/remove a member's stored attachments too, not just their text fields.
+- [x] The Settings module's task additionally includes the certificate-type/issuing-authority/system-lists management UI referenced across several earlier modules' "add a new type" links (`DESIGN_HANDOFF.md` §8's Settings row) — build Settings before or alongside whichever module first needs to link to it, not strictly last, despite its §7a build-order position. **Only Users & Roles (§7a) within Settings depends on Auth existing** — System Lists, General, Company Profile, and Form Requirements don't need `users` at all; don't defer the whole Settings module behind Phase 3 — `module-build-order.mermaid` reflects this already (`AUTH --> USERROLES` only, not `AUTH --> SET`; this bullet just restates the reasoning for that edge, not a pending fix).
 
 ### Task 5.4: Non-module items — Alerts, Dashboard, the vessel-detail integration pass, Export
 
 These four don't fit Task 5.2/5.3's "match Certificates file-for-file" shape, so each needs its own brief scope statement rather than the generic delegation above:
 
-- [ ] **Alerts aggregator (step 11):** no new tables — `src/modules/alerts/alerts.controller.ts` + `alerts.model.ts` per `PROJECT_PLAN.md` §5's fully-specified `AlertItem`/`getAlerts()` interface, plus `src/app/dashboard/alerts/page.tsx` and the reusable `alerts-list.tsx` component. Depends on Certificates, Crew, Insurance, and Deficiencies all existing (it queries all four). **Tool:** Claude Code for the aggregator query logic (cross-table, must resolve `criticalDays` once per call per §5's own correction note); Cursor for the filtered/sorted feed UI.
-- [ ] **Dashboard (step 13):** replaces the placeholder `src/app/dashboard/page.tsx` — no new tables, consumes `getAlerts()` plus lightweight `count()` queries per `PROJECT_PLAN.md` §6's 7-card spec. Depends on Alerts, Monthly Executed Forms, Deficiencies, and Manuals. **Tool:** Cursor-led (this is the most visually composed screen in the app — card grid + multiple preview tables), with Claude Code providing the data-fetching functions it consumes.
-- [ ] **Vessel-detail integration pass (step 10):** not a new module — **corrected (Eng.MHD, this session)**: the tab list above (Certificates/Crew/Insurance/Manuals/Drawings/Particulars) was a rough bootstrapping note written before the 10-tab audit landed in `PROJECT_PLAN.md`'s Vessel Profile "Notes" section. The authoritative list, sourced directly from both original client docs' explicit tab enumeration, is **10 tabs, no Crew**: General Info, Certificates, Manuals, ISM Forms, Executed Forms, Drawings, Particulars, Insurance, Deficiencies, Notes. Crew members stay on their own top-level page (filterable by vessel from there), not embedded as a vessel-detail tab. ISM Forms shows the full fleet-wide ISM Templates list unfiltered (confirmed — ISM Templates have no `vesselId`, so there's nothing vessel-specific to filter on). Adds all 10 sections to the existing vessel detail page (`src/app/dashboard/vessels/[id]/page.tsx`) as one consolidated pass, per `PROJECT_PLAN.md` §1's explicit note that this is deferred until Crew and Insurance both ship rather than done per-module. **Tool:** Cursor-led (assembling existing pieces into tabs/sections on one page is exactly the live-layout work Cursor is suited for); Claude Code only if a new cross-module query helper turns out to be needed.
-- [ ] **Export to Excel/PDF (step 15):** a shared `exportToExcel(rows, columns)`/`exportToPdf(rows, columns)` utility (`PROJECT_PLAN.md` build-order note), applied first to Certificates and Deficiencies, then rolled out to the rest. No new tables (Certificates/Deficiencies phase), **but a real dependency once it reaches Crew**: per `PROJECT_PLAN.md` §15's new security note, the utility must write an `access_logs` row (`accessType: "export"`) when the source rows are Crew data, and a plain `activity_logs` row (`actionType: "exported"`) for every other module — this means the Crew rollout of Export can't ship before the Phase 4 `access_logs` table exists, a real ordering constraint not previously documented. **Tool:** Claude Code for the shared utility (reused everywhere, so it belongs in the "must be consistent" category); Cursor wires the Export button on each list page to it, one module at a time.
+- [x] **Alerts aggregator (step 11):** no new tables — `src/modules/alerts/alerts.controller.ts` + `alerts.model.ts` per `PROJECT_PLAN.md` §5's fully-specified `AlertItem`/`getAlerts()` interface, plus `src/app/dashboard/alerts/page.tsx` and the reusable `alerts-list.tsx` component. Depends on Certificates, Crew, Insurance, and Deficiencies all existing (it queries all four). **Tool:** Claude Code for the aggregator query logic (cross-table, must resolve `criticalDays` once per call per §5's own correction note); Cursor for the filtered/sorted feed UI.
+- [x] **Dashboard (step 13):** replaces the placeholder `src/app/dashboard/page.tsx` — no new tables, consumes `getAlerts()` plus lightweight `count()` queries per `PROJECT_PLAN.md` §6's 7-card spec. Depends on Alerts, Monthly Executed Forms, Deficiencies, and Manuals. **Tool:** Cursor-led (this is the most visually composed screen in the app — card grid + multiple preview tables), with Claude Code providing the data-fetching functions it consumes.
+- [ ] **Vessel-detail integration pass (step 10):** not a new module — **corrected (Eng.MHD, this session)**: the tab list above (Certificates/Crew/Insurance/Manuals/Drawings/Particulars) was a rough bootstrapping note written before the 10-tab audit landed in `PROJECT_PLAN.md`'s Vessel Profile "Notes" section. The authoritative list, sourced directly from both original client docs' explicit tab enumeration, is **10 tabs, no Crew**: General Info, Certificates, Manuals, ISM Forms, Executed Forms, Drawings, Particulars, Insurance, Deficiencies, Notes. Crew members stay on their own top-level page (filterable by vessel from there), not embedded as a vessel-detail tab. ISM Forms shows the full fleet-wide ISM Templates list unfiltered (confirmed — ISM Templates have no `vesselId`, so there's nothing vessel-specific to filter on). Adds all 10 sections to the existing vessel detail page (`src/app/dashboard/vessels/[id]/page.tsx`) as one consolidated pass, per `PROJECT_PLAN.md` §1's explicit note that this is deferred until Crew and Insurance both ship rather than done per-module. **Tool:** Cursor-led (assembling existing pieces into tabs/sections on one page is exactly the live-layout work Cursor is suited for); Claude Code only if a new cross-module query helper turns out to be needed. (PARTIAL: 10 tabs present; confirm every panel content depth vs PROJECT_PLAN)
+- [x] **Export to Excel/PDF (step 15):** a shared `exportToExcel(rows, columns)`/`exportToPdf(rows, columns)` utility (`PROJECT_PLAN.md` build-order note), applied first to Certificates and Deficiencies, then rolled out to the rest. No new tables (Certificates/Deficiencies phase), **but a real dependency once it reaches Crew**: per `PROJECT_PLAN.md` §15's new security note, the utility must write an `access_logs` row (`accessType: "export"`) when the source rows are Crew data, and a plain `activity_logs` row (`actionType: "exported"`) for every other module — this means the Crew rollout of Export can't ship before the Phase 4 `access_logs` table exists, a real ordering constraint not previously documented. **Tool:** Claude Code for the shared utility (reused everywhere, so it belongs in the "must be consistent" category); Cursor wires the Export button on each list page to it, one module at a time.
 
 ### Task 5.5: Email digest — outbound compliance alerts (step 16, new — added this session)
 
@@ -265,16 +265,16 @@ Full design in `PROJECT_PLAN.md` §12b. Reviewed independently by Cursor before 
 
 **Tool split:** Claude Code for the scheduled job, provider adapter, and template escaping (backend, security-sensitive, must not leak more than §12b specifies); Cursor for the Settings on/off toggle UI (small, matches the existing Settings > General pattern).
 
-- [ ] Add `email_deliveries` to `schema.ts`; migrate.
-- [ ] Build the provider adapter behind an interface (e.g. `sendEmail(to, subject, text)`) — Resend/Postmark implementation is an env-configured choice, not hardcoded to one vendor in the calling code.
-- [ ] Build the digest job: `getAlerts()` → group by recipient (all Admin-role users) → check `email_deliveries` idempotency → render template → send → record delivery.
-- [ ] Wire the cron/scheduler entry in the Phase 7 deployment runbook.
-- [ ] Add the Settings on/off toggle; digest job checks it before doing anything.
-- [ ] Deep links in the email require an existing session login — no long-lived tokens embedded in the URL (§12b).
-- [ ] Log "digest sent to user X, date Y" server-side (the `email_deliveries` row itself satisfies this — no separate log needed).
+- [x] Add `email_deliveries` to `schema.ts`; migrate.
+- [x] Build the provider adapter behind an interface (e.g. `sendEmail(to, subject, text)`) — Resend/Postmark implementation is an env-configured choice, not hardcoded to one vendor in the calling code.
+- [x] Build the digest job: `getAlerts()` → group by recipient (all Admin-role users) → check `email_deliveries` idempotency → render template → send → record delivery.
+- [ ] Wire the cron/scheduler entry in the Phase 7 deployment runbook. (PARTIAL: app route + README; no docker-compose.prod cron)
+- [x] Add the Settings on/off toggle; digest job checks it before doing anything.
+- [x] Deep links in the email require an existing session login — no long-lived tokens embedded in the URL (§12b).
+- [x] Log "digest sent to user X, date Y" server-side (the `email_deliveries` row itself satisfies this — no separate log needed).
 - [ ] **GDPR artifact (Phase 4-adjacent):** add a line for the email provider as a data processor/subprocessor to the record-of-processing-activities document once that's drafted (Phase 4) — this task doesn't draft that document itself, just flags the dependency.
-- [ ] Full doc-comment pass per `CODE_CONVENTIONS.md` — `src/lib/email/` is shared/foundational, no exceptions.
-- [ ] Commit in scoped steps (schema → adapter → job → Settings toggle → cron wiring).
+- [x] Full doc-comment pass per `CODE_CONVENTIONS.md` — `src/lib/email/` is shared/foundational, no exceptions.
+- [x] Commit in scoped steps (schema → adapter → job → Settings toggle → cron wiring).
 
 ---
 
@@ -339,13 +339,13 @@ remains provisional. Phase 6 build prompts may proceed against it directly.
 
 Once the mapping is re-confirmed:
 
-- [ ] Add `userRoleEnum` and `users.vesselId` to `schema.ts` per above; migrate.
-- [ ] Add a `WRITE_ROLES`-style table/config read by both server-side enforcement and UI gating (per `MASTER_PLAN.md` Phase 6) — binary per-module, not 3-tier.
-- [ ] Add a vessel-scoping check alongside the role check for `management_user`/`vessel_user` — every read/write in a vessel-scoped module must also verify the record's `vesselId` matches the caller's `users.vesselId`, not just that the role permits the module. This is a materially bigger check than a flat role gate (row-level, not just action-level).
-- [ ] Add role (+ vessel-scope) checks to every Server Action across every module built in Phase 5 — this is a cross-cutting retrofit pass, not a new module, so budget it as touching every `actions.ts` in the repo.
+- [x] Add `userRoleEnum` and `users.vesselId` to `schema.ts` per above; migrate.
+- [x] Add a `WRITE_ROLES`-style table/config read by both server-side enforcement and UI gating (per `MASTER_PLAN.md` Phase 6) — binary per-module, not 3-tier.
+- [x] Add a vessel-scoping check alongside the role check for `management_user`/`vessel_user` — every read/write in a vessel-scoped module must also verify the record's `vesselId` matches the caller's `users.vesselId`, not just that the role permits the module. This is a materially bigger check than a flat role gate (row-level, not just action-level).
+- [x] Add role (+ vessel-scope) checks to every Server Action across every module built in Phase 5 — this is a cross-cutting retrofit pass, not a new module, so budget it as touching every `actions.ts` in the repo.
 - [ ] Add the RLS policies deferred from Phase 4 now that role/vessel-scoping data exists — RLS shape is now confirmed "role-and-row-based" (`SECURITY_PLAN.md` §4's open question is resolved: vessel-level scoping is a real requirement).
-- [ ] Resolve the sidebar-visibility question (`PLAN_REVIEW.md` finding #6) — hide, disable, or visible-but-403 for a nav item the caller's role/vessel-scope can't reach.
-- [ ] **Tool:** Claude Code — this is the same "must be consistent across every file" class of work as the Postgres migration, just wider (every module instead of one schema file).
+- [x] Resolve the sidebar-visibility question (`PLAN_REVIEW.md` finding #6) — hide, disable, or visible-but-403 for a nav item the caller's role/vessel-scope can't reach.
+- [ ] **Tool:** Claude Code — this is the same "must be consistent across every file" class of work as the Postgres migration, just wider (every module instead of one schema file). (SUPERSEDED: tooling instruction)
 
 ---
 
@@ -356,7 +356,7 @@ Per `MASTER_PLAN.md` Phase 7's fully-specified runbook (UFW, fail2ban, LUKS, fou
 - [ ] **Claude Code** authors: `docker-compose.prod.yml` (app + Postgres + Caddy + GlitchTip + Redis/Valkey sidecar, pinned image versions, non-root/read-only/capability-dropped per the runbook), the UFW/fail2ban provisioning script, the backup script (`pg_dump`/`pgBackRest` cron + Backblaze B2 upload).
 - [ ] **Eng.MHD directly** (neither tool has the credentials or account access to do this): provisions the Hetzner VPS, sets up the Backblaze B2 bucket, points DNS at the VPS per the two-option domain model in `PROJECT_PLAN.md`'s Cross-cutting notes, and runs the provisioning script against the real server.
 - [ ] Trivy (or equivalent) image scanning added to the CI/CD pipeline from Phase 2, gating deploys — Claude Code.
-- [ ] **Email digest provisioning (new, Round 5 — Task 5.5's cron dependency, previously unlisted here):** create the Resend/Postmark account (Eng.MHD's provider choice, §12b), verify the sending domain and set its SPF/DKIM/DMARC DNS records (Eng.MHD, alongside the other DNS work above), store the provider API key as an environment secret (Claude Code wires the env plumbing, Eng.MHD supplies the actual key value), and add the digest job's cron entry to `docker-compose.prod.yml`/the scheduler (Claude Code). Sign the provider's DPA before real compliance data goes through it (Eng.MHD, feeds the Phase 4 record-of-processing-activities document).
+- [ ] **Email digest provisioning (new, Round 5 — Task 5.5's cron dependency, previously unlisted here):** create the Resend/Postmark account (Eng.MHD's provider choice, §12b), verify the sending domain and set its SPF/DKIM/DMARC DNS records (Eng.MHD, alongside the other DNS work above), store the provider API key as an environment secret (Claude Code wires the env plumbing, Eng.MHD supplies the actual key value), and add the digest job's cron entry to `docker-compose.prod.yml`/the scheduler (Claude Code). Sign the provider's DPA before real compliance data goes through it (Eng.MHD, feeds the Phase 4 record-of-processing-activities document). (PARTIAL: env wiring exists; provider account/DPA external)
 
 ---
 

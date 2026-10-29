@@ -202,18 +202,18 @@ The `engineering:incident-response` skill can structure this into a fuller runbo
 
 Maps directly onto `MASTER_PLAN.md` Phase 8's OWASP Top 10 (2025) pass — restated here as literal, checkable items rather than a narrative, so it functions as a real gate before any customer goes live:
 
-- [ ] **Broken Access Control** — every Server Action/API route checked for a role/session guard; IDOR check per module (§5) once RBAC ships.
-- [ ] **Security Misconfiguration** — headers from §8.1 present on every response; no default credentials anywhere (Postgres, GlitchTip, Redis); debug/verbose error output disabled in production.
+- [ ] **Broken Access Control** — every Server Action/API route checked for a role/session guard; IDOR check per module (§5) once RBAC ships. (PARTIAL: app-layer RBAC; no Postgres RLS)
+- [ ] **Security Misconfiguration** — headers from §8.1 present on every response; no default credentials anywhere (Postgres, GlitchTip, Redis); debug/verbose error output disabled in production. (PARTIAL: headers present; prod defaults unverified)
 - [ ] **Software Supply Chain Failures** — `npm audit`/Trivy both green (§11).
-- [ ] **Cryptographic Failures** — Argon2id parameters confirmed (§2.1); TLS-only confirmed (no HTTP fallback); backups encrypted (§7).
-- [ ] **Injection** — no raw SQL string interpolation anywhere (§5); Zod validation confirmed present on every mutating endpoint, not just the UI form.
-- [ ] **Insecure Design** — this document plus `MASTER_PLAN.md`/`PROJECT_PLAN.md` reviewed as a whole once Phases 3–7 are real, per Phase 8's own framing.
-- [ ] **Identification & Authentication Failures** — session `maxAge`/rotation confirmed (§3); rate limiting confirmed live on login (§2.4), not just planned.
-- [ ] **Data Integrity Failures** — the RESTRICT/CASCADE/SET NULL delete policy spot-checked against the actual migrated schema, not just the plan document.
-- [ ] **Security Logging & Alerting Failures** — §10's alerting actually firing on a test trigger (e.g., deliberately fail a login 5 times and confirm something visible happens), not just theoretically configured.
-- [ ] **Mishandling of Exceptional Conditions** — confirm a thrown error never leaks a stack trace or internal path to the browser in production mode; confirm failures fail closed (deny access) rather than open anywhere an auth check could itself error.
+- [ ] **Cryptographic Failures** — Argon2id parameters confirmed (§2.1); TLS-only confirmed (no HTTP fallback); backups encrypted (§7). (PARTIAL: Argon2id ok; TLS/backups need prod)
+- [x] **Injection** — no raw SQL string interpolation anywhere (§5); Zod validation confirmed present on every mutating endpoint, not just the UI form.
+- [ ] **Insecure Design** — this document plus `MASTER_PLAN.md`/`PROJECT_PLAN.md` reviewed as a whole once Phases 3–7 are real, per Phase 8's own framing. (PARTIAL: this review; formal Phase-8 still open)
+- [x] **Identification & Authentication Failures** — session `maxAge`/rotation confirmed (§3); rate limiting confirmed live on login (§2.4), not just planned.
+- [ ] **Data Integrity Failures** — the RESTRICT/CASCADE/SET NULL delete policy spot-checked against the actual migrated schema, not just the plan document. (PARTIAL: schema policies present; full FK audit incomplete)
+- [ ] **Security Logging & Alerting Failures** — §10's alerting actually firing on a test trigger (e.g., deliberately fail a login 5 times and confirm something visible happens), not just theoretically configured. (PARTIAL: logError/GlitchTip optional; no evidenced alert path)
+- [ ] **Mishandling of Exceptional Conditions** — confirm a thrown error never leaks a stack trace or internal path to the browser in production mode; confirm failures fail closed (deny access) rather than open anywhere an auth check could itself error. (PARTIAL: fail-closed in auth/cron; prod error leakage unverified)
 - [ ] **Backup restore drill** completed at least once (§7) before the first real customer's data is at stake.
-- [ ] **Break-glass admin recovery procedure** (§2.3) written down and location known to more than one person.
+- [ ] **Break-glass admin recovery procedure** (§2.3) written down and location known to more than one person. (PARTIAL: script+RUNBOOK exist; multi-person knowledge external)
 
 **Sign-off:** per `MASTER_PLAN.md`'s standing caveat, this checklist produces findings for Eng.MHD (and, for the GDPR-specific items, a real DPO/lawyer) to act on — neither tool can certify legal/compliance sign-off, only verify the technical controls listed above are actually in place.
 

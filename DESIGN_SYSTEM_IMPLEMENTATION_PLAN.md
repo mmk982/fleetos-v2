@@ -39,7 +39,7 @@ This plan is written to be split across **Claude Code** (this agent, or a `claud
 - Create: `.gitattributes` (repo root)
 - Modify: none (the CRLF fix is a re-checkout, not hand-editing 22 files)
 
-- [ ] **Step 1: Add `.gitattributes` to force LF for text files**
+- [x] **Step 1: Add `.gitattributes` to force LF for text files**
 
 ```gitattributes
 * text=auto eol=lf
@@ -56,7 +56,7 @@ git status --short
 ```
 Expected: the 22 previously-CRLF files show as modified (now LF), nothing shows as CRLF anymore.
 
-- [ ] **Step 3: Commit the pending design docs and the normalization separately**
+- [x] **Step 3: Commit the pending design docs and the normalization separately**
 
 ```bash
 git add PROJECT_PLAN.md DESIGN_HANDOFF.md
@@ -66,7 +66,7 @@ git commit -m "chore: normalize line endings to LF via .gitattributes"
 git push origin master
 ```
 
-- [ ] **Step 4: Create the working branch for this plan**
+- [ ] **Step 4: Create the working branch for this plan** (SUPERSEDED: work landed on cursor/rbac-enforcement)
 
 ```bash
 git checkout -b design-system-phase-1
@@ -83,7 +83,7 @@ git push -u origin design-system-phase-1
 **Interfaces:**
 - Produces: CSS custom properties (`--bg-page`, `--bg-sidebar`, `--border`, `--bg-card`, `--accent`, `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-muted`, plus `--status-success-bg/-text`, `--status-warning-bg/-text`, `--status-danger-bg/-text`) and matching Tailwind utility classes (`bg-page`, `bg-sidebar`, `border-default`, `bg-card`, `text-primary`, `text-secondary`, `text-tertiary`, `text-muted`) that every later task consumes. Dark mode is opt-in via a `.dark` class on `<html>`, driven by `next-themes` (Task 2) — not `prefers-color-scheme`.
 
-- [ ] **Step 1: Replace the starter tokens with the DESIGN_HANDOFF.md palette**
+- [ ] **Step 1: Replace the starter tokens with the DESIGN_HANDOFF.md palette** (PARTIAL: tokens exist; hexes diverge from DESIGN_HANDOFF)
 
 ```css
 @import "tailwindcss";
@@ -153,11 +153,11 @@ Note: the light-mode sidebar (`--bg-sidebar: #123A63`) is intentionally a differ
 
 **Correction (caught in Cursor's independent review of this plan):** the token block above now uses `--font-inter` — an earlier version of this task kept the starter app's `Geist`/`Geist_Mono` fonts in `--font-sans`, which contradicts `DESIGN_HANDOFF.md` §1.4 (`--font-latin: Inter, sans-serif`) and `PROJECT_PLAN.md` §14a (both explicitly specify Inter for Latin text, paired with an Arabic font for `dir="rtl"`). Task 2's font import changes accordingly, below.
 
-- [ ] **Step 2: Verify tokens compile**
+- [x] **Step 2: Verify tokens compile**
 
 Run: `npm run dev`, open `/`, open devtools → Elements → confirm `--bg-page` etc. are computed on `<body>`. No visual check needed yet since no component consumes the new utility classes until Task 4+.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/globals.css
@@ -176,13 +176,13 @@ git commit -m "feat(design-system): add DESIGN_HANDOFF.md token layer + class da
 - Consumes: nothing new.
 - Produces: `<ThemeProvider>` wrapping the app (attribute `class`, `defaultTheme="light"`, `enableSystem={false}` — per Global Constraints, theme and locale are independent and neither should silently follow OS/browser settings for this internal fleet-office tool); `<ThemeToggle />` component other tasks (TopBar, Task 4) import and render.
 
-- [ ] **Step 1: Install next-themes**
+- [x] **Step 1: Install next-themes**
 
 ```bash
 npm install next-themes
 ```
 
-- [ ] **Step 2: Wrap the root layout**
+- [x] **Step 2: Wrap the root layout**
 
 ```tsx
 // src/app/layout.tsx
@@ -221,7 +221,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
 `suppressHydrationWarning` on `<html>` is required by next-themes (it sets the `class` attribute client-side before hydration).
 
-- [ ] **Step 3: Build the toggle component**
+- [x] **Step 3: Build the toggle component**
 
 ```tsx
 // src/components/theme-toggle.tsx
@@ -259,7 +259,7 @@ The `h-11 w-11` on mobile / `md:h-8 md:w-8` on desktop satisfies the 44px mobile
 
 Run `npm run dev`, open `/`, click the (not-yet-placed) toggle isn't wired to any UI yet — instead temporarily render `<ThemeToggle />` in `src/app/page.tsx`, confirm clicking flips `<html class="dark">` in devtools and the page background changes color (proves Task 1's tokens are live). Remove the temporary render before committing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json package-lock.json src/app/layout.tsx src/components/theme-toggle.tsx
@@ -279,7 +279,7 @@ Scope note: this task builds the **mechanism** (locale toggle, `dir="rtl"`, font
 **Interfaces:**
 - Produces: `<Identifier>{children}</Identifier>` — a `<span>` wrapper with `style={{ direction: "ltr", unicodeBidi: "isolate" }}`. Every later task that renders a vessel name, IMO number, certificate/policy number, or file name **must** wrap it in `<Identifier>`, per the Global Constraints rule.
 
-- [ ] **Step 1: Build the `Identifier` primitive**
+- [x] **Step 1: Build the `Identifier` primitive**
 
 ```tsx
 // src/components/ui/identifier.tsx
@@ -382,7 +382,7 @@ git commit -m "feat(design-system): scaffold locale/RTL toggle + Identifier LTR-
 - Consumes: `ThemeToggle` (Task 2), `LocaleToggle` (Task 3).
 - Produces: `<DashboardSidebar />` (desktop, ≥768px, always 5 groups per §2.1), `<TopBar companyName={string} />`, `<MobileNavOverlay open={boolean} onClose={() => void} />`. Module route pages (Task 7+) don't touch these directly — they're mounted once in `src/app/dashboard/layout.tsx`.
 
-- [ ] **Step 1: Rewrite the sidebar with the full 5-group structure**
+- [x] **Step 1: Rewrite the sidebar with the full 5-group structure**
 
 ```tsx
 // src/components/dashboard-sidebar.tsx
@@ -484,7 +484,7 @@ export function DashboardSidebar() {
 
 Note the active-item classes use logical `border-s-2` (start-edge), not `border-l-2` — this is what makes the active indicator mirror correctly in RTL per §2.1 ("a true mirror, not just repositioned").
 
-- [ ] **Step 2: Build the TopBar**
+- [x] **Step 2: Build the TopBar**
 
 ```tsx
 // src/components/layout/top-bar.tsx
@@ -534,7 +534,7 @@ export function TopBar({ locale, companyName }: { locale: "en" | "ar"; companyNa
 }
 ```
 
-- [ ] **Step 3: Build the mobile full-screen overlay nav**
+- [ ] **Step 3: Build the mobile full-screen overlay nav** (PARTIAL: mobile nav is side panel, not full-screen)
 
 Per §2.2 this is a full-screen overlay replacing the top bar, not a slide-out drawer — reuse the same `NAV_GROUPS` data as the sidebar so the two never drift apart. Export `NAV_GROUPS` from `dashboard-sidebar.tsx` and import it here.
 
@@ -583,11 +583,11 @@ export function MobileNavOverlay({ open, onClose }: { open: boolean; onClose: ()
 }
 ```
 
-- [ ] **Step 4: Export `NAV_GROUPS` from the sidebar file**
+- [ ] **Step 4: Export `NAV_GROUPS` from the sidebar file** (PARTIAL: exported as NAV, not NAV_GROUPS)
 
 Add `export` to the `NAV_GROUPS` declaration from Step 1 (it's written as a plain `const` above — change to `export const NAV_GROUPS: NavGroup[] = [...]`).
 
-- [ ] **Step 5: Wire both into the dashboard layout**
+- [x] **Step 5: Wire both into the dashboard layout**
 
 ```tsx
 // src/app/dashboard/layout.tsx
@@ -618,7 +618,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
 
 `npm run dev`, open `/dashboard`, check: (a) light+EN, (b) dark+EN via ThemeToggle, (c) light+AR via LocaleToggle — confirm sidebar switches to the trailing edge visually via `dir="rtl"` and the active-item border flips to the correct side, (d) dark+AR. Resize below 768px, confirm sidebar disappears and hamburger + overlay work in all 4 combos too.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/dashboard-sidebar.tsx src/components/layout/ src/app/dashboard/layout.tsx
@@ -639,7 +639,7 @@ git commit -m "feat(design-system): 5-group sidebar, top bar, mobile nav overlay
   - `<Drawer open={boolean} onClose={() => void} title={string}>{children}</Drawer>` — desktop side drawer / mobile full-screen sheet, switching at the 768px breakpoint via CSS, not JS (`Drawer` renders both structures and lets Tailwind's `md:` variants decide which is visible, so there's no layout flash on resize).
   - `<Modal open={boolean} onClose={() => void} variant="centered" | "bottom-sheet">{children}</Modal>`
 
-- [ ] **Step 1: StatusPill**
+- [x] **Step 1: StatusPill**
 
 ```tsx
 // src/components/ui/status-pill.tsx
@@ -667,7 +667,7 @@ export function StatusPill({
 
 Callers decide the tone mapping per-domain (e.g. Vessels `active` → `success`, `inactive` → `warning`, `archived` → `neutral`) — that mapping lives in each module, not in this shared component, since "what counts as danger" differs per module (§1.3 lists the 3 tones as domain-agnostic primitives, not fixed per status string).
 
-- [ ] **Step 2: ListToolbar (desktop toolbar row / mobile "Filters" button collapse per §3)**
+- [x] **Step 2: ListToolbar (desktop toolbar row / mobile "Filters" button collapse per §3)**
 
 ```tsx
 // src/components/ui/list-toolbar.tsx
@@ -725,7 +725,7 @@ export function ListToolbar({
 }
 ```
 
-- [ ] **Step 3: Drawer (side drawer desktop / full-screen sheet mobile, per §4.1 and §4.3)**
+- [x] **Step 3: Drawer (side drawer desktop / full-screen sheet mobile, per §4.1 and §4.3)**
 
 ```tsx
 // src/components/ui/drawer.tsx
@@ -786,7 +786,7 @@ export function Drawer({
 
 **Not yet handled: a real focus trap** (Tab/Shift+Tab cycling within the open drawer rather than escaping to the page behind it). `role="dialog"`/`aria-modal`/Escape/scroll-lock above cover the most common WCAG findings cheaply — the accessibility gap Cursor's review flagged; a full focus trap is enough additional logic (or a small dependency) that it's called out here explicitly rather than silently included — add one (hand-rolled or a small library) before Task 9's accessibility pass, not after.
 
-- [ ] **Step 4: Modal (centered desktop / bottom sheet mobile, per §4.2 and §4.4)**
+- [x] **Step 4: Modal (centered desktop / bottom sheet mobile, per §4.2 and §4.4)**
 
 ```tsx
 // src/components/ui/modal.tsx
@@ -846,7 +846,7 @@ export function Modal({
 
 **Same focus-trap caveat as Drawer** — Tab cycling within the open modal isn't implemented here either; add before Task 9's accessibility pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/ui/status-pill.tsx src/components/ui/list-toolbar.tsx src/components/ui/drawer.tsx src/components/ui/modal.tsx
@@ -862,11 +862,11 @@ git commit -m "feat(design-system): StatusPill, ListToolbar, Drawer, Modal primi
 
 No auth backend exists yet (`MASTER_PLAN.md` Phase 3 is unbuilt) — this is a **static UI-only** screen per §8's "Login — Single form screen," wired to a placeholder `<form>` with no real submit handler yet. Don't invent a fake authentication flow; leave the form action as a TODO comment pointing at Phase 3, not a stubbed "fake login."
 
-- [ ] **Step 1: Build the screen** (no code dictated here — build directly against `DESIGN_HANDOFF.md` §4 for the card/input styling and the token classes from Task 1; this is exactly the kind of single, isolated, look-at-it-live screen Cursor should build interactively rather than have handed to it as finished JSX)
+- [ ] **Step 1: Build the screen** (no code dictated here — build directly against `DESIGN_HANDOFF.md` §4 for the card/input styling and the token classes from Task 1; this is exactly the kind of single, isolated, look-at-it-live screen Cursor should build interactively rather than have handed to it as finished JSX) (PARTIAL: login tokenized; EN/AR polish deferred)
 
 - [ ] **Step 2: Verify** in light/dark × EN/AR (4 combinations) at both desktop and mobile widths.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/login/
@@ -883,10 +883,10 @@ git commit -m "feat(design-system): Login screen (reference implementation)"
 **Interfaces:**
 - Consumes: `StatusPill`, `ListToolbar`, `Identifier` (Tasks 3 and 5).
 
-- [ ] **Step 1:** Replace the current ad-hoc `<table>` markup with the canonical pattern from §3: header row (title + "+ Add vessel"), `<ListToolbar>` directly below (search + status filter `<select>` + Export), then the table using the new token classes (`bg-card`, `border-default`, `text-muted`/`text-secondary`). Wrap `v.name` and `formatImo(v.imoNumber)` in `<Identifier>` per the Global Constraints rule — these are exactly the vessel-name/IMO-number case §5 calls out by name. Replace the current bare `<span className="capitalize">{v.status}</span>` with `<StatusPill tone={...}>`, mapping `active` → `success`, `inactive` → `warning`, `archived` → `neutral`.
-- [ ] **Step 2:** Add the mobile stacked-card layout per §3 ("Mobile") — each row becomes a card with the vessel name as the 14px/500 title, `StatusPill` top-right, remaining fields as label/value lines below.
+- [x] **Step 1:** Replace the current ad-hoc `<table>` markup with the canonical pattern from §3: header row (title + "+ Add vessel"), `<ListToolbar>` directly below (search + status filter `<select>` + Export), then the table using the new token classes (`bg-card`, `border-default`, `text-muted`/`text-secondary`). Wrap `v.name` and `formatImo(v.imoNumber)` in `<Identifier>` per the Global Constraints rule — these are exactly the vessel-name/IMO-number case §5 calls out by name. Replace the current bare `<span className="capitalize">{v.status}</span>` with `<StatusPill tone={...}>`, mapping `active` → `success`, `inactive` → `warning`, `archived` → `neutral`.
+- [x] **Step 2:** Add the mobile stacked-card layout per §3 ("Mobile") — each row becomes a card with the vessel name as the 14px/500 title, `StatusPill` top-right, remaining fields as label/value lines below.
 - [ ] **Step 3: Verify** in light/dark × EN/AR at both desktop and mobile widths; confirm vessel names/IMO numbers stay LTR even when the row is in an RTL table.
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/dashboard/vessels/page.tsx
@@ -925,8 +925,8 @@ git commit -m "feat(design-system): retrofit Vessels add/edit to Drawer pattern"
 **Files:** none (verification only)
 
 - [ ] **Step 1:** For each of Login, Vessels list, Vessels add/edit drawer — check all 8 combinations: {light, dark} × {EN, AR} × {desktop ≥1280px, mobile 375-414px}. Use the `design:accessibility-review` skill for a WCAG 2.1 AA pass per `DESIGN_HANDOFF.md` §6 (not yet formally audited anywhere in the project).
-- [ ] **Step 2:** Confirm no component still uses a physical-direction Tailwind class (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`, `border-l-`, `border-r-`) where a logical one (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `border-s-`, `border-e-`) belongs — grep for these across the files touched in Tasks 4-8.
-- [ ] **Step 3:** File any gaps found as follow-up items rather than silently patching around them mid-QA.
+- [x] **Step 2:** Confirm no component still uses a physical-direction Tailwind class (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`, `border-l-`, `border-r-`) where a logical one (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `border-s-`, `border-e-`) belongs — grep for these across the files touched in Tasks 4-8.
+- [ ] **Step 3:** File any gaps found as follow-up items rather than silently patching around them mid-QA. (PARTIAL: some gaps in PLAN_REVIEW only)
 
 ---
 
@@ -938,7 +938,7 @@ Everything above covers 2 of 13 modules named in `DESIGN_HANDOFF.md` §8. The ot
 - Create: `.claude/skills/fleetos-design-system/SKILL.md`
 
 - [ ] **Step 1:** Write a Skill file whose body is a condensed pointer to `DESIGN_HANDOFF.md` (don't duplicate its content — reference it) plus the concrete primitive import paths this plan produced (`@/components/ui/status-pill`, `@/components/ui/drawer`, `@/components/ui/modal`, `@/components/ui/list-toolbar`, `@/components/ui/identifier`) and the two finished reference implementations (Vessels list + drawer) as the pattern to copy.
-- [ ] **Step 2:** For each remaining module, dispatch one Claude Code subagent per module (per the `dispatching-parallel-agents` / `subagent-driven-development` skills already available in this environment), each given: the module's row from `DESIGN_HANDOFF.md` §8, the relevant schema/controller under `src/modules/<module>/` once it exists, and the finished Vessels retrofit (Tasks 7-8) as the literal pattern to match file-for-file.
+- [ ] **Step 2:** For each remaining module, dispatch one Claude Code subagent per module (per the `dispatching-parallel-agents` / `subagent-driven-development` skills already available in this environment), each given: the module's row from `DESIGN_HANDOFF.md` §8, the relevant schema/controller under `src/modules/<module>/` once it exists, and the finished Vessels retrofit (Tasks 7-8) as the literal pattern to match file-for-file. (SUPERSEDED: modules already built)
 - [ ] **Step 3:** Human (Eng.MHD) reviews each module's diff in Cursor before merging — this keeps the "many files, one pattern" bulk generation on Claude Code while keeping visual sign-off in the IDE where it's actually being looked at.
 
 ---
