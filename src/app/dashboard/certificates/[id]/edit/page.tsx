@@ -9,6 +9,7 @@ import {
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -25,14 +26,23 @@ export default async function EditCertificatePage(props: PageProps) {
     redirect(`/dashboard/certificates/${id}`);
   }
 
-  const [cert, vessels, types, authorities, parentCandidates] =
-    await Promise.all([
-      getCertificateById(access, id),
-      listSelectableVessels(access),
-      listCertificateTypes(access),
-      listIssuingAuthorities(access),
-      listParentCandidates(access),
-    ]);
+  let cert;
+  let vessels;
+  let types;
+  let authorities;
+  let parentCandidates;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    cert = await getCertificateById(access, id);
+    vessels = await listSelectableVessels(access);
+    types = await listCertificateTypes(access);
+    authorities = await listIssuingAuthorities(access);
+    parentCandidates = await listParentCandidates(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!cert) {
     notFound();
   }

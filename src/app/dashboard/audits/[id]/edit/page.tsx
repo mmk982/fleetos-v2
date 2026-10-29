@@ -4,6 +4,7 @@ import { EditAuditDrawer } from "@/components/edit-audit-drawer";
 import { getAudit } from "@/modules/audits/audit.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -12,10 +13,18 @@ export default async function EditAuditPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
-  const [row, vessels] = await Promise.all([
-    getAudit(access, id),
-    listSelectableVessels(access),
-  ]);
+
+  let row;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    row = await getAudit(access, id);
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!row) notFound();
 
   return (

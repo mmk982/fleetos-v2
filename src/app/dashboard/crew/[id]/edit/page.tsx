@@ -6,6 +6,7 @@ import {
 } from "@/modules/crew/crew.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -21,11 +22,19 @@ export default async function EditCrewPage(props: PageProps) {
     redirect(`/dashboard/crew/${id}`);
   }
 
-  const [member, vessels, categories] = await Promise.all([
-    getCrewMemberById(access, id),
-    listSelectableVessels(access),
-    listCrewCategories(access),
-  ]);
+  let member;
+  let vessels;
+  let categories;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    member = await getCrewMemberById(access, id);
+    vessels = await listSelectableVessels(access);
+    categories = await listCrewCategories(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!member) notFound();
 
   return (

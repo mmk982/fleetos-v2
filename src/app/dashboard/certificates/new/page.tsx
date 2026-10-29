@@ -8,6 +8,7 @@ import {
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -21,12 +22,21 @@ export default async function NewCertificatePage() {
     redirect("/dashboard/certificates");
   }
 
-  const [vessels, types, authorities, parentCandidates] = await Promise.all([
-    listSelectableVessels(access),
-    listCertificateTypes(access),
-    listIssuingAuthorities(access),
-    listParentCandidates(access),
-  ]);
+  let vessels;
+  let types;
+  let authorities;
+  let parentCandidates;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    vessels = await listSelectableVessels(access);
+    types = await listCertificateTypes(access);
+    authorities = await listIssuingAuthorities(access);
+    parentCandidates = await listParentCandidates(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

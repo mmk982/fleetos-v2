@@ -47,6 +47,21 @@ export class ForbiddenError extends Error {
 }
 
 /**
+ * Thrown by {@link requireScopedVesselId} when a vessel-scoped role has no
+ * assigned vessel. Distinct from other {@link ForbiddenError}s so pages can
+ * render {@link NoVesselAssignedNotice} without matching message text.
+ */
+export class MissingVesselAssignmentError extends ForbiddenError {
+  readonly missingVessel = true as const;
+  constructor(
+    message = "Vessel-scoped role has no assigned vessel — access denied.",
+  ) {
+    super(message);
+    this.name = "MissingVesselAssignmentError";
+  }
+}
+
+/**
  * Builds an {@link AccessContext} from a validated session.
  *
  * @param session - Result of `requireSession()` / `validateSession()`.
@@ -151,24 +166,23 @@ export function requireScopedVesselId(ctx: AccessContext): string | undefined {
     return undefined;
   }
   if (!ctx.vesselId) {
-    throw new ForbiddenError(
-      "Vessel-scoped role has no assigned vessel — access denied.",
-    );
+    throw new MissingVesselAssignmentError();
   }
   return ctx.vesselId;
 }
 
 /**
- * True when a vessel-scoped caller has no vessel and a controller threw
- * {@link ForbiddenError}. Pages use this to render a notice instead of 500.
- * Controllers keep fail-closed behaviour via {@link requireScopedVesselId}.
+ * True when a controller threw {@link MissingVesselAssignmentError}.
+ * Pages use this to render a notice instead of 500. Controllers keep
+ * fail-closed behaviour via {@link requireScopedVesselId}.
+ *
+ * `ctx` is accepted for call-site compatibility; classification uses the
+ * dedicated error class only (never message text).
  */
 export function isMissingVesselAssignmentError(
   error: unknown,
-  ctx: AccessContext,
+  _ctx?: AccessContext,
 ): boolean {
-  if (!(error instanceof ForbiddenError)) return false;
-  const role = ctx.role as UserRole | null;
-  if (role !== "vessel_user" && role !== "management_user") return false;
-  return !ctx.vesselId;
+  void _ctx;
+  return error instanceof MissingVesselAssignmentError;
 }

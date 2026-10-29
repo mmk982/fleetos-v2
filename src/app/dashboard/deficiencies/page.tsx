@@ -7,6 +7,7 @@ import {
 import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import { parseDeficiencyStatusFilter } from "@/modules/deficiencies/deficiency.model";
 
@@ -28,17 +29,26 @@ export default async function DeficienciesPage(props: {
 
   const status = parseDeficiencyStatusFilter(sp.status);
 
-  const [rows, vessels, sources, pscInspections] = await Promise.all([
-    listDeficiencies(access, {
+  let rows;
+  let vessels;
+  let sources;
+  let pscInspections;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listDeficiencies(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       status,
       sourceId: uuidSearchParam(sp.sourceId),
       category: sp.category || undefined,
-    }),
-    listSelectableVessels(access),
-    listDeficiencySources(access),
-    listPscInspections(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+    sources = await listDeficiencySources(access);
+    pscInspections = await listPscInspections(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

@@ -2,12 +2,9 @@
  * Full notification history — linked from the top-bar bell, not the sidebar.
  * Spec: PROJECT_PLAN.md §12a.
  */
-import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
 import { NotificationsHistory } from "@/components/notifications-history";
-import {
-  isMissingVesselAssignmentError,
-  toAccessContext,
-} from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import {
   getUnreadCount,
@@ -24,14 +21,12 @@ export default async function NotificationsPage() {
   let rows;
   let unreadCount;
   try {
-    [rows, unreadCount] = await Promise.all([
-      listNotifications(access, { userId: access.userId }),
-      getUnreadCount(access, access.userId),
-    ]);
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listNotifications(access, { userId: access.userId });
+    unreadCount = await getUnreadCount(access, access.userId);
   } catch (error) {
-    if (isMissingVesselAssignmentError(error, access)) {
-      return <NoVesselAssignedNotice />;
-    }
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
     throw error;
   }
 

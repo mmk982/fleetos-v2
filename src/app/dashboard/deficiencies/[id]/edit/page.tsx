@@ -8,6 +8,7 @@ import {
 import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -16,12 +17,22 @@ export default async function EditDeficiencyPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
-  const [row, vessels, sources, pscInspections] = await Promise.all([
-    getDeficiencyById(access, id),
-    listSelectableVessels(access),
-    listDeficiencySources(access),
-    listPscInspections(access),
-  ]);
+
+  let row;
+  let vessels;
+  let sources;
+  let pscInspections;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    row = await getDeficiencyById(access, id);
+    vessels = await listSelectableVessels(access);
+    sources = await listDeficiencySources(access);
+    pscInspections = await listPscInspections(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!row) notFound();
 
   return (

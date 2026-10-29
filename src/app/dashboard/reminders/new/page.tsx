@@ -2,13 +2,23 @@ import Link from "next/link";
 import { ReminderForm } from "@/components/reminder-form";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewReminderPage() {
   const session = await requireSession();
-  const vessels = await listSelectableVessels(toAccessContext(session));
+  const access = toAccessContext(session);
+
+  let vessels;
+  try {
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

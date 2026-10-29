@@ -23,6 +23,7 @@ import {
   crewMemberStatusTone,
 } from "@/modules/crew/crew.model";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -36,20 +37,28 @@ export default async function CrewDetailPage(props: PageProps) {
     getModuleAccess(access.role as UserRole | null, "crew") === "write";
   const { id } = await props.params;
 
-  const member = await getCrewMemberById(access, id, { logView: true });
-  if (!member) notFound();
-
-  const [certs, endorsementTypes] = await Promise.all([
-    listCrewCertificates(access, id),
-    listEndorsementTypes(access),
-  ]);
-
-  const certificates = await Promise.all(
-    certs.map(async (cert) => ({
-      ...cert,
-      attachments: await listCrewCertificateAttachments(access, cert.id),
-    })),
-  );
+  let member;
+  let endorsementTypes;
+  const certificates = [];
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    member = await getCrewMemberById(access, id, { logView: true });
+    if (member) {
+      const certs = await listCrewCertificates(access, id);
+      endorsementTypes = await listEndorsementTypes(access);
+      for (const cert of certs) {
+        certificates.push({
+          ...cert,
+          attachments: await listCrewCertificateAttachments(access, cert.id),
+        });
+      }
+    }
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
+  if (!member || !endorsementTypes) notFound();
 
   const fields: { label: string; value: ReactNode }[] = [
     {

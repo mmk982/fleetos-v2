@@ -4,6 +4,7 @@ import { listInsurancePolicies } from "@/modules/insurance/insurance.controller"
 import { INSURANCE_TYPES } from "@/modules/insurance/insurance.model";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import type { InsuranceType } from "@/db/schema";
 
@@ -25,13 +26,20 @@ export default async function InsurancePage(props: {
     ? (sp.policyType as InsuranceType)
     : undefined;
 
-  const [rows, vessels] = await Promise.all([
-    listInsurancePolicies(access, {
+  let rows;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listInsurancePolicies(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       policyType,
-    }),
-    listSelectableVessels(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

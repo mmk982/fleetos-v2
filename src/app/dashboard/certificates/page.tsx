@@ -1,16 +1,13 @@
 import { uuidSearchParam } from "@/lib/validation/search-params";
 import Link from "next/link";
 import { CertificatesList } from "@/components/certificates-list";
-import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
 import {
   listCertificates,
   listIssuingAuthorities,
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
-import {
-  isMissingVesselAssignmentError,
-  toAccessContext,
-} from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -53,20 +50,18 @@ export default async function CertificatesPage(props: {
   let vessels;
   let issuers;
   try {
-    [rows, vessels, issuers] = await Promise.all([
-      listCertificates(access, {
-        vesselId: uuidSearchParam(sp.vesselId),
-        authority: sp.authority || undefined,
-        issuingAuthorityId: uuidSearchParam(sp.issuingAuthorityId),
-        status,
-      }),
-      listSelectableVessels(access),
-      listIssuingAuthorities(access),
-    ]);
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listCertificates(access, {
+      vesselId: uuidSearchParam(sp.vesselId),
+      authority: sp.authority || undefined,
+      issuingAuthorityId: uuidSearchParam(sp.issuingAuthorityId),
+      status,
+    });
+    vessels = await listSelectableVessels(access);
+    issuers = await listIssuingAuthorities(access);
   } catch (error) {
-    if (isMissingVesselAssignmentError(error, access)) {
-      return <NoVesselAssignedNotice />;
-    }
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
     throw error;
   }
 

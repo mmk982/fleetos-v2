@@ -3,6 +3,7 @@ import { AuditsList } from "@/components/audits-list";
 import { listAudits } from "@/modules/audits/audit.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { AuditType, UserRole } from "@/db/schema";
@@ -26,13 +27,20 @@ export default async function AuditsPage(props: {
     ? (sp.auditType as AuditType)
     : undefined;
 
-  const [rows, vessels] = await Promise.all([
-    listAudits(access, {
+  let rows;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listAudits(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       auditType,
-    }),
-    listSelectableVessels(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   const canWrite =
     getModuleAccess(access.role as UserRole | null, "audits") === "write";

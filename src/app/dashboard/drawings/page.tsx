@@ -6,6 +6,7 @@ import {
 } from "@/modules/drawings/drawing.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +23,22 @@ export default async function DrawingsPage(props: {
   const access = toAccessContext(session);
   const sp = await props.searchParams;
 
-  const [rows, vessels, categories] = await Promise.all([
-    listDrawings(access, {
+  let rows;
+  let vessels;
+  let categories;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listDrawings(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       categoryId: uuidSearchParam(sp.categoryId),
-    }),
-    listSelectableVessels(access),
-    listDrawingCategories(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+    categories = await listDrawingCategories(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

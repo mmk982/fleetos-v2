@@ -452,3 +452,78 @@ Legend: **PASS** = A-only or both as expected; no B leak for scoped users.
 
 No cross-vessel **data leak** observed for phase-2 modules on list/detail/attachment/export paths tested.
 
+---
+
+## 12. Access 500s fix (`cursor/fix-access-500s`)
+
+**Date:** 2026-10-29  
+**Branch:** `cursor/fix-access-500s` (from `cursor/rls-phase2` @ `b5c1095`; **no commit/push**)  
+**Scope:** Page-layer handling only — no RLS / migration / `MODULE_PERMISSIONS` changes. Controllers stay fail-closed.
+
+### 12.1 Root causes → fixes
+
+| # | Root cause | Fix |
+|---|---|---|
+| 1 | `monthly-forms/page.tsx` always called `listMonthlyFormRequirements` → `assertFullMonthlyFormAccess` (`monthly-form-requirement.controller.ts:66–71`) for `submit` roles | `planMonthlyFormsPageData` loads requirements / templates only when `getMonthlyFormAccess === "full"`; list UI gates generate / ad-hoc / requirements; sequential loads |
+| 2 | `getVesselById` → `assertModuleAccess(…, "vessels", "read")` (`vessel.controller.ts:114`); pages did not catch | `AccessDeniedNotice` + `planVesselRegistryPageAccess`; catch via `noticeForPageAccessError` on vessels list/detail/edit/new |
+| 3 | `requireScopedVesselId` throws for vuNone (`access.ts:169` → `MissingVesselAssignmentError`); deficiencies/reminders/… pages did not catch | Dedicated subclass + `classifyPageAccessError` / `noticeForPageAccessError` on all vessel-scoped dashboard list/detail/new/edit pages |
+
+### 12.2 Verify commands (real)
+
+```
+git log --oneline -3
+b5c1095 feat(rls): run phase-2 modules through withDb / withSystemDb
+41ecb04 feat(db): row level security phase 2 policies, tests and docs
+b09abf5 chore(deps): security upgrade next 16.4.3, zod 4.6.6, transitive fixes
+
+npx tsc --noEmit          → exit 0
+npx eslint .              → exit 0
+npx vitest run            → 34 files / 219 tests passed (incl. page-access.test.ts)
+npm run test:integration  → 26 passed (rls-phase1 + rls-phase2); needed NODE_OPTIONS=--max-old-space-size=8192 once after OOM
+npm audit --omit=dev --audit-level=high → exit 0 (2 moderate uuid via exceljs only)
+npx next build --webpack  → exit 0 (with max-old-space-size=12288 / NEXT_CPU_COUNT=1); then rm -rf .next
+```
+
+### 12.3 Browser matrix (Playwright, `fleetos_app`, RLS-TEST users)
+
+Shared password: `FleetOS-RlsTest-9f3aK2!mQ`.
+
+| User | Page | HTTP | Visible result |
+|---|---|---|---|
+| `vuA` | `/dashboard/monthly-forms` | **200** | List (Vessel A only); **no** Generate / Add ad-hoc / Requirements |
+| `vuA` | monthly form detail A | **200** | Status **Submitted**; attachments present (`rls-test-mf-a.pdf`, `rls-submit-a.pdf`) — submit e2e already proven in §11.5 |
+| `vuA` | `/dashboard/monthly-forms/new` | **200** | Access denied notice (submit ≠ full) |
+| `vuA` | vessel detail URL | **200** | Access denied notice |
+| `vuA` | deficiencies / reminders | **200** | Vessel A data only (`hasB: false`) |
+| `vuNone` | dashboard + certs/crew/alerts/notifs/defs/reminders/insurance/manuals/drawings/monthly/particulars/audits/psc | **200** | **No vessel assigned** notice (never 500) |
+| `vuNone` | `/dashboard/vessels` (+ detail) | **200** | Access denied (registry / `vessels: none`) |
+| `super1` | monthly-forms list | **200** | Both Vessel A and B in filter |
+| `super1` / `mgmtA` / `ro1` | vessel detail URL | **200** | Access denied (`vessels: none`) |
+| `mgmtA` | monthly-forms | **200** | Vessel A only |
+| `ro1` | monthly-forms | **200** | Fleet list (read) |
+| `admin1` | vessels list + detail + monthly | **200** | Normal registry + tabs |
+
+### 12.4 Server console (this session, post-fix)
+
+- Page responses for the matrix above are **200** (no uncaught Forbidden → 500).
+- `NOTIFICATION_SYNC_FAILED` JSON logs for `vuNone` (`MissingVesselAssignmentError`) — sync still throws internally; dashboard page maps to notice (pre-existing log noise, not HTTP 500).
+- No new `client.query` deprecation warnings observed on the fixed monthly-forms / vessel-scoped list paths during the matrix.
+- No `row-level security` violation strings on happy paths.
+
+### 12.5 Other pages / links
+
+- Applied the same catch helper across insurance, manuals, drawings, particulars, audits, PSC, monthly new/detail, certificates/crew detail/new/edit, alerts, notifications, dashboard (in addition to deficiencies/reminders/vessels).
+- Sidebar already hides **Vessels** when `moduleKey: vessels` is `none`.
+- Dashboard “Vessels” card `href` cleared when `vessels` access is `none` (card no longer deep-links into AccessDenied).
+- No certificate / crew / alert row links to `/dashboard/vessels/[id]` found; vessel registry links live under vessels list (admin) and particulars vessel pages.
+
+### 12.6 Product note (Defect 2 — not changed)
+
+Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel_user`, `read_only`. The strongest product case for a **read-only “my vessel” hub** is `vessel_user` / `management_user` (they already live inside one vessel across certificates, forms, deficiencies). Office roles (`superintendent`, `read_only`) may still want a single-vessel assembly for navigation convenience even without registry CRUD — that would be a separate permission / surface decision (e.g. grant `vessels: "read"` to office, or a scoped “assigned vessel” page that does not use the registry module key). **Not changed here.**
+
+### 12.7 Not fixed / out of scope
+
+- `MODULE_PERMISSIONS` / RLS policies / migrations — unchanged by design.
+- `NOTIFICATION_SYNC_FAILED` log for vuNone — page is 200; sync error logging left as-is.
+- Re-running a fresh monthly submit for vuA — form A already **Submitted** with attachments from §11; list/detail/new gates verified this session.
+

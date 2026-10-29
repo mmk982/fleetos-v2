@@ -1,16 +1,13 @@
 import { uuidSearchParam } from "@/lib/validation/search-params";
 import { CrewList } from "@/components/crew-list";
-import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
 import {
   listCrewCategories,
   listCrewMembers,
 } from "@/modules/crew/crew.controller";
 import { CREW_STATUSES } from "@/modules/crew/crew.model";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
-import {
-  isMissingVesselAssignmentError,
-  toAccessContext,
-} from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { CrewStatus, UserRole } from "@/db/schema";
@@ -39,19 +36,17 @@ export default async function CrewPage(props: { searchParams: SearchParams }) {
   let vessels;
   let categories;
   try {
-    [rows, vessels, categories] = await Promise.all([
-      listCrewMembers(access, {
-        vesselId: uuidSearchParam(sp.vesselId),
-        status,
-        categoryId: uuidSearchParam(sp.categoryId),
-      }),
-      listSelectableVessels(access),
-      listCrewCategories(access),
-    ]);
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listCrewMembers(access, {
+      vesselId: uuidSearchParam(sp.vesselId),
+      status,
+      categoryId: uuidSearchParam(sp.categoryId),
+    });
+    vessels = await listSelectableVessels(access);
+    categories = await listCrewCategories(access);
   } catch (error) {
-    if (isMissingVesselAssignmentError(error, access)) {
-      return <NoVesselAssignedNotice />;
-    }
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
     throw error;
   }
 

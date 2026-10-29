@@ -8,6 +8,7 @@ import {
 } from "@/modules/reminders/reminder.model";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import type {
   ReminderPriority,
@@ -41,15 +42,22 @@ export default async function RemindersPage(props: {
     ? (sp.status as ReminderStatus)
     : undefined;
 
-  const [rows, vessels] = await Promise.all([
-    listReminders(access, {
+  let rows;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listReminders(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       type,
       priority,
       status,
-    }),
-    listSelectableVessels(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

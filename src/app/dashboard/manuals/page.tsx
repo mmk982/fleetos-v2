@@ -3,6 +3,7 @@ import { ManualsList } from "@/components/manuals-list";
 import { listManuals } from "@/modules/manuals/manual.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -20,15 +21,25 @@ export default async function ManualsPage(props: {
   const access = toAccessContext(session);
   const sp = await props.searchParams;
 
-  const [rows, vessels, optionRows] = await Promise.all([
-    listManuals(access, {
+  let rows;
+  let vessels;
+  let optionRows;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listManuals(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       manualType: sp.manualType || undefined,
       department: sp.department || undefined,
-    }),
-    listSelectableVessels(access),
-    listManuals(access, { vesselId: uuidSearchParam(sp.vesselId) }),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+    optionRows = await listManuals(access, {
+      vesselId: uuidSearchParam(sp.vesselId),
+    });
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   const manualTypes = [
     ...new Set(

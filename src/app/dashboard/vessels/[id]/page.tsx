@@ -16,6 +16,7 @@ import {
 } from "@/components/vessel-tabs-nav";
 import type { VesselParticularsRow, VesselRow } from "@/db/schema";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import { listCertificates } from "@/modules/certificates/certificate.controller";
 import {
@@ -51,7 +52,10 @@ import {
   deleteVesselNoteFormAction,
 } from "@/modules/ship-particulars/actions";
 import { getParticularsForVessel } from "@/modules/ship-particulars/particulars.controller";
-import type { ParticularsCurrentDetail } from "@/modules/ship-particulars/particulars.model";
+import type {
+  ParticularsCurrentDetail,
+  ParticularsVesselDetail,
+} from "@/modules/ship-particulars/particulars.model";
 import {
   listVesselNotes,
   type VesselNoteListItem,
@@ -74,38 +78,47 @@ export default async function VesselDetailPage(props: PageProps) {
   const sp = await props.searchParams;
   const active: VesselTabKey = parseVesselTab(sp.tab);
 
-  const vessel = await getVesselById(access, id);
-  if (!vessel) notFound();
+  let vessel: VesselRow;
+  let certificates: CertificateListItem[] | null = null;
+  let manuals: ManualListItem[] | null = null;
+  let ismTemplates: IsmTemplateListItem[] | null = null;
+  let executedForms: MonthlyFormListItem[] | null = null;
+  let drawings: DrawingListItem[] | null = null;
+  let particulars: ParticularsVesselDetail | null | undefined = null;
+  let insurance: InsuranceListItem[] | null = null;
+  let deficiencies: DeficiencyListItem[] | null = null;
+  let notes: VesselNoteListItem[] | null = null;
 
-  const [
-    certificates,
-    manuals,
-    ismTemplates,
-    executedForms,
-    drawings,
-    particulars,
-    insurance,
-    deficiencies,
-    notes,
-  ] = await Promise.all([
-    active === "certificates"
-      ? listCertificates(access, { vesselId: id })
-      : null,
-    active === "manuals" ? listManuals(access, { vesselId: id }) : null,
-    active === "ism" ? listIsmTemplates(access) : null,
-    active === "executed"
-      ? listMonthlyForms(access, { vesselId: id })
-      : null,
-    active === "drawings" ? listDrawings(access, { vesselId: id }) : null,
-    active === "particulars" ? getParticularsForVessel(access, id) : null,
-    active === "insurance"
-      ? listInsurancePolicies(access, { vesselId: id })
-      : null,
-    active === "deficiencies"
-      ? listDeficiencies(access, { vesselId: id })
-      : null,
-    active === "notes" ? listVesselNotes(access, id) : null,
-  ]);
+  try {
+    const found = await getVesselById(access, id);
+    if (!found) notFound();
+    vessel = found;
+
+    // Sequential tab loaders — avoid concurrent queries on a shared withDb client.
+    if (active === "certificates") {
+      certificates = await listCertificates(access, { vesselId: id });
+    } else if (active === "manuals") {
+      manuals = await listManuals(access, { vesselId: id });
+    } else if (active === "ism") {
+      ismTemplates = await listIsmTemplates(access);
+    } else if (active === "executed") {
+      executedForms = await listMonthlyForms(access, { vesselId: id });
+    } else if (active === "drawings") {
+      drawings = await listDrawings(access, { vesselId: id });
+    } else if (active === "particulars") {
+      particulars = await getParticularsForVessel(access, id);
+    } else if (active === "insurance") {
+      insurance = await listInsurancePolicies(access, { vesselId: id });
+    } else if (active === "deficiencies") {
+      deficiencies = await listDeficiencies(access, { vesselId: id });
+    } else if (active === "notes") {
+      notes = await listVesselNotes(access, id);
+    }
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

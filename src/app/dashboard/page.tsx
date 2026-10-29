@@ -15,12 +15,11 @@ import {
 import { AlertsList } from "@/components/alerts-list";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Identifier } from "@/components/ui/identifier";
-import {
-  isMissingVesselAssignmentError,
-  toAccessContext,
-} from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
-import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
+import type { UserRole } from "@/db/schema";
 import {
   STATUS_LABELS,
   type ComplianceStatus,
@@ -111,9 +110,8 @@ export default async function DashboardPage() {
       syncNotifications(access),
     ]);
   } catch (error) {
-    if (isMissingVesselAssignmentError(error, access)) {
-      return <NoVesselAssignedNotice />;
-    }
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
     throw error;
   }
 
@@ -151,7 +149,11 @@ export default async function DashboardPage() {
     {
       label: "Vessels",
       value: vesselCount,
-      href: "/dashboard/vessels",
+      // Registry is admin-only (`vessels` module); other roles hit AccessDenied.
+      href:
+        getModuleAccess(access.role as UserRole | null, "vessels") !== "none"
+          ? "/dashboard/vessels"
+          : undefined,
       icon: Anchor,
       tone: "slate",
     },

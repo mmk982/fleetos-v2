@@ -6,6 +6,7 @@ import {
 } from "@/modules/drawings/drawing.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 import DrawingDetailPage from "../page";
 
@@ -16,11 +17,19 @@ export default async function EditDrawingPage(props: PageProps) {
   const access = toAccessContext(session);
   const { id } = await props.params;
 
-  const [drawing, vessels, categories] = await Promise.all([
-    getDrawingById(access, id),
-    listSelectableVessels(access),
-    listDrawingCategories(access),
-  ]);
+  let drawing;
+  let vessels;
+  let categories;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    drawing = await getDrawingById(access, id);
+    vessels = await listSelectableVessels(access);
+    categories = await listDrawingCategories(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!drawing) notFound();
 
   return (

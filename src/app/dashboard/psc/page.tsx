@@ -3,6 +3,7 @@ import { PscInspectionsList } from "@/components/psc-inspections-list";
 import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { PscInspectionResult, UserRole } from "@/db/schema";
@@ -28,13 +29,20 @@ export default async function PscPage(props: {
     ? (sp.result as PscInspectionResult)
     : undefined;
 
-  const [rows, vessels] = await Promise.all([
-    listPscInspections(access, {
+  let rows;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    rows = await listPscInspections(access, {
       vesselId: uuidSearchParam(sp.vesselId),
       result,
-    }),
-    listSelectableVessels(access),
-  ]);
+    });
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   const canWrite =
     getModuleAccess(access.role as UserRole | null, "psc") === "write";

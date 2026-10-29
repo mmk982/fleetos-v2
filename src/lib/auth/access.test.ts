@@ -11,6 +11,7 @@ import {
   assertAuthenticatedAccess,
   assertVesselScope,
   ForbiddenError,
+  MissingVesselAssignmentError,
   isMissingVesselAssignmentError,
   requireScopedVesselId,
   type AccessContext,
@@ -124,29 +125,31 @@ describe("assertAuthenticatedAccess", () => {
 });
 
 describe("isMissingVesselAssignmentError", () => {
-  it("is true for ForbiddenError + vessel_user with no vessel", () => {
+  it("is true only for MissingVesselAssignmentError", () => {
     expect(
       isMissingVesselAssignmentError(
-        new ForbiddenError("Vessel-scoped role has no assigned vessel — access denied."),
+        new MissingVesselAssignmentError(),
         ctx({ role: "vessel_user", vesselId: null }),
       ),
     ).toBe(true);
   });
 
-  it("is false when the scoped user has a vessel", () => {
+  it("is false for a plain ForbiddenError even with the legacy message", () => {
     expect(
       isMissingVesselAssignmentError(
-        new ForbiddenError("Vessel scope mismatch."),
-        ctx({ role: "vessel_user", vesselId: VESSEL_ID }),
+        new ForbiddenError(
+          "Vessel-scoped role has no assigned vessel — access denied.",
+        ),
+        ctx({ role: "vessel_user", vesselId: null }),
       ),
     ).toBe(false);
   });
 
-  it("is false for office roles and non-Forbidden errors", () => {
+  it("is false for other ForbiddenError and non-Forbidden errors", () => {
     expect(
       isMissingVesselAssignmentError(
-        new ForbiddenError("nope"),
-        ctx({ role: "admin", vesselId: null }),
+        new ForbiddenError("Vessel scope mismatch."),
+        ctx({ role: "vessel_user", vesselId: VESSEL_ID }),
       ),
     ).toBe(false);
     expect(

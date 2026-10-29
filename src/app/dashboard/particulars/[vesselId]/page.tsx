@@ -9,6 +9,7 @@ import { deleteParticularsFormAction } from "@/modules/ship-particulars/actions"
 import { getParticularsForVessel } from "@/modules/ship-particulars/particulars.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ vesselId: string }> };
@@ -18,10 +19,17 @@ export default async function ParticularsVesselPage(props: PageProps) {
   const access = toAccessContext(session);
   const { vesselId } = await props.params;
 
-  const [detail, vessels] = await Promise.all([
-    getParticularsForVessel(access, vesselId),
-    listSelectableVessels(access),
-  ]);
+  let detail;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    detail = await getParticularsForVessel(access, vesselId);
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!detail) notFound();
 
   const current = detail.current;

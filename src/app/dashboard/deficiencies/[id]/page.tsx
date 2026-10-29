@@ -20,14 +20,24 @@ import {
   deficiencyStatusTone,
 } from "@/modules/deficiencies/deficiency.model";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function DeficiencyDetailPage(props: PageProps) {
   const session = await requireSession();
+  const access = toAccessContext(session);
   const { id } = await props.params;
-  const row = await getDeficiencyById(toAccessContext(session), id);
+
+  let row;
+  try {
+    row = await getDeficiencyById(access, id);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!row) notFound();
 
   const fields: { label: string; value: ReactNode }[] = [

@@ -7,6 +7,7 @@ import { deleteAuditFormAction } from "@/modules/audits/actions";
 import { getAudit } from "@/modules/audits/audit.controller";
 import { auditTypeLabel } from "@/modules/audits/audit.model";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import type { UserRole } from "@/db/schema";
@@ -17,7 +18,15 @@ export default async function AuditDetailPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
-  const row = await getAudit(access, id);
+
+  let row;
+  try {
+    row = await getAudit(access, id);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!row) notFound();
 
   const canWrite =

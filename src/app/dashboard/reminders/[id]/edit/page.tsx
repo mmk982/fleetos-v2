@@ -4,6 +4,7 @@ import { ReminderForm } from "@/components/reminder-form";
 import { getReminderById } from "@/modules/reminders/reminder.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,17 @@ export default async function EditReminderPage(props: PageProps) {
   const access = toAccessContext(session);
   const { id } = await props.params;
 
-  const [reminder, vessels] = await Promise.all([
-    getReminderById(access, id),
-    listSelectableVessels(access),
-  ]);
+  let reminder;
+  let vessels;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    reminder = await getReminderById(access, id);
+    vessels = await listSelectableVessels(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
   if (!reminder) notFound();
 
   return (

@@ -4,16 +4,26 @@ import { listDeficiencySources } from "@/modules/deficiencies/deficiency.control
 import { listPscInspections } from "@/modules/psc/psc.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
 
 export default async function NewDeficiencyPage() {
   const session = await requireSession();
   const access = toAccessContext(session);
-  const [vessels, sources, pscInspections] = await Promise.all([
-    listSelectableVessels(access),
-    listDeficiencySources(access),
-    listPscInspections(access),
-  ]);
+
+  let vessels;
+  let sources;
+  let pscInspections;
+  try {
+    // Sequential: avoid concurrent queries on a shared withDb client.
+    vessels = await listSelectableVessels(access);
+    sources = await listDeficiencySources(access);
+    pscInspections = await listPscInspections(access);
+  } catch (error) {
+    const notice = noticeForPageAccessError(error, access);
+    if (notice) return notice;
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

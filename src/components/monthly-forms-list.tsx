@@ -45,12 +45,19 @@ export function MonthlyFormsList({
   requirements,
   vessels,
   templates,
+  canManageRequirements = true,
+  canCreateAdHoc = true,
+  canGenerateChecklist = true,
   initialFilters,
 }: {
   rows: MonthlyFormListItem[];
   requirements: MonthlyFormRequirementListItem[];
   vessels: VesselRow[];
   templates: IsmTemplateListItem[];
+  /** Full monthly access — requirements CRUD + generate. */
+  canManageRequirements?: boolean;
+  canCreateAdHoc?: boolean;
+  canGenerateChecklist?: boolean;
   initialFilters: {
     vesselId: string;
     month: string;
@@ -217,27 +224,31 @@ export function MonthlyFormsList({
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <form action={genAction} className="flex flex-wrap items-center gap-2">
-            {filters.vesselId ? (
-              <input type="hidden" name="vesselId" value={filters.vesselId} />
-            ) : null}
-            {filters.month ? (
-              <input type="hidden" name="month" value={filters.month} />
-            ) : null}
-            {filters.year ? (
-              <input type="hidden" name="year" value={filters.year} />
-            ) : null}
-            <Button variant="primary" type="submit"
-              disabled={genPending}>
-              {genPending ? "Generating…" : "Generate this month's checklist"}
-            </Button>
-          </form>
-          <Link
-            href="/dashboard/monthly-forms/new"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
-          >
-            Add ad-hoc form
-          </Link>
+          {canGenerateChecklist ? (
+            <form action={genAction} className="flex flex-wrap items-center gap-2">
+              {filters.vesselId ? (
+                <input type="hidden" name="vesselId" value={filters.vesselId} />
+              ) : null}
+              {filters.month ? (
+                <input type="hidden" name="month" value={filters.month} />
+              ) : null}
+              {filters.year ? (
+                <input type="hidden" name="year" value={filters.year} />
+              ) : null}
+              <Button variant="primary" type="submit"
+                disabled={genPending}>
+                {genPending ? "Generating…" : "Generate this month's checklist"}
+              </Button>
+            </form>
+          ) : null}
+          {canCreateAdHoc ? (
+            <Link
+              href="/dashboard/monthly-forms/new"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+            >
+              Add ad-hoc form
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -306,121 +317,125 @@ export function MonthlyFormsList({
         </div>
       )}
 
-      <section className="rounded-xl border border-[var(--border)]">
-        <Button variant="ghost" type="button"
-          onClick={() => setReqOpen((o) => !o)}
-          aria-expanded={reqOpen} className="w-full justify-between text-left">
-          {/* Move to Settings / vessel profile once those exist (§10). */}
-          Requirements (per vessel / template)
-          <span className="font-normal text-[var(--text-tertiary)]">
-            {reqOpen ? "Hide" : "Show"}
-          </span>
-        </Button>
-        {reqOpen ? (
-          <div className="space-y-4 border-t border-[var(--border)] p-4">
-            <div className="flex justify-end">
-              <Button variant="primary" type="button"
-                onClick={() => setReqDrawer({ kind: "create" })}>
-                Add requirement
-              </Button>
-            </div>
-            {requirements.length === 0 ? (
-              <p className="text-sm text-[var(--text-tertiary)]">
-                No requirements yet — checklist generation will create nothing
-                until you add some.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
-                    <tr>
-                      <th className="px-2 py-2 font-medium">Vessel</th>
-                      <th className="px-2 py-2 font-medium">Template</th>
-                      <th className="px-2 py-2 font-medium">Frequency</th>
-                      <th className="px-2 py-2 font-medium">Active</th>
-                      <th className="px-2 py-2 font-medium" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
-                    {requirements.map((r) => (
-                      <tr key={r.id}>
-                        <td className="px-2 py-2">
-                          <Identifier>{r.vesselName}</Identifier>
-                        </td>
-                        <td className="px-2 py-2">
-                          <span className="font-mono text-xs">{r.formCode}</span>
-                          <span className="text-[var(--text-secondary)]">
-                            {" "}
-                            — {r.templateName}
-                          </span>
-                        </td>
-                        <td className="px-2 py-2">
-                          {monthlyFormFrequencyLabel(r.frequency)}
-                        </td>
-                        <td className="px-2 py-2">
-                          {r.activeStatus ? "Yes" : "No"}
-                        </td>
-                        <td className="px-2 py-2 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            onClick={() => setReqDrawer({ kind: "edit", row: r })}
-                            className="me-3"
-                          >
-                            Edit
-                          </Button>
-                          <form
-                            action={deleteMonthlyFormRequirementFormAction}
-                            className="inline"
-                          >
-                            <input type="hidden" name="id" value={r.id} />
-                            <Button variant="destructive" size="sm" type="submit">
-                              Delete
-                            </Button>
-                          </form>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {canManageRequirements ? (
+        <section className="rounded-xl border border-[var(--border)]">
+          <Button variant="ghost" type="button"
+            onClick={() => setReqOpen((o) => !o)}
+            aria-expanded={reqOpen} className="w-full justify-between text-left">
+            {/* Move to Settings / vessel profile once those exist (§10). */}
+            Requirements (per vessel / template)
+            <span className="font-normal text-[var(--text-tertiary)]">
+              {reqOpen ? "Hide" : "Show"}
+            </span>
+          </Button>
+          {reqOpen ? (
+            <div className="space-y-4 border-t border-[var(--border)] p-4">
+              <div className="flex justify-end">
+                <Button variant="primary" type="button"
+                  onClick={() => setReqDrawer({ kind: "create" })}>
+                  Add requirement
+                </Button>
               </div>
-            )}
-          </div>
-        ) : null}
-      </section>
+              {requirements.length === 0 ? (
+                <p className="text-sm text-[var(--text-tertiary)]">
+                  No requirements yet — checklist generation will create nothing
+                  until you add some.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="text-xs uppercase tracking-wide text-[var(--text-tertiary)]">
+                      <tr>
+                        <th className="px-2 py-2 font-medium">Vessel</th>
+                        <th className="px-2 py-2 font-medium">Template</th>
+                        <th className="px-2 py-2 font-medium">Frequency</th>
+                        <th className="px-2 py-2 font-medium">Active</th>
+                        <th className="px-2 py-2 font-medium" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)]">
+                      {requirements.map((r) => (
+                        <tr key={r.id}>
+                          <td className="px-2 py-2">
+                            <Identifier>{r.vesselName}</Identifier>
+                          </td>
+                          <td className="px-2 py-2">
+                            <span className="font-mono text-xs">{r.formCode}</span>
+                            <span className="text-[var(--text-secondary)]">
+                              {" "}
+                              — {r.templateName}
+                            </span>
+                          </td>
+                          <td className="px-2 py-2">
+                            {monthlyFormFrequencyLabel(r.frequency)}
+                          </td>
+                          <td className="px-2 py-2">
+                            {r.activeStatus ? "Yes" : "No"}
+                          </td>
+                          <td className="px-2 py-2 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              onClick={() => setReqDrawer({ kind: "edit", row: r })}
+                              className="me-3"
+                            >
+                              Edit
+                            </Button>
+                            <form
+                              action={deleteMonthlyFormRequirementFormAction}
+                              className="inline"
+                            >
+                              <input type="hidden" name="id" value={r.id} />
+                              <Button variant="destructive" size="sm" type="submit">
+                                Delete
+                              </Button>
+                            </form>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
-      <Drawer
-        open={reqDrawer.kind !== "closed"}
-        onClose={() => setReqDrawer({ kind: "closed" })}
-        title={
-          reqDrawer.kind === "edit" ? "Edit requirement" : "Add requirement"
-        }
-      >
-        {reqDrawer.kind === "create" ? (
-          <MonthlyFormRequirementForm
-            mode="create"
-            vessels={vessels}
-            templates={templates}
-            onCancel={() => setReqDrawer({ kind: "closed" })}
-          />
-        ) : null}
-        {reqDrawer.kind === "edit" ? (
-          <MonthlyFormRequirementForm
-            mode="edit"
-            requirementId={reqDrawer.row.id}
-            vessels={vessels}
-            templates={templates}
-            defaultValues={{
-              vesselId: reqDrawer.row.vesselId,
-              ismTemplateId: reqDrawer.row.ismTemplateId,
-              frequency: reqDrawer.row.frequency,
-              activeStatus: reqDrawer.row.activeStatus,
-            }}
-            onCancel={() => setReqDrawer({ kind: "closed" })}
-          />
-        ) : null}
-      </Drawer>
+      {canManageRequirements ? (
+        <Drawer
+          open={reqDrawer.kind !== "closed"}
+          onClose={() => setReqDrawer({ kind: "closed" })}
+          title={
+            reqDrawer.kind === "edit" ? "Edit requirement" : "Add requirement"
+          }
+        >
+          {reqDrawer.kind === "create" ? (
+            <MonthlyFormRequirementForm
+              mode="create"
+              vessels={vessels}
+              templates={templates}
+              onCancel={() => setReqDrawer({ kind: "closed" })}
+            />
+          ) : null}
+          {reqDrawer.kind === "edit" ? (
+            <MonthlyFormRequirementForm
+              mode="edit"
+              requirementId={reqDrawer.row.id}
+              vessels={vessels}
+              templates={templates}
+              defaultValues={{
+                vesselId: reqDrawer.row.vesselId,
+                ismTemplateId: reqDrawer.row.ismTemplateId,
+                frequency: reqDrawer.row.frequency,
+                activeStatus: reqDrawer.row.activeStatus,
+              }}
+              onCancel={() => setReqDrawer({ kind: "closed" })}
+            />
+          ) : null}
+        </Drawer>
+      ) : null}
     </div>
   );
 }
