@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, count, desc, eq, type SQL } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   manuals,
   manualRevisions,
@@ -141,51 +141,56 @@ export type ManualListFilters = {
 
 /** Manuals count for Dashboard summary cards (vessel-scoped when applicable). */
 export async function getManualCount(ctx: AccessContext): Promise<number> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "manuals", "read");
-  const scopedVesselId = requireScopedVesselId(ctx);
-  const rows = scopedVesselId
-    ? await getDb()
-        .select({ n: count() })
-        .from(manuals)
-        .where(eq(manuals.vesselId, scopedVesselId))
-    : await getDb().select({ n: count() }).from(manuals);
-  return rows[0]?.n ?? 0;
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "manuals", "read");
+    const scopedVesselId = requireScopedVesselId(ctx);
+    const rows = scopedVesselId
+      ? await getDb()
+          .select({ n: count() })
+          .from(manuals)
+          .where(eq(manuals.vesselId, scopedVesselId))
+      : await getDb().select({ n: count() }).from(manuals);
+    return rows[0]?.n ?? 0;
+
+  });
 }
 
 export async function listManuals(
   ctx: AccessContext,
   filters: ManualListFilters = {},
 ): Promise<ManualListItem[]> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "manuals", "read");
-  const db = getDb();
-  const conditions: SQL[] = [];
-  const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
-  if (scopedVesselId) {
-    conditions.push(eq(manuals.vesselId, scopedVesselId));
-  }
-  if (filters.manualType) {
-    conditions.push(eq(manuals.manualType, filters.manualType));
-  }
-  if (filters.department) {
-    conditions.push(eq(manuals.department, filters.department));
-  }
-
-  const rows = await db
-    .select({
-      manual: manuals,
-      vesselName: vessels.name,
-    })
-    .from(manuals)
-    .innerJoin(vessels, eq(manuals.vesselId, vessels.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(asc(vessels.name), asc(manuals.title));
-
-  const result: ManualListItem[] = [];
-  for (const r of rows) {
-    const [currentRows, countRows] = await Promise.all([
-      db
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "manuals", "read");
+    const db = getDb();
+    const conditions: SQL[] = [];
+    const scopedVesselId = requireScopedVesselId(ctx) ?? filters.vesselId;
+    if (scopedVesselId) {
+      conditions.push(eq(manuals.vesselId, scopedVesselId));
+    }
+    if (filters.manualType) {
+      conditions.push(eq(manuals.manualType, filters.manualType));
+    }
+    if (filters.department) {
+      conditions.push(eq(manuals.department, filters.department));
+    }
+  
+    const rows = await db
+      .select({
+        manual: manuals,
+        vesselName: vessels.name,
+      })
+      .from(manuals)
+      .innerJoin(vessels, eq(manuals.vesselId, vessels.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(asc(vessels.name), asc(manuals.title));
+  
+    const result: ManualListItem[] = [];
+    for (const r of rows) {
+      const currentRows = await db
         .select()
         .from(manualRevisions)
         .where(
@@ -194,58 +199,63 @@ export async function listManuals(
             eq(manualRevisions.isCurrentVersion, true),
           ),
         )
-        .limit(1),
-      db
+        .limit(1);
+      const countRows = await db
         .select({ n: count() })
         .from(manualRevisions)
-        .where(eq(manualRevisions.manualId, r.manual.id)),
-    ]);
-    result.push({
-      ...r.manual,
-      vesselName: r.vesselName,
-      currentRevision: currentRows[0] ?? null,
-      revisionCount: Number(countRows[0]?.n ?? 0),
-    });
-  }
-  return result;
+        .where(eq(manualRevisions.manualId, r.manual.id));
+      result.push({
+        ...r.manual,
+        vesselName: r.vesselName,
+        currentRevision: currentRows[0] ?? null,
+        revisionCount: Number(countRows[0]?.n ?? 0),
+      });
+    }
+    return result;
+
+  });
 }
 
 export async function getManualById(
   ctx: AccessContext,
   id: string,
 ): Promise<ManualDetail | undefined> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "manuals", "read");
-  const db = getDb();
-  const rows = await db
-    .select({
-      manual: manuals,
-      vesselName: vessels.name,
-    })
-    .from(manuals)
-    .innerJoin(vessels, eq(manuals.vesselId, vessels.id))
-    .where(eq(manuals.id, id))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return undefined;
-  assertVesselScope(ctx, row.manual.vesselId);
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "manuals", "read");
+    const db = getDb();
+    const rows = await db
+      .select({
+        manual: manuals,
+        vesselName: vessels.name,
+      })
+      .from(manuals)
+      .innerJoin(vessels, eq(manuals.vesselId, vessels.id))
+      .where(eq(manuals.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    assertVesselScope(ctx, row.manual.vesselId);
+  
+    const revisions = await db
+      .select()
+      .from(manualRevisions)
+      .where(eq(manualRevisions.manualId, id))
+      .orderBy(desc(manualRevisions.uploadedAt));
+  
+    const currentRevision =
+      revisions.find((r) => r.isCurrentVersion) ?? null;
+  
+    return {
+      ...row.manual,
+      vesselName: row.vesselName,
+      currentRevision,
+      revisionCount: revisions.length,
+      revisions,
+    };
 
-  const revisions = await db
-    .select()
-    .from(manualRevisions)
-    .where(eq(manualRevisions.manualId, id))
-    .orderBy(desc(manualRevisions.uploadedAt));
-
-  const currentRevision =
-    revisions.find((r) => r.isCurrentVersion) ?? null;
-
-  return {
-    ...row.manual,
-    vesselName: row.vesselName,
-    currentRevision,
-    revisionCount: revisions.length,
-    revisions,
-  };
+  });
 }
 
 /**
@@ -261,59 +271,63 @@ export async function createManualWithFirstRevision(
     revisionDate?: string | null;
   } = {},
 ): Promise<ManualRow> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "manuals", "write");
-  assertVesselScope(ctx, input.vesselId);
-  assertValidAttachment(file);
-
-  const stored = await storeAttachmentFile(file);
-  const db = getDb();
-
-  let manual: ManualRow;
-  try {
-    manual = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(manuals)
-        .values({
-          vesselId: input.vesselId,
-          title: input.title,
-          manualType: input.manualType ?? null,
-          department: input.department ?? null,
-          notes: input.notes ?? null,
-        })
-        .returning();
-      const insertedManual = inserted[0];
-      if (!insertedManual) throw new Error("Manual insert did not return a row");
-
-      await tx.insert(manualRevisions).values({
-        id: stored.id,
-        manualId: insertedManual.id,
-        revisionNumber: firstRevision.revisionNumber ?? null,
-        revisionDate: firstRevision.revisionDate ?? null,
-        fileName: stored.fileName,
-        filePath: stored.relativePath,
-        uploadedBy: ctx.userId,
-        isCurrentVersion: true,
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "manuals", "write");
+    assertVesselScope(ctx, input.vesselId);
+    assertValidAttachment(file);
+  
+    const stored = await storeAttachmentFile(file);
+    const db = getDb();
+  
+    let manual: ManualRow;
+    try {
+      manual = await db.transaction(async (tx) => {
+        const inserted = await tx
+          .insert(manuals)
+          .values({
+            vesselId: input.vesselId,
+            title: input.title,
+            manualType: input.manualType ?? null,
+            department: input.department ?? null,
+            notes: input.notes ?? null,
+          })
+          .returning();
+        const insertedManual = inserted[0];
+        if (!insertedManual) throw new Error("Manual insert did not return a row");
+  
+        await tx.insert(manualRevisions).values({
+          id: stored.id,
+          manualId: insertedManual.id,
+          revisionNumber: firstRevision.revisionNumber ?? null,
+          revisionDate: firstRevision.revisionDate ?? null,
+          fileName: stored.fileName,
+          filePath: stored.relativePath,
+          uploadedBy: ctx.userId,
+          isCurrentVersion: true,
+        });
+  
+        return insertedManual;
       });
-
-      return insertedManual;
-    });
-  } catch (error) {
-    await removeStoredAttachmentFile(stored.relativePath);
-    if (isPgForeignKeyViolation(error)) {
-      throw new ManualConflictError("Vessel reference is invalid.");
+    } catch (error) {
+      await removeStoredAttachmentFile(stored.relativePath);
+      if (isPgForeignKeyViolation(error)) {
+        throw new ManualConflictError("Vessel reference is invalid.");
+      }
+      logError("MANUAL_CREATE_FAILED", { error });
+      throw error;
     }
-    logError("MANUAL_CREATE_FAILED", { error });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "created",
-    moduleName: "manual",
-    recordId: manual.id,
-    description: `Added manual: ${manual.title}`,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "created",
+      moduleName: "manual",
+      recordId: manual.id,
+      description: `Added manual: ${manual.title}`,
+    });
+    return manual;
+
   });
-  return manual;
 }
 
 /**
@@ -326,72 +340,76 @@ export async function addManualRevision(
   input: Omit<ManualRevisionCreateInput, "manualId">,
   file: UploadFile,
 ): Promise<ManualRevisionRow> {
-  assertAuthenticatedAccess(ctx, manualId);
-  assertModuleAccess(ctx, "manuals", "write");
-  assertValidAttachment(file);
-
-  const db = getDb();
-  const parent = await db
-    .select({
-      id: manuals.id,
-      title: manuals.title,
-      vesselId: manuals.vesselId,
-    })
-    .from(manuals)
-    .where(eq(manuals.id, manualId))
-    .limit(1);
-  if (!parent[0]) throw new ManualNotFoundError(manualId);
-  assertVesselScope(ctx, parent[0].vesselId);
-  const manualTitle = parent[0].title;
-
-  const stored = await storeAttachmentFile(file);
-
-  let row: ManualRevisionRow;
-  try {
-    row = await db.transaction(async (tx) => {
-      await tx
-        .update(manualRevisions)
-        .set({ isCurrentVersion: false })
-        .where(eq(manualRevisions.manualId, manualId));
-
-      const inserted = await tx
-        .insert(manualRevisions)
-        .values({
-          id: stored.id,
-          manualId,
-          revisionNumber: input.revisionNumber ?? null,
-          revisionDate: input.revisionDate ?? null,
-          fileName: stored.fileName,
-          filePath: stored.relativePath,
-          uploadedBy: ctx.userId,
-          isCurrentVersion: true,
-        })
-        .returning();
-      const insertedRow = inserted[0];
-      if (!insertedRow) throw new Error("Revision insert did not return a row");
-
-      await tx
-        .update(manuals)
-        .set({ updatedAt: new Date() })
-        .where(eq(manuals.id, manualId));
-
-      return insertedRow;
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, manualId);
+    assertModuleAccess(ctx, "manuals", "write");
+    assertValidAttachment(file);
+  
+    const db = getDb();
+    const parent = await db
+      .select({
+        id: manuals.id,
+        title: manuals.title,
+        vesselId: manuals.vesselId,
+      })
+      .from(manuals)
+      .where(eq(manuals.id, manualId))
+      .limit(1);
+    if (!parent[0]) throw new ManualNotFoundError(manualId);
+    assertVesselScope(ctx, parent[0].vesselId);
+    const manualTitle = parent[0].title;
+  
+    const stored = await storeAttachmentFile(file);
+  
+    let row: ManualRevisionRow;
+    try {
+      row = await db.transaction(async (tx) => {
+        await tx
+          .update(manualRevisions)
+          .set({ isCurrentVersion: false })
+          .where(eq(manualRevisions.manualId, manualId));
+  
+        const inserted = await tx
+          .insert(manualRevisions)
+          .values({
+            id: stored.id,
+            manualId,
+            revisionNumber: input.revisionNumber ?? null,
+            revisionDate: input.revisionDate ?? null,
+            fileName: stored.fileName,
+            filePath: stored.relativePath,
+            uploadedBy: ctx.userId,
+            isCurrentVersion: true,
+          })
+          .returning();
+        const insertedRow = inserted[0];
+        if (!insertedRow) throw new Error("Revision insert did not return a row");
+  
+        await tx
+          .update(manuals)
+          .set({ updatedAt: new Date() })
+          .where(eq(manuals.id, manualId));
+  
+        return insertedRow;
+      });
+    } catch (error) {
+      await removeStoredAttachmentFile(stored.relativePath);
+      if (error instanceof ManualNotFoundError) throw error;
+      logError("MANUAL_REVISION_ADD_FAILED", { error, manualId });
+      throw error;
+    }
+    const revisionLabel = row.revisionNumber ?? row.fileName;
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "uploaded",
+      moduleName: "manual",
+      recordId: manualId,
+      description: `Uploaded manual revision: ${manualTitle} ${revisionLabel}`,
     });
-  } catch (error) {
-    await removeStoredAttachmentFile(stored.relativePath);
-    if (error instanceof ManualNotFoundError) throw error;
-    logError("MANUAL_REVISION_ADD_FAILED", { error, manualId });
-    throw error;
-  }
-  const revisionLabel = row.revisionNumber ?? row.fileName;
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "uploaded",
-    moduleName: "manual",
-    recordId: manualId,
-    description: `Uploaded manual revision: ${manualTitle} ${revisionLabel}`,
+    return row;
+
   });
-  return row;
 }
 
 export async function updateManual(
@@ -399,53 +417,57 @@ export async function updateManual(
   id: string,
   input: ManualUpdateInput,
 ): Promise<ManualRow> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "manuals", "write");
-  const db = getDb();
-
-  const existing = await db
-    .select({ id: manuals.id, vesselId: manuals.vesselId })
-    .from(manuals)
-    .where(eq(manuals.id, id))
-    .limit(1);
-  if (!existing[0]) throw new ManualNotFoundError(id);
-  assertVesselScope(ctx, existing[0].vesselId);
-
-  const patch: Partial<typeof manuals.$inferInsert> & { updatedAt: Date } = {
-    updatedAt: new Date(),
-  };
-  if (input.vesselId !== undefined) patch.vesselId = input.vesselId;
-  if (input.title !== undefined) patch.title = input.title;
-  if (input.manualType !== undefined) patch.manualType = input.manualType;
-  if (input.department !== undefined) patch.department = input.department;
-  if (input.notes !== undefined) patch.notes = input.notes;
-
-  let row: ManualRow;
-  try {
-    const updated = await db
-      .update(manuals)
-      .set(patch)
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "manuals", "write");
+    const db = getDb();
+  
+    const existing = await db
+      .select({ id: manuals.id, vesselId: manuals.vesselId })
+      .from(manuals)
       .where(eq(manuals.id, id))
-      .returning();
-    const updatedRow = updated[0];
-    if (!updatedRow) throw new ManualNotFoundError(id);
-    row = updatedRow;
-  } catch (error) {
-    if (error instanceof ManualNotFoundError) throw error;
-    if (isPgForeignKeyViolation(error)) {
-      throw new ManualConflictError("Vessel reference is invalid.");
+      .limit(1);
+    if (!existing[0]) throw new ManualNotFoundError(id);
+    assertVesselScope(ctx, existing[0].vesselId);
+  
+    const patch: Partial<typeof manuals.$inferInsert> & { updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
+    if (input.vesselId !== undefined) patch.vesselId = input.vesselId;
+    if (input.title !== undefined) patch.title = input.title;
+    if (input.manualType !== undefined) patch.manualType = input.manualType;
+    if (input.department !== undefined) patch.department = input.department;
+    if (input.notes !== undefined) patch.notes = input.notes;
+  
+    let row: ManualRow;
+    try {
+      const updated = await db
+        .update(manuals)
+        .set(patch)
+        .where(eq(manuals.id, id))
+        .returning();
+      const updatedRow = updated[0];
+      if (!updatedRow) throw new ManualNotFoundError(id);
+      row = updatedRow;
+    } catch (error) {
+      if (error instanceof ManualNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new ManualConflictError("Vessel reference is invalid.");
+      }
+      logError("MANUAL_UPDATE_FAILED", { error, manualId: id });
+      throw error;
     }
-    logError("MANUAL_UPDATE_FAILED", { error, manualId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "updated",
-    moduleName: "manual",
-    recordId: row.id,
-    description: `Updated manual: ${row.title}`,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "updated",
+      moduleName: "manual",
+      recordId: row.id,
+      description: `Updated manual: ${row.title}`,
+    });
+    return row;
+
   });
-  return row;
 }
 
 /**
@@ -457,115 +479,123 @@ export async function setCurrentRevision(
   manualId: string,
   revisionId: string,
 ): Promise<ManualRevisionRow> {
-  assertAuthenticatedAccess(ctx, manualId);
-  assertModuleAccess(ctx, "manuals", "write");
-  const db = getDb();
-
-  const parent = await db
-    .select({ title: manuals.title, vesselId: manuals.vesselId })
-    .from(manuals)
-    .where(eq(manuals.id, manualId))
-    .limit(1);
-  if (!parent[0]) throw new ManualNotFoundError(manualId);
-  assertVesselScope(ctx, parent[0].vesselId);
-  const manualTitle = parent[0].title;
-
-  let row: ManualRevisionRow;
-  try {
-    row = await db.transaction(async (tx) => {
-      const target = await tx
-        .select()
-        .from(manualRevisions)
-        .where(
-          and(
-            eq(manualRevisions.id, revisionId),
-            eq(manualRevisions.manualId, manualId),
-          ),
-        )
-        .limit(1);
-      if (!target[0]) throw new ManualRevisionNotFoundError(revisionId);
-
-      await tx
-        .update(manualRevisions)
-        .set({ isCurrentVersion: false })
-        .where(eq(manualRevisions.manualId, manualId));
-
-      const updated = await tx
-        .update(manualRevisions)
-        .set({ isCurrentVersion: true })
-        .where(eq(manualRevisions.id, revisionId))
-        .returning();
-      const updatedRow = updated[0];
-      if (!updatedRow) throw new ManualRevisionNotFoundError(revisionId);
-
-      await tx
-        .update(manuals)
-        .set({ updatedAt: new Date() })
-        .where(eq(manuals.id, manualId));
-
-      return updatedRow;
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, manualId);
+    assertModuleAccess(ctx, "manuals", "write");
+    const db = getDb();
+  
+    const parent = await db
+      .select({ title: manuals.title, vesselId: manuals.vesselId })
+      .from(manuals)
+      .where(eq(manuals.id, manualId))
+      .limit(1);
+    if (!parent[0]) throw new ManualNotFoundError(manualId);
+    assertVesselScope(ctx, parent[0].vesselId);
+    const manualTitle = parent[0].title;
+  
+    let row: ManualRevisionRow;
+    try {
+      row = await db.transaction(async (tx) => {
+        const target = await tx
+          .select()
+          .from(manualRevisions)
+          .where(
+            and(
+              eq(manualRevisions.id, revisionId),
+              eq(manualRevisions.manualId, manualId),
+            ),
+          )
+          .limit(1);
+        if (!target[0]) throw new ManualRevisionNotFoundError(revisionId);
+  
+        await tx
+          .update(manualRevisions)
+          .set({ isCurrentVersion: false })
+          .where(eq(manualRevisions.manualId, manualId));
+  
+        const updated = await tx
+          .update(manualRevisions)
+          .set({ isCurrentVersion: true })
+          .where(eq(manualRevisions.id, revisionId))
+          .returning();
+        const updatedRow = updated[0];
+        if (!updatedRow) throw new ManualRevisionNotFoundError(revisionId);
+  
+        await tx
+          .update(manuals)
+          .set({ updatedAt: new Date() })
+          .where(eq(manuals.id, manualId));
+  
+        return updatedRow;
+      });
+    } catch (error) {
+      if (error instanceof ManualRevisionNotFoundError) throw error;
+      logError("MANUAL_SET_CURRENT_FAILED", {
+        error,
+        manualId,
+        revisionId,
+      });
+      throw error;
+    }
+    const revisionLabel = row.revisionNumber ?? row.fileName;
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "updated",
+      moduleName: "manual",
+      recordId: manualId,
+      description: manualTitle
+        ? `Set current revision on manual: ${manualTitle} ${revisionLabel}`
+        : `Updated manual revision: ${revisionLabel}`,
     });
-  } catch (error) {
-    if (error instanceof ManualRevisionNotFoundError) throw error;
-    logError("MANUAL_SET_CURRENT_FAILED", {
-      error,
-      manualId,
-      revisionId,
-    });
-    throw error;
-  }
-  const revisionLabel = row.revisionNumber ?? row.fileName;
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "updated",
-    moduleName: "manual",
-    recordId: manualId,
-    description: manualTitle
-      ? `Set current revision on manual: ${manualTitle} ${revisionLabel}`
-      : `Updated manual revision: ${revisionLabel}`,
+    return row;
+
   });
-  return row;
 }
 
 export async function deleteManual(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "manuals", "write");
-  const db = getDb();
-  const existing = await db
-    .select({ title: manuals.title, vesselId: manuals.vesselId })
-    .from(manuals)
-    .where(eq(manuals.id, id))
-    .limit(1);
-  if (!existing[0]) throw new ManualNotFoundError(id);
-  assertVesselScope(ctx, existing[0].vesselId);
-  const title = existing[0].title;
-  try {
-    const atts = await db
-      .select()
-      .from(manualRevisions)
-      .where(eq(manualRevisions.manualId, id));
-    for (const att of atts) {
-      await removeStoredAttachmentFile(att.filePath);
-    }
-    const deleted = await db
-      .delete(manuals)
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "manuals", "write");
+    const db = getDb();
+    const existing = await db
+      .select({ title: manuals.title, vesselId: manuals.vesselId })
+      .from(manuals)
       .where(eq(manuals.id, id))
-      .returning({ id: manuals.id });
-    if (deleted.length === 0) throw new ManualNotFoundError(id);
-  } catch (error) {
-    if (error instanceof ManualNotFoundError) throw error;
-    logError("MANUAL_DELETE_FAILED", { error, manualId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "deleted",
-    moduleName: "manual",
-    recordId: id,
-    description: title ? `Deleted manual: ${title}` : "Deleted manual",
+      .limit(1);
+    if (!existing[0]) throw new ManualNotFoundError(id);
+    assertVesselScope(ctx, existing[0].vesselId);
+    const title = existing[0].title;
+    try {
+      const atts = await db
+        .select()
+        .from(manualRevisions)
+        .where(eq(manualRevisions.manualId, id));
+      for (const att of atts) {
+        await removeStoredAttachmentFile(att.filePath);
+      }
+      const deleted = await db
+        .delete(manuals)
+        .where(eq(manuals.id, id))
+        .returning({ id: manuals.id });
+      if (deleted.length === 0) throw new ManualNotFoundError(id);
+    } catch (error) {
+      if (error instanceof ManualNotFoundError) throw error;
+      logError("MANUAL_DELETE_FAILED", { error, manualId: id });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "deleted",
+      moduleName: "manual",
+      recordId: id,
+      description: title ? `Deleted manual: ${title}` : "Deleted manual",
+    });
+
   });
 }
 
@@ -581,25 +611,29 @@ export async function getManualRevisionAttachmentById(
   | Pick<ManualRevisionRow, "fileName" | "filePath" | "uploadedBy">
   | undefined
 > {
-  assertAuthenticatedAccess(ctx, revisionId);
-  assertModuleAccess(ctx, "manuals", "read");
-  const rows = await getDb()
-    .select({
-      fileName: manualRevisions.fileName,
-      filePath: manualRevisions.filePath,
-      uploadedBy: manualRevisions.uploadedBy,
-      vesselId: manuals.vesselId,
-    })
-    .from(manualRevisions)
-    .innerJoin(manuals, eq(manualRevisions.manualId, manuals.id))
-    .where(eq(manualRevisions.id, revisionId))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return undefined;
-  assertVesselScope(ctx, row.vesselId);
-  return {
-    fileName: row.fileName,
-    filePath: row.filePath,
-    uploadedBy: row.uploadedBy,
-  };
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, revisionId);
+    assertModuleAccess(ctx, "manuals", "read");
+    const rows = await getDb()
+      .select({
+        fileName: manualRevisions.fileName,
+        filePath: manualRevisions.filePath,
+        uploadedBy: manualRevisions.uploadedBy,
+        vesselId: manuals.vesselId,
+      })
+      .from(manualRevisions)
+      .innerJoin(manuals, eq(manualRevisions.manualId, manuals.id))
+      .where(eq(manualRevisions.id, revisionId))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    assertVesselScope(ctx, row.vesselId);
+    return {
+      fileName: row.fileName,
+      filePath: row.filePath,
+      uploadedBy: row.uploadedBy,
+    };
+
+  });
 }

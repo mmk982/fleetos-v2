@@ -220,10 +220,11 @@ export async function withDb<T>(
  *
  * Legitimate reasons (keep this list short):
  * - `email-digest` — Admin digest aggregates certificates + crew certs
+ * - `notification-sync` — fan-out inserts for all active users
  * - `integration-test` — harness only
  */
 export async function withSystemDb<T>(
-  reason: "email-digest" | "integration-test",
+  reason: "email-digest" | "integration-test" | "notification-sync",
   fn: (db: AppDb) => Promise<T>,
 ): Promise<T> {
   void reason;

@@ -37,6 +37,9 @@ vi.mock("node:fs/promises", () => ({
 const getDb = vi.fn();
 vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
+  withDb: async (_ctx: unknown, fn: (db: unknown) => unknown) => fn(undefined as unknown),
+  withSystemDb: async (_reason: unknown, fn: (db: unknown) => unknown) =>
+    fn(getDb()),
 }));
 
 import {

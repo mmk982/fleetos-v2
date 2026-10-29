@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, count, desc, eq, type SQL } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   ismTemplates,
   monthlyExecutedFormAttachments,
@@ -171,62 +171,66 @@ export async function listMonthlyForms(
   ctx: AccessContext,
   filters: MonthlyFormListFilters = {},
 ): Promise<MonthlyFormListItem[]> {
-  assertAuthenticatedAccess(ctx);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access === "none") {
-    throw new ForbiddenError("Insufficient access for monthly forms.");
-  }
-  const db = getDb();
-  const conditions: SQL[] = [];
-  if (access === "submit") {
-    if (!ctx.vesselId) return [];
-    conditions.push(eq(monthlyExecutedForms.vesselId, ctx.vesselId));
-  } else if (filters.vesselId) {
-    conditions.push(eq(monthlyExecutedForms.vesselId, filters.vesselId));
-  }
-  if (filters.month !== undefined) {
-    conditions.push(eq(monthlyExecutedForms.month, filters.month));
-  }
-  if (filters.year !== undefined) {
-    conditions.push(eq(monthlyExecutedForms.year, filters.year));
-  }
-  if (filters.status) {
-    conditions.push(eq(monthlyExecutedForms.status, filters.status));
-  }
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access === "none") {
+      throw new ForbiddenError("Insufficient access for monthly forms.");
+    }
+    const db = getDb();
+    const conditions: SQL[] = [];
+    if (access === "submit") {
+      if (!ctx.vesselId) return [];
+      conditions.push(eq(monthlyExecutedForms.vesselId, ctx.vesselId));
+    } else if (filters.vesselId) {
+      conditions.push(eq(monthlyExecutedForms.vesselId, filters.vesselId));
+    }
+    if (filters.month !== undefined) {
+      conditions.push(eq(monthlyExecutedForms.month, filters.month));
+    }
+    if (filters.year !== undefined) {
+      conditions.push(eq(monthlyExecutedForms.year, filters.year));
+    }
+    if (filters.status) {
+      conditions.push(eq(monthlyExecutedForms.status, filters.status));
+    }
+  
+    const rows = await db
+      .select({
+        form: monthlyExecutedForms,
+        vesselName: vessels.name,
+      })
+      .from(monthlyExecutedForms)
+      .innerJoin(vessels, eq(monthlyExecutedForms.vesselId, vessels.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(
+        desc(monthlyExecutedForms.year),
+        desc(monthlyExecutedForms.month),
+        asc(vessels.name),
+        asc(monthlyExecutedForms.formName),
+      );
+  
+    const result: MonthlyFormListItem[] = [];
+    for (const r of rows) {
+      const countRows = await db
+        .select({ n: count() })
+        .from(monthlyExecutedFormAttachments)
+        .where(eq(monthlyExecutedFormAttachments.executedFormId, r.form.id));
+      result.push({
+        ...r.form,
+        vesselName: r.vesselName,
+        displayStatus: deriveMonthlyFormDisplayStatus(
+          r.form.status,
+          r.form.month,
+          r.form.year,
+        ),
+        attachmentCount: Number(countRows[0]?.n ?? 0),
+      });
+    }
+    return result;
 
-  const rows = await db
-    .select({
-      form: monthlyExecutedForms,
-      vesselName: vessels.name,
-    })
-    .from(monthlyExecutedForms)
-    .innerJoin(vessels, eq(monthlyExecutedForms.vesselId, vessels.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(
-      desc(monthlyExecutedForms.year),
-      desc(monthlyExecutedForms.month),
-      asc(vessels.name),
-      asc(monthlyExecutedForms.formName),
-    );
-
-  const result: MonthlyFormListItem[] = [];
-  for (const r of rows) {
-    const countRows = await db
-      .select({ n: count() })
-      .from(monthlyExecutedFormAttachments)
-      .where(eq(monthlyExecutedFormAttachments.executedFormId, r.form.id));
-    result.push({
-      ...r.form,
-      vesselName: r.vesselName,
-      displayStatus: deriveMonthlyFormDisplayStatus(
-        r.form.status,
-        r.form.month,
-        r.form.year,
-      ),
-      attachmentCount: Number(countRows[0]?.n ?? 0),
-    });
-  }
-  return result;
+  });
 }
 
 export type MonthlyFormDetail = MonthlyFormListItem & {
@@ -237,114 +241,122 @@ export async function getMonthlyFormById(
   ctx: AccessContext,
   id: string,
 ): Promise<MonthlyFormDetail | undefined> {
-  assertAuthenticatedAccess(ctx, id);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access === "none") {
-    throw new ForbiddenError("Insufficient access for monthly forms.");
-  }
-  const db = getDb();
-  const rows = await db
-    .select({
-      form: monthlyExecutedForms,
-      vesselName: vessels.name,
-    })
-    .from(monthlyExecutedForms)
-    .innerJoin(vessels, eq(monthlyExecutedForms.vesselId, vessels.id))
-    .where(eq(monthlyExecutedForms.id, id))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return undefined;
-  assertVesselScope(ctx, row.form.vesselId);
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access === "none") {
+      throw new ForbiddenError("Insufficient access for monthly forms.");
+    }
+    const db = getDb();
+    const rows = await db
+      .select({
+        form: monthlyExecutedForms,
+        vesselName: vessels.name,
+      })
+      .from(monthlyExecutedForms)
+      .innerJoin(vessels, eq(monthlyExecutedForms.vesselId, vessels.id))
+      .where(eq(monthlyExecutedForms.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    assertVesselScope(ctx, row.form.vesselId);
+  
+    const attachments = await db
+      .select()
+      .from(monthlyExecutedFormAttachments)
+      .where(eq(monthlyExecutedFormAttachments.executedFormId, id))
+      .orderBy(asc(monthlyExecutedFormAttachments.uploadedAt));
+  
+    return {
+      ...row.form,
+      vesselName: row.vesselName,
+      displayStatus: deriveMonthlyFormDisplayStatus(
+        row.form.status,
+        row.form.month,
+        row.form.year,
+      ),
+      attachmentCount: attachments.length,
+      attachments,
+    };
 
-  const attachments = await db
-    .select()
-    .from(monthlyExecutedFormAttachments)
-    .where(eq(monthlyExecutedFormAttachments.executedFormId, id))
-    .orderBy(asc(monthlyExecutedFormAttachments.uploadedAt));
-
-  return {
-    ...row.form,
-    vesselName: row.vesselName,
-    displayStatus: deriveMonthlyFormDisplayStatus(
-      row.form.status,
-      row.form.month,
-      row.form.year,
-    ),
-    attachmentCount: attachments.length,
-    attachments,
-  };
+  });
 }
 
 export async function createMonthlyForm(
   ctx: AccessContext,
   input: MonthlyFormCreateInput,
 ): Promise<MonthlyExecutedFormRow> {
-  assertAuthenticatedAccess(ctx);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access !== "full") {
-    throw new ForbiddenError(
-      "Insufficient access for monthly forms (need full).",
-    );
-  }
-  assertVesselScope(ctx, input.vesselId);
-  const db = getDb();
-
-  let formName = input.formName?.trim() || "";
-  if (input.ismTemplateId) {
-    const templates = await db
-      .select({ formName: ismTemplates.formName })
-      .from(ismTemplates)
-      .where(eq(ismTemplates.id, input.ismTemplateId))
-      .limit(1);
-    if (!templates[0]) {
-      throw new MonthlyFormConflictError("ISM template reference is invalid.");
-    }
-    if (!formName) formName = templates[0].formName;
-  }
-  if (!formName) {
-    throw new MonthlyFormConflictError("Form name is required.");
-  }
-
-  let row: MonthlyExecutedFormRow;
-  try {
-    const inserted = await db
-      .insert(monthlyExecutedForms)
-      .values({
-        vesselId: input.vesselId,
-        ismTemplateId: input.ismTemplateId ?? null,
-        formName,
-        month: input.month,
-        year: input.year,
-        required: false,
-        status: "pending",
-        remarks: input.remarks ?? null,
-      })
-      .returning();
-    const insertedRow = inserted[0];
-    if (!insertedRow) throw new Error("Monthly form insert did not return a row");
-    row = insertedRow;
-  } catch (error) {
-    if (isPgUniqueViolation(error)) {
-      throw new MonthlyFormConflictError(
-        "A form for this vessel/template/period already exists.",
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access !== "full") {
+      throw new ForbiddenError(
+        "Insufficient access for monthly forms (need full).",
       );
     }
-    if (isPgForeignKeyViolation(error)) {
-      throw new MonthlyFormConflictError(
-        "Vessel or ISM template reference is invalid.",
-      );
+    assertVesselScope(ctx, input.vesselId);
+    const db = getDb();
+  
+    let formName = input.formName?.trim() || "";
+    if (input.ismTemplateId) {
+      const templates = await db
+        .select({ formName: ismTemplates.formName })
+        .from(ismTemplates)
+        .where(eq(ismTemplates.id, input.ismTemplateId))
+        .limit(1);
+      if (!templates[0]) {
+        throw new MonthlyFormConflictError("ISM template reference is invalid.");
+      }
+      if (!formName) formName = templates[0].formName;
     }
-    logError("MONTHLY_FORM_CREATE_FAILED", { error });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "created",
-    moduleName: "monthly_form",
-    recordId: row.id,
-    description: `Added monthly form: ${row.formName} (${row.month}/${row.year})`,
+    if (!formName) {
+      throw new MonthlyFormConflictError("Form name is required.");
+    }
+  
+    let row: MonthlyExecutedFormRow;
+    try {
+      const inserted = await db
+        .insert(monthlyExecutedForms)
+        .values({
+          vesselId: input.vesselId,
+          ismTemplateId: input.ismTemplateId ?? null,
+          formName,
+          month: input.month,
+          year: input.year,
+          required: false,
+          status: "pending",
+          remarks: input.remarks ?? null,
+        })
+        .returning();
+      const insertedRow = inserted[0];
+      if (!insertedRow) throw new Error("Monthly form insert did not return a row");
+      row = insertedRow;
+    } catch (error) {
+      if (isPgUniqueViolation(error)) {
+        throw new MonthlyFormConflictError(
+          "A form for this vessel/template/period already exists.",
+        );
+      }
+      if (isPgForeignKeyViolation(error)) {
+        throw new MonthlyFormConflictError(
+          "Vessel or ISM template reference is invalid.",
+        );
+      }
+      logError("MONTHLY_FORM_CREATE_FAILED", { error });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "created",
+      moduleName: "monthly_form",
+      recordId: row.id,
+      description: `Added monthly form: ${row.formName} (${row.month}/${row.year})`,
+    });
+    return row;
+
   });
-  return row;
 }
 
 /**
@@ -355,71 +367,75 @@ export async function generateMonthlyChecklist(
   ctx: AccessContext,
   options: { vesselId?: string; month?: number; year?: number } = {},
 ): Promise<{ created: number }> {
-  assertAuthenticatedAccess(ctx);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access !== "full") {
-    throw new ForbiddenError(
-      "Insufficient access for monthly forms (need full).",
-    );
-  }
-  if (options.vesselId) {
-    assertVesselScope(ctx, options.vesselId);
-  }
-  const [todayYear = 0, todayMonth = 0] = businessToday().split("-").map(Number);
-  const month = options.month ?? todayMonth;
-  const year = options.year ?? todayYear;
-  const db = getDb();
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access !== "full") {
+      throw new ForbiddenError(
+        "Insufficient access for monthly forms (need full).",
+      );
+    }
+    if (options.vesselId) {
+      assertVesselScope(ctx, options.vesselId);
+    }
+    const [todayYear = 0, todayMonth = 0] = businessToday()
+      .split("-")
+      .map(Number);
+    const month = options.month ?? todayMonth;
+    const year = options.year ?? todayYear;
+    const db = getDb();
 
-  const conditions: SQL[] = [
-    eq(monthlyFormRequirements.activeStatus, true),
-  ];
-  if (options.vesselId) {
-    conditions.push(eq(monthlyFormRequirements.vesselId, options.vesselId));
-  }
-
-  const requirements = await db
-    .select({
-      requirement: monthlyFormRequirements,
-      templateName: ismTemplates.formName,
-    })
-    .from(monthlyFormRequirements)
-    .innerJoin(
-      ismTemplates,
-      eq(monthlyFormRequirements.ismTemplateId, ismTemplates.id),
-    )
-    .where(and(...conditions));
-
-  let created = 0;
-  for (const r of requirements) {
-    if (!isRequirementDueInMonth(r.requirement.frequency, month)) {
-      continue;
+    const conditions: SQL[] = [
+      eq(monthlyFormRequirements.activeStatus, true),
+    ];
+    if (options.vesselId) {
+      conditions.push(eq(monthlyFormRequirements.vesselId, options.vesselId));
     }
 
-    const inserted = await db
-      .insert(monthlyExecutedForms)
-      .values({
-        vesselId: r.requirement.vesselId,
-        ismTemplateId: r.requirement.ismTemplateId,
-        formName: r.templateName,
-        month,
-        year,
-        required: true,
-        status: "pending",
+    const requirements = await db
+      .select({
+        requirement: monthlyFormRequirements,
+        templateName: ismTemplates.formName,
       })
-      .onConflictDoNothing({
-        target: [
-          monthlyExecutedForms.vesselId,
-          monthlyExecutedForms.ismTemplateId,
-          monthlyExecutedForms.month,
-          monthlyExecutedForms.year,
-        ],
-      })
-      .returning({ id: monthlyExecutedForms.id });
+      .from(monthlyFormRequirements)
+      .innerJoin(
+        ismTemplates,
+        eq(monthlyFormRequirements.ismTemplateId, ismTemplates.id),
+      )
+      .where(and(...conditions));
 
-    created += inserted.length;
-  }
+    let created = 0;
+    for (const r of requirements) {
+      if (!isRequirementDueInMonth(r.requirement.frequency, month)) {
+        continue;
+      }
 
-  return { created };
+      const inserted = await db
+        .insert(monthlyExecutedForms)
+        .values({
+          vesselId: r.requirement.vesselId,
+          ismTemplateId: r.requirement.ismTemplateId,
+          formName: r.templateName,
+          month,
+          year,
+          required: true,
+          status: "pending",
+        })
+        .onConflictDoNothing({
+          target: [
+            monthlyExecutedForms.vesselId,
+            monthlyExecutedForms.ismTemplateId,
+            monthlyExecutedForms.month,
+            monthlyExecutedForms.year,
+          ],
+        })
+        .returning({ id: monthlyExecutedForms.id });
+
+      created += inserted.length;
+    }
+
+    return { created };
+  });
 }
 
 /**
@@ -432,130 +448,138 @@ export async function submitMonthlyForm(
   input: MonthlyFormSubmitInput,
   file: UploadFile,
 ): Promise<MonthlyExecutedFormRow> {
-  assertAuthenticatedAccess(ctx, id);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access !== "submit" && access !== "full") {
-    throw new ForbiddenError(
-      "Insufficient access for monthly forms (need submit).",
-    );
-  }
-  assertValidAttachment(file);
-
-  const db = getDb();
-  const existing = await db
-    .select()
-    .from(monthlyExecutedForms)
-    .where(eq(monthlyExecutedForms.id, id))
-    .limit(1);
-  const form = existing[0];
-  if (!form) throw new MonthlyFormNotFoundError(id);
-  assertVesselScope(ctx, form.vesselId);
-
-  const stored = await storeAttachmentFile(file);
-  const isFirstSubmission =
-    form.status === "pending" && form.uploadedAt === null;
-
-  let row: MonthlyExecutedFormRow;
-  try {
-    row = await db.transaction(async (tx) => {
-      await tx.insert(monthlyExecutedFormAttachments).values({
-        id: stored.id,
-        executedFormId: id,
-        fileName: stored.fileName,
-        filePath: stored.relativePath,
-        uploadedBy: ctx.userId,
-      });
-
-      if (isFirstSubmission) {
-        const updated = await tx
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access !== "submit" && access !== "full") {
+      throw new ForbiddenError(
+        "Insufficient access for monthly forms (need submit).",
+      );
+    }
+    assertValidAttachment(file);
+  
+    const db = getDb();
+    const existing = await db
+      .select()
+      .from(monthlyExecutedForms)
+      .where(eq(monthlyExecutedForms.id, id))
+      .limit(1);
+    const form = existing[0];
+    if (!form) throw new MonthlyFormNotFoundError(id);
+    assertVesselScope(ctx, form.vesselId);
+  
+    const stored = await storeAttachmentFile(file);
+    const isFirstSubmission =
+      form.status === "pending" && form.uploadedAt === null;
+  
+    let row: MonthlyExecutedFormRow;
+    try {
+      row = await db.transaction(async (tx) => {
+        await tx.insert(monthlyExecutedFormAttachments).values({
+          id: stored.id,
+          executedFormId: id,
+          fileName: stored.fileName,
+          filePath: stored.relativePath,
+          uploadedBy: ctx.userId,
+        });
+  
+        if (isFirstSubmission) {
+          const updated = await tx
+            .update(monthlyExecutedForms)
+            .set({
+              status: "submitted",
+              uploadedAt: new Date(),
+              uploadedBy: ctx.userId,
+              remarks:
+                input.remarks !== undefined ? input.remarks : form.remarks,
+              updatedAt: new Date(),
+            })
+            .where(eq(monthlyExecutedForms.id, id))
+            .returning();
+          const updatedRow = updated[0];
+          if (!updatedRow) throw new MonthlyFormNotFoundError(id);
+          return updatedRow;
+        }
+  
+        const touched = await tx
           .update(monthlyExecutedForms)
-          .set({
-            status: "submitted",
-            uploadedAt: new Date(),
-            uploadedBy: ctx.userId,
-            remarks:
-              input.remarks !== undefined ? input.remarks : form.remarks,
-            updatedAt: new Date(),
-          })
+          .set({ updatedAt: new Date() })
           .where(eq(monthlyExecutedForms.id, id))
           .returning();
-        const updatedRow = updated[0];
-        if (!updatedRow) throw new MonthlyFormNotFoundError(id);
-        return updatedRow;
-      }
-
-      const touched = await tx
-        .update(monthlyExecutedForms)
-        .set({ updatedAt: new Date() })
-        .where(eq(monthlyExecutedForms.id, id))
-        .returning();
-      return touched[0] ?? form;
+        return touched[0] ?? form;
+      });
+    } catch (error) {
+      await removeStoredAttachmentFile(stored.relativePath);
+      if (error instanceof MonthlyFormNotFoundError) throw error;
+      logError("MONTHLY_FORM_SUBMIT_FAILED", { error, executedFormId: id });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "submitted",
+      moduleName: "monthly_form",
+      recordId: row.id,
+      description: `Submitted monthly form: ${row.formName} (${row.month}/${row.year})`,
     });
-  } catch (error) {
-    await removeStoredAttachmentFile(stored.relativePath);
-    if (error instanceof MonthlyFormNotFoundError) throw error;
-    logError("MONTHLY_FORM_SUBMIT_FAILED", { error, executedFormId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "submitted",
-    moduleName: "monthly_form",
-    recordId: row.id,
-    description: `Submitted monthly form: ${row.formName} (${row.month}/${row.year})`,
+    return row;
+
   });
-  return row;
 }
 
 export async function deleteMonthlyForm(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, id);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access !== "full") {
-    throw new ForbiddenError(
-      "Insufficient access for monthly forms (need full).",
-    );
-  }
-  const db = getDb();
-  const existing = await db
-    .select({
-      formName: monthlyExecutedForms.formName,
-      month: monthlyExecutedForms.month,
-      year: monthlyExecutedForms.year,
-      vesselId: monthlyExecutedForms.vesselId,
-    })
-    .from(monthlyExecutedForms)
-    .where(eq(monthlyExecutedForms.id, id))
-    .limit(1);
-  const formMeta = existing[0];
-  if (!formMeta) throw new MonthlyFormNotFoundError(id);
-  assertVesselScope(ctx, formMeta.vesselId);
-  try {
-    const atts = await db
-      .select()
-      .from(monthlyExecutedFormAttachments)
-      .where(eq(monthlyExecutedFormAttachments.executedFormId, id));
-    for (const att of atts) {
-      await removeStoredAttachmentFile(att.filePath);
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, id);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access !== "full") {
+      throw new ForbiddenError(
+        "Insufficient access for monthly forms (need full).",
+      );
     }
-    const deleted = await db
-      .delete(monthlyExecutedForms)
+    const db = getDb();
+    const existing = await db
+      .select({
+        formName: monthlyExecutedForms.formName,
+        month: monthlyExecutedForms.month,
+        year: monthlyExecutedForms.year,
+        vesselId: monthlyExecutedForms.vesselId,
+      })
+      .from(monthlyExecutedForms)
       .where(eq(monthlyExecutedForms.id, id))
-      .returning({ id: monthlyExecutedForms.id });
-    if (deleted.length === 0) throw new MonthlyFormNotFoundError(id);
-  } catch (error) {
-    if (error instanceof MonthlyFormNotFoundError) throw error;
-    logError("MONTHLY_FORM_DELETE_FAILED", { error, executedFormId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "deleted",
-    moduleName: "monthly_form",
-    recordId: id,
-    description: `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`,
+      .limit(1);
+    const formMeta = existing[0];
+    if (!formMeta) throw new MonthlyFormNotFoundError(id);
+    assertVesselScope(ctx, formMeta.vesselId);
+    try {
+      const atts = await db
+        .select()
+        .from(monthlyExecutedFormAttachments)
+        .where(eq(monthlyExecutedFormAttachments.executedFormId, id));
+      for (const att of atts) {
+        await removeStoredAttachmentFile(att.filePath);
+      }
+      const deleted = await db
+        .delete(monthlyExecutedForms)
+        .where(eq(monthlyExecutedForms.id, id))
+        .returning({ id: monthlyExecutedForms.id });
+      if (deleted.length === 0) throw new MonthlyFormNotFoundError(id);
+    } catch (error) {
+      if (error instanceof MonthlyFormNotFoundError) throw error;
+      logError("MONTHLY_FORM_DELETE_FAILED", { error, executedFormId: id });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "deleted",
+      moduleName: "monthly_form",
+      recordId: id,
+      description: `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`,
+    });
+
   });
 }
 
@@ -563,40 +587,97 @@ export async function listMonthlyFormAttachments(
   ctx: AccessContext,
   executedFormId: string,
 ): Promise<MonthlyExecutedFormAttachmentRow[]> {
-  assertAuthenticatedAccess(ctx, executedFormId);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access === "none") {
-    throw new ForbiddenError("Insufficient access for monthly forms.");
-  }
-  const db = getDb();
-  const parent = await db
-    .select({ vesselId: monthlyExecutedForms.vesselId })
-    .from(monthlyExecutedForms)
-    .where(eq(monthlyExecutedForms.id, executedFormId))
-    .limit(1);
-  if (!parent[0]) return [];
-  assertVesselScope(ctx, parent[0].vesselId);
-  return db
-    .select()
-    .from(monthlyExecutedFormAttachments)
-    .where(eq(monthlyExecutedFormAttachments.executedFormId, executedFormId))
-    .orderBy(asc(monthlyExecutedFormAttachments.uploadedAt));
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, executedFormId);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access === "none") {
+      throw new ForbiddenError("Insufficient access for monthly forms.");
+    }
+    const db = getDb();
+    const parent = await db
+      .select({ vesselId: monthlyExecutedForms.vesselId })
+      .from(monthlyExecutedForms)
+      .where(eq(monthlyExecutedForms.id, executedFormId))
+      .limit(1);
+    if (!parent[0]) return [];
+    assertVesselScope(ctx, parent[0].vesselId);
+    return db
+      .select()
+      .from(monthlyExecutedFormAttachments)
+      .where(eq(monthlyExecutedFormAttachments.executedFormId, executedFormId))
+      .orderBy(asc(monthlyExecutedFormAttachments.uploadedAt));
+
+  });
 }
 
 export async function deleteMonthlyFormAttachment(
   ctx: AccessContext,
   attachmentId: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, attachmentId);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access !== "full") {
-    throw new ForbiddenError(
-      "Insufficient access for monthly forms (need full).",
-    );
-  }
-  const db = getDb();
-  try {
-    const rows = await db
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, attachmentId);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access !== "full") {
+      throw new ForbiddenError(
+        "Insufficient access for monthly forms (need full).",
+      );
+    }
+    const db = getDb();
+    try {
+      const rows = await db
+        .select({
+          attachment: monthlyExecutedFormAttachments,
+          vesselId: monthlyExecutedForms.vesselId,
+        })
+        .from(monthlyExecutedFormAttachments)
+        .innerJoin(
+          monthlyExecutedForms,
+          eq(
+            monthlyExecutedFormAttachments.executedFormId,
+            monthlyExecutedForms.id,
+          ),
+        )
+        .where(eq(monthlyExecutedFormAttachments.id, attachmentId))
+        .limit(1);
+      const row = rows[0];
+      if (!row) throw new AttachmentNotFoundError(attachmentId);
+      assertVesselScope(ctx, row.vesselId);
+      await db
+        .delete(monthlyExecutedFormAttachments)
+        .where(eq(monthlyExecutedFormAttachments.id, attachmentId));
+      await removeStoredAttachmentFile(row.attachment.filePath);
+    } catch (error) {
+      if (error instanceof AttachmentNotFoundError) throw error;
+      if (error instanceof ForbiddenError) throw error;
+      logError("MONTHLY_FORM_ATTACHMENT_DELETE_FAILED", {
+        error,
+        attachmentId,
+      });
+      throw error;
+    }
+
+  });
+}
+
+/**
+ * Lookup for the generic `/api/attachments/[id]` resolver.
+ * Does not write access_logs — monthly forms are out of GDPR access-log
+ * scope (SECURITY_PLAN.md §6b is Crew-only).
+ */
+export async function getMonthlyFormAttachmentById(
+  ctx: AccessContext,
+  attachmentId: string,
+): Promise<MonthlyExecutedFormAttachmentRow | undefined> {
+  return withDb(ctx, async () => {
+  
+    assertAuthenticatedAccess(ctx, attachmentId);
+    const access = getMonthlyFormAccess(ctx.role as UserRole | null);
+    if (access === "none") {
+      throw new ForbiddenError("Insufficient access for monthly forms.");
+    }
+    const rows = await getDb()
       .select({
         attachment: monthlyExecutedFormAttachments,
         vesselId: monthlyExecutedForms.vesselId,
@@ -612,54 +693,9 @@ export async function deleteMonthlyFormAttachment(
       .where(eq(monthlyExecutedFormAttachments.id, attachmentId))
       .limit(1);
     const row = rows[0];
-    if (!row) throw new AttachmentNotFoundError(attachmentId);
+    if (!row) return undefined;
     assertVesselScope(ctx, row.vesselId);
-    await db
-      .delete(monthlyExecutedFormAttachments)
-      .where(eq(monthlyExecutedFormAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.attachment.filePath);
-  } catch (error) {
-    if (error instanceof AttachmentNotFoundError) throw error;
-    if (error instanceof ForbiddenError) throw error;
-    logError("MONTHLY_FORM_ATTACHMENT_DELETE_FAILED", {
-      error,
-      attachmentId,
-    });
-    throw error;
-  }
-}
+    return row.attachment;
 
-/**
- * Lookup for the generic `/api/attachments/[id]` resolver.
- * Does not write access_logs — monthly forms are out of GDPR access-log
- * scope (SECURITY_PLAN.md §6b is Crew-only).
- */
-export async function getMonthlyFormAttachmentById(
-  ctx: AccessContext,
-  attachmentId: string,
-): Promise<MonthlyExecutedFormAttachmentRow | undefined> {
-  assertAuthenticatedAccess(ctx, attachmentId);
-  const access = getMonthlyFormAccess(ctx.role as UserRole | null);
-  if (access === "none") {
-    throw new ForbiddenError("Insufficient access for monthly forms.");
-  }
-  const rows = await getDb()
-    .select({
-      attachment: monthlyExecutedFormAttachments,
-      vesselId: monthlyExecutedForms.vesselId,
-    })
-    .from(monthlyExecutedFormAttachments)
-    .innerJoin(
-      monthlyExecutedForms,
-      eq(
-        monthlyExecutedFormAttachments.executedFormId,
-        monthlyExecutedForms.id,
-      ),
-    )
-    .where(eq(monthlyExecutedFormAttachments.id, attachmentId))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return undefined;
-  assertVesselScope(ctx, row.vesselId);
-  return row.attachment;
+  });
 }
