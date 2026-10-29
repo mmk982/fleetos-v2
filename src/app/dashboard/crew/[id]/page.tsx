@@ -23,13 +23,17 @@ import {
   crewMemberStatusTone,
 } from "@/modules/crew/crew.model";
 import { toAccessContext } from "@/lib/auth/access";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
+import type { UserRole } from "@/db/schema";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CrewDetailPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
+  const canWrite =
+    getModuleAccess(access.role as UserRole | null, "crew") === "write";
   const { id } = await props.params;
 
   const member = await getCrewMemberById(access, id, { logView: true });
@@ -90,27 +94,29 @@ export default async function CrewDetailPage(props: PageProps) {
             Personal data view is access-logged.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/dashboard/crew/${member.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
-          >
-            Edit
-          </Link>
-          <ConfirmDeleteButton
-            label="Scrub PII"
-            title="Scrub personal data?"
-            description="Nulls names, DOB, nationality, document numbers/dates, and deletes passport/visa attachment files. The crew row remains."
-            id={member.id}
-            action={scrubCrewMemberPiiFormAction}
-          />
-          <ConfirmDeleteButton
-            title="Delete crew member?"
-            description="Hard-delete. Blocked if certificates still exist — scrub or delete documents first."
-            id={member.id}
-            action={deleteCrewMemberFormAction}
-          />
-        </div>
+        {canWrite ? (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/dashboard/crew/${member.id}/edit`}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+            >
+              Edit
+            </Link>
+            <ConfirmDeleteButton
+              label="Scrub PII"
+              title="Scrub personal data?"
+              description="Nulls names, DOB, nationality, document numbers/dates, and deletes passport/visa attachment files. The crew row remains."
+              id={member.id}
+              action={scrubCrewMemberPiiFormAction}
+            />
+            <ConfirmDeleteButton
+              title="Delete crew member?"
+              description="Hard-delete. Blocked if certificates still exist — scrub or delete documents first."
+              id={member.id}
+              action={deleteCrewMemberFormAction}
+            />
+          </div>
+        ) : null}
       </div>
 
       <dl className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -130,6 +136,7 @@ export default async function CrewDetailPage(props: PageProps) {
         crewMemberId={member.id}
         certificates={certificates}
         endorsementTypes={endorsementTypes}
+        canWrite={canWrite}
       />
     </main>
   );

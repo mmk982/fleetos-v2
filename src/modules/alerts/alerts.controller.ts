@@ -8,7 +8,7 @@ import { businessNow } from "@/lib/settings/business-time";
 import "server-only";
 
 import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   certificates,
   certificateTypes,
@@ -289,55 +289,62 @@ export async function getAlerts(
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "alerts", "read");
 
-  const kinds = options.kinds?.filter((k) =>
-    (ALERT_KINDS as readonly string[]).includes(k),
-  );
-  const vesselId =
-    requireScopedVesselId(ctx) ?? (options.vesselId || undefined);
-  const criticalDays = await getCriticalDays();
+  return withDb(ctx, async () => {
+    const kinds = options.kinds?.filter((k) =>
+      (ALERT_KINDS as readonly string[]).includes(k),
+    );
+    const vesselId =
+      requireScopedVesselId(ctx) ?? (options.vesselId || undefined);
+    const criticalDays = await getCriticalDays();
 
-  const batches = await Promise.all([
-    wantsKind(kinds, "certificate")
-      ? loadCertificateAlerts(criticalDays, vesselId)
-      : Promise.resolve([] as AlertItem[]),
-    wantsKind(kinds, "crew_certificate")
-      ? loadCrewCertificateAlerts(criticalDays, vesselId)
-      : Promise.resolve([] as AlertItem[]),
-    wantsKind(kinds, "insurance")
-      ? loadInsuranceAlerts(criticalDays, vesselId)
-      : Promise.resolve([] as AlertItem[]),
-    wantsKind(kinds, "deficiency")
-      ? loadDeficiencyAlerts(criticalDays, vesselId)
-      : Promise.resolve([] as AlertItem[]),
-  ]);
+    // Sequential on the withDb transaction client — pg forbids concurrent
+    // client.query() on the same PoolClient (DeprecationWarning → hang risk).
+    const certificateItems = wantsKind(kinds, "certificate")
+      ? await loadCertificateAlerts(criticalDays, vesselId)
+      : ([] as AlertItem[]);
+    const crewCertItems = wantsKind(kinds, "crew_certificate")
+      ? await loadCrewCertificateAlerts(criticalDays, vesselId)
+      : ([] as AlertItem[]);
+    const insuranceItems = wantsKind(kinds, "insurance")
+      ? await loadInsuranceAlerts(criticalDays, vesselId)
+      : ([] as AlertItem[]);
+    const deficiencyItems = wantsKind(kinds, "deficiency")
+      ? await loadDeficiencyAlerts(criticalDays, vesselId)
+      : ([] as AlertItem[]);
 
-  let items = batches.flat();
+    let items = [
+      ...certificateItems,
+      ...crewCertItems,
+      ...insuranceItems,
+      ...deficiencyItems,
+    ];
 
-  if (options.statuses && options.statuses.length > 0) {
-    const allowed = new Set(options.statuses);
-    items = items.filter((item) => allowed.has(item.status));
-  } else {
-    items = items.filter((item) => isActionable(item.status));
-  }
+    if (options.statuses && options.statuses.length > 0) {
+      const allowed = new Set(options.statuses);
+      items = items.filter((item) => allowed.has(item.status));
+    } else {
+      items = items.filter((item) => isActionable(item.status));
+    }
 
-  items.sort((a, b) =>
-    compareBySeverity(
-      {
-        status: a.status,
-        daysRemaining: a.daysRemaining,
-        reference: "expiry",
-      },
-      {
-        status: b.status,
-        daysRemaining: b.daysRemaining,
-        reference: "expiry",
-      },
-    ),
-  );
+    items.sort((a, b) =>
+      compareBySeverity(
+        {
+          status: a.status,
+          daysRemaining: a.daysRemaining,
+          reference: "expiry",
+        },
+        {
+          status: b.status,
+          daysRemaining: b.daysRemaining,
+          reference: "expiry",
+        },
+      ),
+    );
 
-  if (options.limit != null && options.limit >= 0) {
-    items = items.slice(0, options.limit);
-  }
+    if (options.limit != null && options.limit >= 0) {
+      items = items.slice(0, options.limit);
+    }
 
-  return items;
+    return items;
+  });
 }

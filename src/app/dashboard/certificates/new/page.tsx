@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CertificateForm } from "@/components/certificate-form";
 import {
   listCertificateTypes,
@@ -7,11 +8,19 @@ import {
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
+import type { UserRole } from "@/db/schema";
 
 export default async function NewCertificatePage() {
   const session = await requireSession();
   const access = toAccessContext(session);
+  if (
+    getModuleAccess(access.role as UserRole | null, "certificates") !== "write"
+  ) {
+    redirect("/dashboard/certificates");
+  }
+
   const [vessels, types, authorities, parentCandidates] = await Promise.all([
     listSelectableVessels(access),
     listCertificateTypes(access),

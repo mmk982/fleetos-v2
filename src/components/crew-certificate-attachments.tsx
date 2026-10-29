@@ -17,12 +17,14 @@ type Props = {
   crewMemberId: string;
   crewCertificateId: string;
   attachments: CrewCertificateAttachmentRow[];
+  canWrite?: boolean;
 };
 
 export function CrewCertificateAttachments({
   crewMemberId,
   crewCertificateId,
   attachments,
+  canWrite = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(
     uploadCrewCertificateAttachmentAction,
@@ -53,42 +55,55 @@ export function CrewCertificateAttachments({
               >
                 <Identifier>{a.fileName}</Identifier>
               </a>
-              <form action={deleteCrewCertificateAttachmentAction}>
-                <input type="hidden" name="id" value={a.id} />
-                <input type="hidden" name="crewMemberId" value={crewMemberId} />
-                <Button variant="destructive" size="sm" type="submit">
-                  Remove
-                </Button>
-              </form>
+              {canWrite ? (
+                <form action={deleteCrewCertificateAttachmentAction}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <input
+                    type="hidden"
+                    name="crewMemberId"
+                    value={crewMemberId}
+                  />
+                  <Button variant="destructive" size="sm" type="submit">
+                    Remove
+                  </Button>
+                </form>
+              ) : null}
             </li>
           ))
         )}
       </ul>
 
-      <form action={formAction} className="space-y-2">
-        <input type="hidden" name="crewCertificateId" value={crewCertificateId} />
-        <input type="hidden" name="crewMemberId" value={crewMemberId} />
-        {state && !state.ok ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {state.message}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap items-end gap-2">
+      {canWrite ? (
+        <form action={formAction} className="space-y-2">
           <input
-            id={`file-${crewCertificateId}`}
-            name="file"
-            type="file"
-            accept=".pdf,image/jpeg,image/png,application/pdf"
-            required
-            className={`${inputClass} max-w-xs`}
+            type="hidden"
+            name="crewCertificateId"
+            value={crewCertificateId}
           />
-          <Button variant="secondary" type="submit"
-            disabled={pending}>
-            {pending ? "Uploading…" : "Upload"}
-          </Button>
-        </div>
-        <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>
-      </form>
+          <input type="hidden" name="crewMemberId" value={crewMemberId} />
+          {state && !state.ok ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {state.message}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-end gap-2">
+            <input
+              id={`file-${crewCertificateId}`}
+              name="file"
+              type="file"
+              accept=".pdf,image/jpeg,image/png,application/pdf"
+              required
+              className={`${inputClass} max-w-xs`}
+            />
+            <Button variant="secondary" type="submit" disabled={pending}>
+              {pending ? "Uploading…" : "Upload"}
+            </Button>
+          </div>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            PDF, JPEG, or PNG — max 10 MB.
+          </p>
+        </form>
+      ) : null}
     </div>
   );
 }

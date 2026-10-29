@@ -58,11 +58,13 @@ export function CertificatesList({
   rows,
   vessels,
   issuers,
+  canWrite = false,
   initialFilters,
 }: {
   rows: CertificateListItem[];
   vessels: VesselRow[];
   issuers: IssuingAuthorityRow[];
+  canWrite?: boolean;
   initialFilters: {
     vesselId: string;
     authority: string;
@@ -316,12 +318,14 @@ export function CertificatesList({
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-3">
             <CertificateQuickView row={row} />
-            <Link
-              href={`/dashboard/certificates/${row.id}/edit`}
-              className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
-            >
-              Edit
-            </Link>
+            {canWrite ? (
+              <Link
+                href={`/dashboard/certificates/${row.id}/edit`}
+                className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
+              >
+                Edit
+              </Link>
+            ) : null}
           </div>
         </td>
       </tr>
@@ -356,14 +360,19 @@ export function CertificatesList({
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {topLevel.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
-            No certificates match.{" "}
-            <Link
-              href="/dashboard/certificates/new"
-              className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
-            >
-              Create one
-            </Link>
-            .
+            No certificates match.
+            {canWrite ? (
+              <>
+                {" "}
+                <Link
+                  href="/dashboard/certificates/new"
+                  className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+                >
+                  Create one
+                </Link>
+                .
+              </>
+            ) : null}
           </div>
         ) : (
           <>

@@ -16,9 +16,14 @@ const inputClass =
 type Props = {
   certificateId: string;
   attachments: CertificateAttachmentRow[];
+  canWrite?: boolean;
 };
 
-export function CertificateAttachments({ certificateId, attachments }: Props) {
+export function CertificateAttachments({
+  certificateId,
+  attachments,
+  canWrite = false,
+}: Props) {
   const [state, formAction, pending] = useActionState(
     uploadCertificateAttachmentAction,
     undefined as CertificateActionState | undefined,
@@ -28,7 +33,9 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
     <div className="space-y-4">
       <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)]">
         {attachments.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">No attachments yet.</li>
+          <li className="px-4 py-6 text-center text-sm text-[var(--text-tertiary)]">
+            No attachments yet.
+          </li>
         ) : (
           attachments.map((a) => (
             <li
@@ -43,36 +50,59 @@ export function CertificateAttachments({ certificateId, attachments }: Props) {
               >
                 <Identifier>{a.fileName}</Identifier>
               </a>
-              <form action={deleteCertificateAttachmentAction}>
-                <input type="hidden" name="id" value={a.id} />
-                <input type="hidden" name="certificateId" value={certificateId} />
-                <Button variant="destructive" size="sm" type="submit">
-                  Remove
-                </Button>
-              </form>
+              {canWrite ? (
+                <form action={deleteCertificateAttachmentAction}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <input
+                    type="hidden"
+                    name="certificateId"
+                    value={certificateId}
+                  />
+                  <Button variant="destructive" size="sm" type="submit">
+                    Remove
+                  </Button>
+                </form>
+              ) : null}
             </li>
           ))
         )}
       </ul>
 
-      <form action={formAction} className="space-y-3 rounded-xl border border-dashed border-[var(--border)] p-4">
-        <input type="hidden" name="certificateId" value={certificateId} />
-        <p className="text-sm font-medium text-[var(--text-primary)]">Upload attachment</p>
-        <p className="text-xs text-[var(--text-tertiary)]">PDF, JPEG, or PNG — max 10 MB.</p>
-        {state && !state.ok ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-            {state.message}
+      {canWrite ? (
+        <form
+          action={formAction}
+          className="space-y-3 rounded-xl border border-dashed border-[var(--border)] p-4"
+        >
+          <input type="hidden" name="certificateId" value={certificateId} />
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            Upload attachment
           </p>
-        ) : null}
-        {state?.ok ? (
-          <p className="text-sm text-green-700 dark:text-green-400">Uploaded.</p>
-        ) : null}
-        <input id="file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required className={inputClass} />
-        <Button variant="primary" type="submit"
-          disabled={pending}>
-          {pending ? "Uploading…" : "Upload"}
-        </Button>
-      </form>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            PDF, JPEG, or PNG — max 10 MB.
+          </p>
+          {state && !state.ok ? (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {state.message}
+            </p>
+          ) : null}
+          {state?.ok ? (
+            <p className="text-sm text-green-700 dark:text-green-400">
+              Uploaded.
+            </p>
+          ) : null}
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            required
+            className={inputClass}
+          />
+          <Button variant="primary" type="submit" disabled={pending}>
+            {pending ? "Uploading…" : "Upload"}
+          </Button>
+        </form>
+      ) : null}
     </div>
   );
 }

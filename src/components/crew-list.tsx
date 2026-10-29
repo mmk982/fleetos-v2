@@ -34,11 +34,13 @@ export function CrewList({
   rows,
   vessels,
   categories,
+  canWrite = false,
   initialFilters,
 }: {
   rows: CrewMemberListItem[];
   vessels: VesselRow[];
   categories: CrewCategoryRow[];
+  canWrite?: boolean;
   initialFilters: {
     vesselId: string;
     status: string;
@@ -164,23 +166,34 @@ export function CrewList({
             searchPlaceholder="Search name, vessel, nationality…"
           />
         </div>
-        <Button variant="primary" type="button"
-          onClick={() => setDrawer({ kind: "create" })} className="shrink-0">
-          Add crew
-        </Button>
+        {canWrite ? (
+          <Button
+            variant="primary"
+            type="button"
+            onClick={() => setDrawer({ kind: "create" })}
+            className="shrink-0"
+          >
+            Add crew
+          </Button>
+        ) : null}
       </div>
 
       {visible.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-10 text-center text-sm text-[var(--text-tertiary)]">
-          No crew members match.{" "}
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => setDrawer({ kind: "create" })}
-            className="underline-offset-2"
-          >
-            Add one
-          </Button>
+          No crew members match.
+          {canWrite ? (
+            <>
+              {" "}
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setDrawer({ kind: "create" })}
+                className="underline-offset-2"
+              >
+                Add one
+              </Button>
+            </>
+          ) : null}
         </p>
       ) : (
         <>
@@ -222,14 +235,16 @@ export function CrewList({
                       </StatusPill>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        type="button"
-                        onClick={() => setDrawer({ kind: "edit", row })}
-                      >
-                        Edit
-                      </Button>
+                      {canWrite ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => setDrawer({ kind: "edit", row })}
+                        >
+                          Edit
+                        </Button>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -260,15 +275,17 @@ export function CrewList({
                     {crewMemberStatusLabel(row.status)}
                   </StatusPill>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  onClick={() => setDrawer({ kind: "edit", row })}
-                  className="mt-3"
-                >
-                  Edit
-                </Button>
+                {canWrite ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => setDrawer({ kind: "edit", row })}
+                    className="mt-3"
+                  >
+                    Edit
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -276,7 +293,7 @@ export function CrewList({
       )}
 
       <Drawer
-        open={drawer.kind !== "closed"}
+        open={canWrite && drawer.kind !== "closed"}
         onClose={() => setDrawer({ kind: "closed" })}
         title={drawer.kind === "edit" ? "Edit crew member" : "Add crew member"}
       >

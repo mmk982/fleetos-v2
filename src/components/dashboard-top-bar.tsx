@@ -1,6 +1,6 @@
 import { businessToday } from "@/lib/settings/business-time";
 import Link from "next/link";
-import { toAccessContext } from "@/lib/auth/access";
+import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import { getCompanyProfile } from "@/modules/settings/company-profile.controller";
 import {
@@ -25,13 +25,24 @@ function initialsFromName(name: string): string {
 export async function DashboardTopBar() {
   const session = await requireSession();
   const access = toAccessContext(session);
-  const [profile, unreadCount, rows] = await Promise.all([
-    getCompanyProfile(),
-    getUnreadCount(access, access.userId),
-    listNotifications(access, { userId: access.userId, limit: 8 }),
-  ]);
+  const profile = await getCompanyProfile();
+
+  let unreadCount = 0;
+  let items: ReturnType<typeof toNotificationListItem>[] = [];
+  try {
+    // Sequential — list + count share the caller's identity; avoid stacking
+    // concurrent requireScopedVesselId paths that can 500 an unassigned user.
+    unreadCount = await getUnreadCount(access, access.userId);
+    const rows = await listNotifications(access, {
+      userId: access.userId,
+      limit: 8,
+    });
+    items = rows.map(toNotificationListItem);
+  } catch (error) {
+    if (!(error instanceof ForbiddenError)) throw error;
+  }
+
   const name = profile.companyName?.trim() || "FleetOS";
-  const items = rows.map(toNotificationListItem);
   const today = new Date().toLocaleDateString();
   const initials = initialsFromName(session.user.name ?? "");
 

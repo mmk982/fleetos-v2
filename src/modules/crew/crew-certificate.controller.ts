@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { asc, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   crewCertificateAttachments,
   crewCertificates,
@@ -198,23 +198,26 @@ export async function listCrewCertificates(
   ctx: AccessContext,
   crewMemberId: string,
 ): Promise<CrewCertificateListItem[]> {
-  assertAuthenticatedAccess(ctx, crewMemberId);
-  await assertCrewMemberAccess(ctx, crewMemberId, "read");
-  const db = getDb();
-  const rows = await db
-    .select({
-      cert: crewCertificates,
-      endorsementTypeName: endorsementTypes.name,
-    })
-    .from(crewCertificates)
-    .leftJoin(
-      endorsementTypes,
-      eq(crewCertificates.endorsementTypeId, endorsementTypes.id),
-    )
-    .where(eq(crewCertificates.crewMemberId, crewMemberId))
-    .orderBy(asc(crewCertificates.name));
-
-  return rows.map((r) => toListItem(r.cert, r.endorsementTypeName));
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, crewMemberId);
+    await assertCrewMemberAccess(ctx, crewMemberId, "read");
+    const db = getDb();
+    const rows = await db
+      .select({
+        cert: crewCertificates,
+        endorsementTypeName: endorsementTypes.name,
+      })
+      .from(crewCertificates)
+      .leftJoin(
+        endorsementTypes,
+        eq(crewCertificates.endorsementTypeId, endorsementTypes.id),
+      )
+      .where(eq(crewCertificates.crewMemberId, crewMemberId))
+      .orderBy(asc(crewCertificates.name));
+  
+    return rows.map((r) => toListItem(r.cert, r.endorsementTypeName));
+  
+  });
 }
 
 export type GetCrewCertificateOptions = {
@@ -226,86 +229,91 @@ export async function getCrewCertificateById(
   id: string,
   options: GetCrewCertificateOptions = {},
 ): Promise<CrewCertificateListItem | undefined> {
-  assertAuthenticatedAccess(ctx, id);
-  try {
-    await assertCrewCertificateAccess(ctx, id, "read");
-  } catch (error) {
-    if (error instanceof CrewCertificateNotFoundError) return undefined;
-    throw error;
-  }
-  const db = getDb();
-  const rows = await db
-    .select({
-      cert: crewCertificates,
-      endorsementTypeName: endorsementTypes.name,
-    })
-    .from(crewCertificates)
-    .leftJoin(
-      endorsementTypes,
-      eq(crewCertificates.endorsementTypeId, endorsementTypes.id),
-    )
-    .where(eq(crewCertificates.id, id))
-    .limit(1);
-  const row = rows[0];
-  if (!row) return undefined;
-
-  if (options.logView) {
-    await writeAccessLog({
-      userId: ctx.userId,
-      moduleName: "crew",
-      recordId: id,
-      accessType: "view",
-    });
-  }
-
-  return toListItem(row.cert, row.endorsementTypeName);
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    try {
+      await assertCrewCertificateAccess(ctx, id, "read");
+    } catch (error) {
+      if (error instanceof CrewCertificateNotFoundError) return undefined;
+      throw error;
+    }
+    const db = getDb();
+    const rows = await db
+      .select({
+        cert: crewCertificates,
+        endorsementTypeName: endorsementTypes.name,
+      })
+      .from(crewCertificates)
+      .leftJoin(
+        endorsementTypes,
+        eq(crewCertificates.endorsementTypeId, endorsementTypes.id),
+      )
+      .where(eq(crewCertificates.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+  
+    if (options.logView) {
+      await writeAccessLog(ctx, {
+        moduleName: "crew",
+        recordId: id,
+        accessType: "view",
+      });
+    }
+  
+    return toListItem(row.cert, row.endorsementTypeName);
+  
+  });
 }
 
 export async function createCrewCertificate(
   ctx: AccessContext,
   input: CrewCertificateCreateInput,
 ): Promise<CrewCertificateRow> {
-  assertAuthenticatedAccess(ctx, input.crewMemberId);
-  await assertCrewMemberAccess(ctx, input.crewMemberId, "write");
-  const db = getDb();
-
-  let row: CrewCertificateRow;
-  try {
-    const inserted = await db
-      .insert(crewCertificates)
-      .values({
-        crewMemberId: input.crewMemberId,
-        name: input.name,
-        documentNumber: input.documentNumber ?? null,
-        issuingAuthority: input.issuingAuthority ?? null,
-        endorsementTypeId: input.endorsementTypeId ?? null,
-        issueDate: input.issueDate ?? null,
-        expiryDate: input.expiryDate ?? null,
-        notes: input.notes ?? null,
-      })
-      .returning();
-    const insertedRow = inserted[0];
-    if (!insertedRow) throw new Error("Crew certificate insert did not return a row");
-    await refreshCachedStatus(insertedRow);
-    row = insertedRow;
-  } catch (error) {
-    if (error instanceof CrewMemberNotFoundError) throw error;
-    if (isPgForeignKeyViolation(error)) {
-      throw new CrewCertificateConflictError(
-        "Crew member or endorsement type reference is invalid.",
-      );
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, input.crewMemberId);
+    await assertCrewMemberAccess(ctx, input.crewMemberId, "write");
+    const db = getDb();
+  
+    let row: CrewCertificateRow;
+    try {
+      const inserted = await db
+        .insert(crewCertificates)
+        .values({
+          crewMemberId: input.crewMemberId,
+          name: input.name,
+          documentNumber: input.documentNumber ?? null,
+          issuingAuthority: input.issuingAuthority ?? null,
+          endorsementTypeId: input.endorsementTypeId ?? null,
+          issueDate: input.issueDate ?? null,
+          expiryDate: input.expiryDate ?? null,
+          notes: input.notes ?? null,
+        })
+        .returning();
+      const insertedRow = inserted[0];
+      if (!insertedRow) throw new Error("Crew certificate insert did not return a row");
+      await refreshCachedStatus(insertedRow);
+      row = insertedRow;
+    } catch (error) {
+      if (error instanceof CrewMemberNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new CrewCertificateConflictError(
+          "Crew member or endorsement type reference is invalid.",
+        );
+      }
+      logError("CREW_CERTIFICATE_CREATE_FAILED", { error });
+      throw error;
     }
-    logError("CREW_CERTIFICATE_CREATE_FAILED", { error });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "created",
-    moduleName: "crew",
-    recordId: row.id,
-    description: `Added crew certificate: ${row.name}`,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "created",
+      moduleName: "crew",
+      recordId: row.id,
+      description: `Added crew certificate: ${row.name}`,
+    });
+    return row;
+  
   });
-  return row;
 }
 
 export async function updateCrewCertificate(
@@ -313,110 +321,116 @@ export async function updateCrewCertificate(
   id: string,
   input: CrewCertificateUpdateInput,
 ): Promise<CrewCertificateRow> {
-  assertAuthenticatedAccess(ctx, id);
-  await assertCrewCertificateAccess(ctx, id, "write");
-  const db = getDb();
-
-  const existing = await db
-    .select()
-    .from(crewCertificates)
-    .where(eq(crewCertificates.id, id))
-    .limit(1);
-  if (!existing[0]) throw new CrewCertificateNotFoundError(id);
-
-  const patch: Partial<typeof crewCertificates.$inferInsert> & {
-    updatedAt: Date;
-  } = { updatedAt: new Date() };
-  if (input.name !== undefined) patch.name = input.name;
-  if (input.documentNumber !== undefined) {
-    patch.documentNumber = input.documentNumber;
-  }
-  if (input.issuingAuthority !== undefined) {
-    patch.issuingAuthority = input.issuingAuthority;
-  }
-  if (input.endorsementTypeId !== undefined) {
-    patch.endorsementTypeId = input.endorsementTypeId;
-  }
-  if (input.issueDate !== undefined) patch.issueDate = input.issueDate;
-  if (input.expiryDate !== undefined) patch.expiryDate = input.expiryDate;
-  if (input.notes !== undefined) patch.notes = input.notes;
-
-  let row: CrewCertificateRow;
-  try {
-    const updated = await db
-      .update(crewCertificates)
-      .set(patch)
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    await assertCrewCertificateAccess(ctx, id, "write");
+    const db = getDb();
+  
+    const existing = await db
+      .select()
+      .from(crewCertificates)
       .where(eq(crewCertificates.id, id))
-      .returning();
-    const updatedRow = updated[0];
-    if (!updatedRow) throw new CrewCertificateNotFoundError(id);
-    await refreshCachedStatus(updatedRow);
-    row = updatedRow;
-  } catch (error) {
-    if (error instanceof CrewCertificateNotFoundError) throw error;
-    if (isPgForeignKeyViolation(error)) {
-      throw new CrewCertificateConflictError(
-        "Endorsement type reference is invalid.",
-      );
+      .limit(1);
+    if (!existing[0]) throw new CrewCertificateNotFoundError(id);
+  
+    const patch: Partial<typeof crewCertificates.$inferInsert> & {
+      updatedAt: Date;
+    } = { updatedAt: new Date() };
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.documentNumber !== undefined) {
+      patch.documentNumber = input.documentNumber;
     }
-    logError("CREW_CERTIFICATE_UPDATE_FAILED", {
-      error,
-      crewCertificateId: id,
+    if (input.issuingAuthority !== undefined) {
+      patch.issuingAuthority = input.issuingAuthority;
+    }
+    if (input.endorsementTypeId !== undefined) {
+      patch.endorsementTypeId = input.endorsementTypeId;
+    }
+    if (input.issueDate !== undefined) patch.issueDate = input.issueDate;
+    if (input.expiryDate !== undefined) patch.expiryDate = input.expiryDate;
+    if (input.notes !== undefined) patch.notes = input.notes;
+  
+    let row: CrewCertificateRow;
+    try {
+      const updated = await db
+        .update(crewCertificates)
+        .set(patch)
+        .where(eq(crewCertificates.id, id))
+        .returning();
+      const updatedRow = updated[0];
+      if (!updatedRow) throw new CrewCertificateNotFoundError(id);
+      await refreshCachedStatus(updatedRow);
+      row = updatedRow;
+    } catch (error) {
+      if (error instanceof CrewCertificateNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new CrewCertificateConflictError(
+          "Endorsement type reference is invalid.",
+        );
+      }
+      logError("CREW_CERTIFICATE_UPDATE_FAILED", {
+        error,
+        crewCertificateId: id,
+      });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "updated",
+      moduleName: "crew",
+      recordId: row.id,
+      description: `Updated crew certificate: ${row.name}`,
     });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "updated",
-    moduleName: "crew",
-    recordId: row.id,
-    description: `Updated crew certificate: ${row.name}`,
+    return row;
+  
   });
-  return row;
 }
 
 export async function deleteCrewCertificate(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, id);
-  await assertCrewCertificateAccess(ctx, id, "write");
-  const db = getDb();
-  const existing = await db
-    .select({ name: crewCertificates.name })
-    .from(crewCertificates)
-    .where(eq(crewCertificates.id, id))
-    .limit(1);
-  const name = existing[0]?.name;
-  try {
-    const atts = await db
-      .select()
-      .from(crewCertificateAttachments)
-      .where(eq(crewCertificateAttachments.crewCertificateId, id));
-    for (const att of atts) {
-      await removeStoredAttachmentFile(att.filePath);
-    }
-    const deleted = await db
-      .delete(crewCertificates)
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    await assertCrewCertificateAccess(ctx, id, "write");
+    const db = getDb();
+    const existing = await db
+      .select({ name: crewCertificates.name })
+      .from(crewCertificates)
       .where(eq(crewCertificates.id, id))
-      .returning({ id: crewCertificates.id });
-    if (deleted.length === 0) throw new CrewCertificateNotFoundError(id);
-  } catch (error) {
-    if (error instanceof CrewCertificateNotFoundError) throw error;
-    logError("CREW_CERTIFICATE_DELETE_FAILED", {
-      error,
-      crewCertificateId: id,
+      .limit(1);
+    const name = existing[0]?.name;
+    try {
+      const atts = await db
+        .select()
+        .from(crewCertificateAttachments)
+        .where(eq(crewCertificateAttachments.crewCertificateId, id));
+      for (const att of atts) {
+        await removeStoredAttachmentFile(att.filePath);
+      }
+      const deleted = await db
+        .delete(crewCertificates)
+        .where(eq(crewCertificates.id, id))
+        .returning({ id: crewCertificates.id });
+      if (deleted.length === 0) throw new CrewCertificateNotFoundError(id);
+    } catch (error) {
+      if (error instanceof CrewCertificateNotFoundError) throw error;
+      logError("CREW_CERTIFICATE_DELETE_FAILED", {
+        error,
+        crewCertificateId: id,
+      });
+      throw error;
+    }
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "deleted",
+      moduleName: "crew",
+      recordId: id,
+      description: name
+        ? `Deleted crew certificate: ${name}`
+        : "Deleted crew certificate",
     });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "deleted",
-    moduleName: "crew",
-    recordId: id,
-    description: name
-      ? `Deleted crew certificate: ${name}`
-      : "Deleted crew certificate",
+  
   });
 }
 
@@ -424,13 +438,16 @@ export async function listCrewCertificateAttachments(
   ctx: AccessContext,
   crewCertificateId: string,
 ): Promise<CrewCertificateAttachmentRow[]> {
-  assertAuthenticatedAccess(ctx, crewCertificateId);
-  await assertCrewCertificateAccess(ctx, crewCertificateId, "read");
-  return getDb()
-    .select()
-    .from(crewCertificateAttachments)
-    .where(eq(crewCertificateAttachments.crewCertificateId, crewCertificateId))
-    .orderBy(asc(crewCertificateAttachments.uploadedAt));
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, crewCertificateId);
+    await assertCrewCertificateAccess(ctx, crewCertificateId, "read");
+    return getDb()
+      .select()
+      .from(crewCertificateAttachments)
+      .where(eq(crewCertificateAttachments.crewCertificateId, crewCertificateId))
+      .orderBy(asc(crewCertificateAttachments.uploadedAt));
+  
+  });
 }
 
 function extensionForMime(mime: string): string {
@@ -445,102 +462,108 @@ export async function uploadCrewCertificateAttachment(
   crewCertificateId: string,
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<CrewCertificateAttachmentRow> {
-  assertAuthenticatedAccess(ctx, crewCertificateId);
-  await assertCrewCertificateAccess(ctx, crewCertificateId, "write");
-
-  if (!ALLOWED_MIME.has(file.type)) {
-    throw new AttachmentValidationError(
-      "Only PDF, JPEG, and PNG attachments are allowed.",
-    );
-  }
-  if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) {
-    throw new AttachmentValidationError(
-      "Attachment must be between 1 byte and 10 MB.",
-    );
-  }
-
-  const db = getDb();
-  let row: CrewCertificateAttachmentRow;
-  try {
-    const parent = await db
-      .select({ id: crewCertificates.id })
-      .from(crewCertificates)
-      .where(eq(crewCertificates.id, crewCertificateId))
-      .limit(1);
-    if (!parent[0]) throw new CrewCertificateNotFoundError(crewCertificateId);
-
-    await mkdir(ATTACHMENTS_DIR, { recursive: true });
-    const id = randomUUID();
-    const storedName = `${id}${extensionForMime(file.type)}`;
-    const absolute = path.join(ATTACHMENTS_DIR, storedName);
-    const relativePath = path
-      .join("data", "attachments", storedName)
-      .replace(/\\/g, "/");
-    await writeFile(absolute, file.bytes);
-
-    const inserted = await db
-      .insert(crewCertificateAttachments)
-      .values({
-        id,
-        crewCertificateId,
-        fileName: file.name.slice(0, 255) || storedName,
-        filePath: relativePath,
-        uploadedBy: ctx.userId,
-      })
-      .returning();
-    const insertedRow = inserted[0];
-    if (!insertedRow) {
-      await removeStoredAttachmentFile(relativePath);
-      throw new Error("Attachment insert did not return a row");
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, crewCertificateId);
+    await assertCrewCertificateAccess(ctx, crewCertificateId, "write");
+  
+    if (!ALLOWED_MIME.has(file.type)) {
+      throw new AttachmentValidationError(
+        "Only PDF, JPEG, and PNG attachments are allowed.",
+      );
     }
-    row = insertedRow;
-  } catch (error) {
-    if (
-      error instanceof CrewCertificateNotFoundError ||
-      error instanceof AttachmentValidationError
-    ) {
+    if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) {
+      throw new AttachmentValidationError(
+        "Attachment must be between 1 byte and 10 MB.",
+      );
+    }
+  
+    const db = getDb();
+    let row: CrewCertificateAttachmentRow;
+    try {
+      const parent = await db
+        .select({ id: crewCertificates.id })
+        .from(crewCertificates)
+        .where(eq(crewCertificates.id, crewCertificateId))
+        .limit(1);
+      if (!parent[0]) throw new CrewCertificateNotFoundError(crewCertificateId);
+  
+      await mkdir(ATTACHMENTS_DIR, { recursive: true });
+      const id = randomUUID();
+      const storedName = `${id}${extensionForMime(file.type)}`;
+      const absolute = path.join(ATTACHMENTS_DIR, storedName);
+      const relativePath = path
+        .join("data", "attachments", storedName)
+        .replace(/\\/g, "/");
+      await writeFile(absolute, file.bytes);
+  
+      const inserted = await db
+        .insert(crewCertificateAttachments)
+        .values({
+          id,
+          crewCertificateId,
+          fileName: file.name.slice(0, 255) || storedName,
+          filePath: relativePath,
+          uploadedBy: ctx.userId,
+        })
+        .returning();
+      const insertedRow = inserted[0];
+      if (!insertedRow) {
+        await removeStoredAttachmentFile(relativePath);
+        throw new Error("Attachment insert did not return a row");
+      }
+      row = insertedRow;
+    } catch (error) {
+      if (
+        error instanceof CrewCertificateNotFoundError ||
+        error instanceof AttachmentValidationError
+      ) {
+        throw error;
+      }
+      logError("CREW_CERTIFICATE_ATTACHMENT_UPLOAD_FAILED", {
+        error,
+        crewCertificateId,
+      });
       throw error;
     }
-    logError("CREW_CERTIFICATE_ATTACHMENT_UPLOAD_FAILED", {
-      error,
-      crewCertificateId,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "uploaded",
+      moduleName: "crew",
+      recordId: crewCertificateId,
+      description: `Uploaded attachment to crew certificate: ${row.fileName}`,
     });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "uploaded",
-    moduleName: "crew",
-    recordId: crewCertificateId,
-    description: `Uploaded attachment to crew certificate: ${row.fileName}`,
+    return row;
+  
   });
-  return row;
 }
 
 export async function deleteCrewCertificateAttachment(
   ctx: AccessContext,
   attachmentId: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, attachmentId);
-  const row = await assertCrewCertificateAttachmentAccess(
-    ctx,
-    attachmentId,
-    "write",
-  );
-  const db = getDb();
-  try {
-    await db
-      .delete(crewCertificateAttachments)
-      .where(eq(crewCertificateAttachments.id, attachmentId));
-    await removeStoredAttachmentFile(row.filePath);
-  } catch (error) {
-    if (error instanceof AttachmentNotFoundError) throw error;
-    logError("CREW_CERTIFICATE_ATTACHMENT_DELETE_FAILED", {
-      error,
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, attachmentId);
+    const row = await assertCrewCertificateAttachmentAccess(
+      ctx,
       attachmentId,
-    });
-    throw error;
-  }
+      "write",
+    );
+    const db = getDb();
+    try {
+      await db
+        .delete(crewCertificateAttachments)
+        .where(eq(crewCertificateAttachments.id, attachmentId));
+      await removeStoredAttachmentFile(row.filePath);
+    } catch (error) {
+      if (error instanceof AttachmentNotFoundError) throw error;
+      logError("CREW_CERTIFICATE_ATTACHMENT_DELETE_FAILED", {
+        error,
+        attachmentId,
+      });
+      throw error;
+    }
+  
+  });
 }
 
 /**
@@ -554,17 +577,20 @@ export async function getCrewCertificateAttachmentById(
   | (CrewCertificateAttachmentRow & { crewCertificateId: string })
   | undefined
 > {
-  assertAuthenticatedAccess(ctx, attachmentId);
-  try {
-    return await assertCrewCertificateAttachmentAccess(
-      ctx,
-      attachmentId,
-      "read",
-    );
-  } catch (error) {
-    if (error instanceof AttachmentNotFoundError) return undefined;
-    throw error;
-  }
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, attachmentId);
+    try {
+      return await assertCrewCertificateAttachmentAccess(
+        ctx,
+        attachmentId,
+        "read",
+      );
+    } catch (error) {
+      if (error instanceof AttachmentNotFoundError) return undefined;
+      throw error;
+    }
+  
+  });
 }
 
 /** Opens a stream after path-escape check (module-local / tests). */
@@ -575,12 +601,15 @@ export async function openCrewCertificateAttachmentStream(
   row: CrewCertificateAttachmentRow;
   stream: NodeJS.ReadableStream;
 }> {
-  const row = await getCrewCertificateAttachmentById(ctx, attachmentId);
-  if (!row) throw new AttachmentNotFoundError(attachmentId);
-  try {
-    const { stream } = openStoredAttachmentStream(row.filePath);
-    return { row, stream };
-  } catch {
-    throw new AttachmentNotFoundError(attachmentId);
-  }
+  return withDb(ctx, async () => {
+    const row = await getCrewCertificateAttachmentById(ctx, attachmentId);
+    if (!row) throw new AttachmentNotFoundError(attachmentId);
+    try {
+      const { stream } = openStoredAttachmentStream(row.filePath);
+      return { row, stream };
+    } catch {
+      throw new AttachmentNotFoundError(attachmentId);
+    }
+  
+  });
 }

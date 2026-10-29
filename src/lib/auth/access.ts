@@ -157,3 +157,18 @@ export function requireScopedVesselId(ctx: AccessContext): string | undefined {
   }
   return ctx.vesselId;
 }
+
+/**
+ * True when a vessel-scoped caller has no vessel and a controller threw
+ * {@link ForbiddenError}. Pages use this to render a notice instead of 500.
+ * Controllers keep fail-closed behaviour via {@link requireScopedVesselId}.
+ */
+export function isMissingVesselAssignmentError(
+  error: unknown,
+  ctx: AccessContext,
+): boolean {
+  if (!(error instanceof ForbiddenError)) return false;
+  const role = ctx.role as UserRole | null;
+  if (role !== "vessel_user" && role !== "management_user") return false;
+  return !ctx.vesselId;
+}

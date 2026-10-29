@@ -21,6 +21,9 @@ vi.mock("@/lib/logging", () => ({
 const getDb = vi.fn();
 vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
+  withDb: async (_ctx: unknown, fn: (db: unknown) => unknown) => fn(getDb()),
+  withSystemDb: async (_reason: unknown, fn: (db: unknown) => unknown) =>
+    fn(getDb()),
 }));
 
 const assertAuthenticatedAccess = vi.fn();

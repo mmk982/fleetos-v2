@@ -92,8 +92,7 @@ export async function GET(request: Request) {
         : await exportToPdf(exportRows, COLUMNS, "Crew export");
 
     for (const row of rows) {
-      await writeAccessLog({
-        userId: access.userId,
+      await writeAccessLog(access, {
         moduleName: "crew",
         recordId: row.id,
         accessType: "export",

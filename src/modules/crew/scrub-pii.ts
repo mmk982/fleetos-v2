@@ -17,7 +17,7 @@
 import "server-only";
 
 import { eq, inArray } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   crewCertificateAttachments,
   crewCertificates,
@@ -54,6 +54,8 @@ export async function scrubCrewMemberPii(
 ): Promise<{ attachmentsRemoved: number }> {
   assertAuthenticatedAccess(ctx, id);
   assertModuleAccess(ctx, "crew", "write");
+
+  return withDb(ctx, async () => {
   const db = getDb();
 
   const members = await db
@@ -153,4 +155,5 @@ export async function scrubCrewMemberPii(
     description: `Deleted crew member: ${name}`,
   });
   return { attachmentsRemoved };
+  });
 }

@@ -13,13 +13,18 @@ import {
 } from "@/modules/certificates/certificate.controller";
 import { formatAuthority } from "@/modules/certificates/certificate.model";
 import { toAccessContext } from "@/lib/auth/access";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
+import type { UserRole } from "@/db/schema";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CertificateDetailPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
+  const canWrite =
+    getModuleAccess(access.role as UserRole | null, "certificates") ===
+    "write";
   const { id } = await props.params;
   const cert = await getCertificateById(access, id);
   if (!cert) {
@@ -119,24 +124,26 @@ export default async function CertificateDetailPage(props: PageProps) {
             <Identifier>{cert.vesselName}</Identifier>
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/dashboard/certificates/${cert.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
-          >
-            Edit
-          </Link>
-          <ConfirmDeleteButton
-            id={cert.id}
-            title="Delete certificate?"
-            description={
-              cert.subItemCount > 0
-                ? `This certificate has ${cert.subItemCount} sub-item${cert.subItemCount === 1 ? "" : "s"}. They will be kept as standalone certificates. This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation.`
-                : "This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation."
-            }
-            action={deleteCertificateFormAction}
-          />
-        </div>
+        {canWrite ? (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/dashboard/certificates/${cert.id}/edit`}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+            >
+              Edit
+            </Link>
+            <ConfirmDeleteButton
+              id={cert.id}
+              title="Delete certificate?"
+              description={
+                cert.subItemCount > 0
+                  ? `This certificate has ${cert.subItemCount} sub-item${cert.subItemCount === 1 ? "" : "s"}. They will be kept as standalone certificates. This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation.`
+                  : "This permanently removes the certificate, its events, and attachments. Prefer revoke for normal history preservation."
+              }
+              action={deleteCertificateFormAction}
+            />
+          </div>
+        ) : null}
       </div>
 
       <dl className="mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
@@ -218,12 +225,18 @@ export default async function CertificateDetailPage(props: PageProps) {
             ))
           )}
         </ol>
-        <CertificateEventForm certificateId={cert.id} />
+        {canWrite ? (
+          <CertificateEventForm certificateId={cert.id} />
+        ) : null}
       </section>
 
       <section className="mt-10 max-w-4xl space-y-4">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">Attachments</h2>
-        <CertificateAttachments certificateId={cert.id} attachments={cert.attachments} />
+        <CertificateAttachments
+          certificateId={cert.id}
+          attachments={cert.attachments}
+          canWrite={canWrite}
+        />
       </section>
     </main>
   );

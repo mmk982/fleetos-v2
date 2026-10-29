@@ -1,7 +1,11 @@
 import { uuidSearchParam } from "@/lib/validation/search-params";
 import { AlertsFilters } from "@/components/alerts-filters";
 import { AlertsList } from "@/components/alerts-list";
-import { toAccessContext } from "@/lib/auth/access";
+import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
+import {
+  isMissingVesselAssignmentError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
 import { getAlerts } from "@/modules/alerts/alerts.controller";
 import {
@@ -32,19 +36,29 @@ export default async function AlertsPage(props: {
   const statuses = parseAlertStatusFilter(sp.status);
   const vesselId = uuidSearchParam(sp.vesselId);
 
-  const [items, missingDates, vessels] = await Promise.all([
-    getAlerts(access, {
-      vesselId,
-      kinds: kind ? [kind] : undefined,
-      statuses,
-    }),
-    getAlerts(access, {
-      vesselId,
-      kinds: kind ? [kind] : undefined,
-      statuses: ["unknown"],
-    }),
-    listSelectableVessels(access),
-  ]);
+  let items;
+  let missingDates;
+  let vessels;
+  try {
+    [items, missingDates, vessels] = await Promise.all([
+      getAlerts(access, {
+        vesselId,
+        kinds: kind ? [kind] : undefined,
+        statuses,
+      }),
+      getAlerts(access, {
+        vesselId,
+        kinds: kind ? [kind] : undefined,
+        statuses: ["unknown"],
+      }),
+      listSelectableVessels(access),
+    ]);
+  } catch (error) {
+    if (isMissingVesselAssignmentError(error, access)) {
+      return <NoVesselAssignedNotice />;
+    }
+    throw error;
+  }
 
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CertificateForm } from "@/components/certificate-form";
 import {
   getCertificateById,
@@ -9,7 +9,9 @@ import {
 } from "@/modules/certificates/certificate.controller";
 import { listSelectableVessels } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
+import type { UserRole } from "@/db/schema";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -17,6 +19,12 @@ export default async function EditCertificatePage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
+  if (
+    getModuleAccess(access.role as UserRole | null, "certificates") !== "write"
+  ) {
+    redirect(`/dashboard/certificates/${id}`);
+  }
+
   const [cert, vessels, types, authorities, parentCandidates] =
     await Promise.all([
       getCertificateById(access, id),

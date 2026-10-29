@@ -29,10 +29,12 @@ export function CrewCertificatesSection({
   crewMemberId,
   certificates,
   endorsementTypes,
+  canWrite = false,
 }: {
   crewMemberId: string;
   certificates: CertWithAttachments[];
   endorsementTypes: EndorsementTypeRow[];
+  canWrite?: boolean;
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<ModalMode>({ kind: "closed" });
@@ -43,10 +45,15 @@ export function CrewCertificatesSection({
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Certificates & documents
         </h2>
-        <Button variant="primary" type="button"
-          onClick={() => setModal({ kind: "create" })}>
-          Add document
-        </Button>
+        {canWrite ? (
+          <Button
+            variant="primary"
+            type="button"
+            onClick={() => setModal({ kind: "create" })}
+          >
+            Add document
+          </Button>
+        ) : null}
       </div>
 
       {certificates.length === 0 ? (
@@ -80,75 +87,82 @@ export function CrewCertificatesSection({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill status={cert.compliance.status} />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    onClick={() => setModal({ kind: "edit", cert })}
-                  >
-                    Edit
-                  </Button>
-                  <ConfirmDeleteButton
-                    label="Delete"
-                    title="Delete document?"
-                    description="Removes this certificate and its attachment files."
-                    id={cert.id}
-                    action={async (fd) => {
-                      fd.set("crewMemberId", crewMemberId);
-                      await deleteCrewCertificateFormAction(fd);
-                      router.refresh();
-                    }}
-                  />
+                  {canWrite ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        onClick={() => setModal({ kind: "edit", cert })}
+                      >
+                        Edit
+                      </Button>
+                      <ConfirmDeleteButton
+                        label="Delete"
+                        title="Delete document?"
+                        description="Removes this certificate and its attachment files."
+                        id={cert.id}
+                        action={async (fd) => {
+                          fd.set("crewMemberId", crewMemberId);
+                          await deleteCrewCertificateFormAction(fd);
+                          router.refresh();
+                        }}
+                      />
+                    </>
+                  ) : null}
                 </div>
               </div>
               <CrewCertificateAttachments
                 crewMemberId={crewMemberId}
                 crewCertificateId={cert.id}
                 attachments={cert.attachments}
+                canWrite={canWrite}
               />
             </li>
           ))}
         </ul>
       )}
 
-      <Modal
-        open={modal.kind !== "closed"}
-        onClose={() => setModal({ kind: "closed" })}
-        ariaLabel={
-          modal.kind === "edit" ? "Edit crew document" : "Add crew document"
-        }
-      >
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">
-          {modal.kind === "edit" ? "Edit document" : "Add document"}
-        </h2>
-        <div className="mt-4">
-          {modal.kind === "create" ? (
-            <CrewCertificateForm
-              mode="create"
-              crewMemberId={crewMemberId}
-              endorsementTypes={endorsementTypes}
-              onCancel={() => setModal({ kind: "closed" })}
-              onSuccess={() => {
-                setModal({ kind: "closed" });
-                router.refresh();
-              }}
-            />
-          ) : null}
-          {modal.kind === "edit" ? (
-            <CrewCertificateForm
-              mode="edit"
-              crewMemberId={crewMemberId}
-              certificate={modal.cert}
-              endorsementTypes={endorsementTypes}
-              onCancel={() => setModal({ kind: "closed" })}
-              onSuccess={() => {
-                setModal({ kind: "closed" });
-                router.refresh();
-              }}
-            />
-          ) : null}
-        </div>
-      </Modal>
+      {canWrite ? (
+        <Modal
+          open={modal.kind !== "closed"}
+          onClose={() => setModal({ kind: "closed" })}
+          ariaLabel={
+            modal.kind === "edit" ? "Edit crew document" : "Add crew document"
+          }
+        >
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
+            {modal.kind === "edit" ? "Edit document" : "Add document"}
+          </h2>
+          <div className="mt-4">
+            {modal.kind === "create" ? (
+              <CrewCertificateForm
+                mode="create"
+                crewMemberId={crewMemberId}
+                endorsementTypes={endorsementTypes}
+                onCancel={() => setModal({ kind: "closed" })}
+                onSuccess={() => {
+                  setModal({ kind: "closed" });
+                  router.refresh();
+                }}
+              />
+            ) : null}
+            {modal.kind === "edit" ? (
+              <CrewCertificateForm
+                mode="edit"
+                crewMemberId={crewMemberId}
+                certificate={modal.cert}
+                endorsementTypes={endorsementTypes}
+                onCancel={() => setModal({ kind: "closed" })}
+                onSuccess={() => {
+                  setModal({ kind: "closed" });
+                  router.refresh();
+                }}
+              />
+            ) : null}
+          </div>
+        </Modal>
+      ) : null}
     </section>
   );
 }

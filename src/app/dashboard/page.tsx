@@ -15,8 +15,12 @@ import {
 import { AlertsList } from "@/components/alerts-list";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Identifier } from "@/components/ui/identifier";
-import { toAccessContext } from "@/lib/auth/access";
+import {
+  isMissingVesselAssignmentError,
+  toAccessContext,
+} from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
+import { NoVesselAssignedNotice } from "@/components/no-vessel-assigned-notice";
 import {
   STATUS_LABELS,
   type ComplianceStatus,
@@ -61,40 +65,57 @@ export default async function DashboardPage() {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const [
-    healthAlerts,
-    certificateStatuses,
-    certificatesDueSoon,
-    openDeficiencyAlerts,
-    missingMonthlyForms,
-    vesselCount,
-    openDeficienciesCount,
-    manualCount,
-    recentActivity,
-    profile,
-  ] = await Promise.all([
-    getAlerts(access),
-    getAlerts(access, {
-      kinds: ["certificate"],
-      statuses: CERT_COUNT_STATUSES,
-    }),
-    getAlerts(access, {
-      kinds: ["certificate"],
-      statuses: ["critical", "expiring"],
-      limit: PREVIEW_LIMIT,
-    }),
-    getAlerts(access, { kinds: ["deficiency"], limit: PREVIEW_LIMIT }),
-    listMonthlyForms(access, { month, year, status: "pending" }),
-    listSelectableVessels(access).then((v) => v.length),
-    getOpenDeficienciesCount(access),
-    getManualCount(access),
-    skipRecentActivity
-      ? Promise.resolve([])
-      : getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
-    getCompanyProfile(),
-    // Lazy notification sweep — runs in parallel; errors are logged inside.
-    syncNotifications(access),
-  ]);
+  let healthAlerts;
+  let certificateStatuses;
+  let certificatesDueSoon;
+  let openDeficiencyAlerts;
+  let missingMonthlyForms;
+  let vesselCount;
+  let openDeficienciesCount;
+  let manualCount;
+  let recentActivity;
+  let profile;
+  try {
+    [
+      healthAlerts,
+      certificateStatuses,
+      certificatesDueSoon,
+      openDeficiencyAlerts,
+      missingMonthlyForms,
+      vesselCount,
+      openDeficienciesCount,
+      manualCount,
+      recentActivity,
+      profile,
+    ] = await Promise.all([
+      getAlerts(access),
+      getAlerts(access, {
+        kinds: ["certificate"],
+        statuses: CERT_COUNT_STATUSES,
+      }),
+      getAlerts(access, {
+        kinds: ["certificate"],
+        statuses: ["critical", "expiring"],
+        limit: PREVIEW_LIMIT,
+      }),
+      getAlerts(access, { kinds: ["deficiency"], limit: PREVIEW_LIMIT }),
+      listMonthlyForms(access, { month, year, status: "pending" }),
+      listSelectableVessels(access).then((v) => v.length),
+      getOpenDeficienciesCount(access),
+      getManualCount(access),
+      skipRecentActivity
+        ? Promise.resolve([])
+        : getRecentActivity(access, { limit: ACTIVITY_LIMIT }),
+      getCompanyProfile(),
+      // Lazy notification sweep — runs in parallel; errors are logged inside.
+      syncNotifications(access),
+    ]);
+  } catch (error) {
+    if (isMissingVesselAssignmentError(error, access)) {
+      return <NoVesselAssignedNotice />;
+    }
+    throw error;
+  }
 
   const companyLabel = profile.companyName?.trim() || "FleetOS";
 

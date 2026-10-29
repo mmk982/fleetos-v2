@@ -64,8 +64,7 @@ export async function resolveAttachmentStream(
 
   const crew = await getCrewCertificateAttachmentById(ctx, attachmentId);
   if (crew) {
-    await writeAccessLog({
-      userId: ctx.userId,
+    await writeAccessLog(ctx, {
       moduleName: "crew",
       recordId: crew.crewCertificateId,
       accessType: "download_attachment",
