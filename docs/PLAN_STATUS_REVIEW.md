@@ -274,6 +274,16 @@ tsc / eslint / vitest 211 / integration 14 / db:check / `next build --webpack` �
 
 ---
 
+## Auth hardening Part B (`cursor/auth-hardening`) — 2026-10-30
+
+Status note (no plan checkbox changes; row 124 stays **DONE**, now stronger). **No commit/push.**
+
+- Login rate limit is DB-backed (`login_attempts`, migration `0027`), policy unchanged (5/acct, 40/IP, 15 min, backoff); keys are HMACs, never raw email/IP; atomic upsert; **fail-closed** on DB error.
+- `getRequestIp` honours `TRUSTED_PROXY_HOPS` (default 0 → `X-Forwarded-For` ignored); leftmost-XFF spoofing closed. Production must set it (Caddy single hop → `1`) — see `.env.example`.
+- Not delivered here: scheduled job calling `cleanupExpiredLoginAttempts()` (opportunistic ~1% purge only); general (non-login) rate limiting (§2.4 follow-on); `docs/DEPLOY.md` does not exist on this branch.
+
+---
+
 ## Module inventory (supporting evidence)
 
 Controllers present under `src/modules/`: activity-log, alerts, audits, certificates, crew (+ crew-certificate), deficiencies, drawings, email-digest, insurance, ism-templates, manuals, monthly-forms (+ requirements), notifications, psc, reminders, settings (users, company-profile), ship-particulars (+ vessel-notes), vessels. Auth has actions only.

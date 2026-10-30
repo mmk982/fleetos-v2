@@ -79,17 +79,48 @@ export async function rejectCrossOrigin(): Promise<NextResponse | null> {
 }
 
 /**
- * Best-effort client IP for rate limiting (first `X-Forwarded-For` hop, or
- * `X-Real-IP`, else `"unknown"`). Not used for security decisions beyond
- * coarse login throttling.
+ * Parses `TRUSTED_PROXY_HOPS` (default `0`). Invalid / negative / non-integer
+ * values fall back to `0` (trust nothing) rather than guessing.
+ */
+function trustedProxyHops(): number {
+  const raw = process.env.TRUSTED_PROXY_HOPS?.trim();
+  if (!raw || !/^\d+$/.test(raw)) {
+    return 0;
+  }
+  return Number.parseInt(raw, 10);
+}
+
+/**
+ * Best-effort client IP for rate limiting. Not used for security decisions
+ * beyond coarse login throttling.
+ *
+ * `X-Forwarded-For` is client-controlled on its left side: every proxy
+ * *appends* the address it saw, so only entries added by proxies we operate
+ * are trustworthy, and those are at the **right** end. The leftmost value is
+ * whatever the client chose to send and must never become a rate-limit key.
+ *
+ * Controlled by `TRUSTED_PROXY_HOPS` (the number of reverse proxies we run in
+ * front of the app):
+ * - `0` (default): `X-Forwarded-For` is ignored entirely; uses `X-Real-IP`
+ *   if present, else `"unknown"`.
+ * - `N ≥ 1`: takes the entry N positions from the **right** of
+ *   `X-Forwarded-For` (1 = rightmost = the address the nearest trusted proxy
+ *   saw; e.g. a single Caddy hop → `1`). If the header has fewer than N
+ *   entries or that entry is empty, falls back to `X-Real-IP`, then
+ *   `"unknown"`.
  */
 export async function getRequestIp(): Promise<string> {
   const h = await headers();
-  const forwarded = h.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) {
-      return first;
+  const hops = trustedProxyHops();
+
+  if (hops >= 1) {
+    const forwarded = h.get("x-forwarded-for");
+    if (forwarded) {
+      const parts = forwarded.split(",").map((part) => part.trim());
+      const candidate = parts[parts.length - hops];
+      if (candidate) {
+        return candidate;
+      }
     }
   }
   return h.get("x-real-ip")?.trim() || "unknown";

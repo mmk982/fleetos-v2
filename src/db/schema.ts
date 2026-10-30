@@ -16,6 +16,7 @@ import {
   integer,
   numeric,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -116,6 +117,32 @@ export const sessions = pgTable("sessions", {
 export type SessionRow = typeof sessions.$inferSelect;
 /** Shape accepted by Drizzle's `.insert()` for {@link sessions}. */
 export type SessionInsert = typeof sessions.$inferInsert;
+
+/**
+ * Login failure counters for rate limiting (`SECURITY_PLAN.md` §2.4).
+ * `key_hash` is an HMAC of the normalised email / client IP — never the raw
+ * value. Not RLS-protected (auth runs before a user context exists); the
+ * runtime role only receives table-level DML grants.
+ */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    scope: text("scope").notNull(),
+    keyHash: text("key_hash").notNull(),
+    failureCount: integer("failure_count").notNull().default(0),
+    windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+    lastFailureAt: timestamp("last_failure_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.scope, t.keyHash] }),
+    check("login_attempts_scope_chk", sql`${t.scope} IN ('account','ip')`),
+    index("login_attempts_window_started_at_idx").on(t.windowStartedAt),
+  ],
+);
+
+/** A login_attempts row as read from the database. */
+export type LoginAttemptRow = typeof loginAttempts.$inferSelect;
 
 /**
  * Generic key-value app settings (`PROJECT_PLAN.md` §7a).

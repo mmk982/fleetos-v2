@@ -91,7 +91,7 @@ export async function loginAction(
   const { email, password } = parsed.data;
   const ip = await getRequestIp();
 
-  if (isLoginRateLimited(email, ip)) {
+  if (await isLoginRateLimited(email, ip)) {
     return { ok: false, message: INVALID_CREDENTIALS };
   }
 
@@ -106,11 +106,11 @@ export async function loginAction(
     !user.isActive ||
     !(await verifyPassword(user.passwordHash, password))
   ) {
-    recordLoginFailure(email, ip);
+    await recordLoginFailure(email, ip);
     return { ok: false, message: INVALID_CREDENTIALS };
   }
 
-  clearLoginFailuresForAccount(email);
+  await clearLoginFailuresForAccount(email);
 
   try {
     await getDb()

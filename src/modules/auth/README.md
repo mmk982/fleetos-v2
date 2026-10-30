@@ -44,11 +44,40 @@ nor `Origin` are rejected, so non-browser clients must send an `Origin`.
 
 ## Login rate limiting (`src/lib/auth/login-rate-limit.ts`)
 
-In-memory `Map`s **per Node process**:
+Counters are stored in Postgres (`login_attempts`, migration
+`0027_login_attempts.sql`), so they survive restarts and are shared across
+app instances:
 
 - Per account: 5 failures / 15 minutes
 - Per IP: 40 failures / 15 minutes
 - Exponential backoff `min(2^(n-1) seconds, 15 min)` after failures
+- Keys are `HMAC-SHA256` hashes (derived from `SESSION_SECRET`) of the
+  normalised email / IP — raw values are never stored or logged.
+- Failures are recorded with one atomic `INSERT … ON CONFLICT DO UPDATE`
+  (concurrent attempts cannot undercount; an expired window resets in-place).
+- **Fail-closed:** if the DB is unavailable, `isLoginRateLimited` returns
+  `true` (login is refused with the generic message) and logs
+  `LOGIN_RATE_LIMIT_UNAVAILABLE`. Recording/clearing failures log and never
+  throw into the login path.
+- Expired rows are purged opportunistically (~1% of recorded failures) and by
+  `cleanupExpiredLoginAttempts()` for a scheduled job.
+- Uses the plain pooled `getDb()` (auth runs outside RLS); `login_attempts`
+  has no RLS policies, only DML grants to `fleetos_app`.
+
+## Client IP (`getRequestIp`)
+
+Controlled by `TRUSTED_PROXY_HOPS` (default `0`):
+
+- `0`: `X-Forwarded-For` ignored; uses `X-Real-IP`, else `"unknown"`.
+- `N ≥ 1`: the Nth entry from the **right** of `X-Forwarded-For` (single
+  Caddy hop → `1`), falling back to `X-Real-IP`, then `"unknown"`. The leftmost
+  value is client-controlled and is never used.
+
+<!-- AUTH_HARDENING: there is no docs/DEPLOY.md on this branch. When a deploy
+     guide exists, it must tell operators to set TRUSTED_PROXY_HOPS (Caddy
+     single hop → 1); with the default 0 behind a proxy, every client shares
+     one IP bucket and X-Real-IP must be set by the proxy. -->
+
 
 ## Password policy (`src/lib/auth/pwned-password.ts`)
 
@@ -68,6 +97,9 @@ Used by bootstrap scripts and settings password changes.
 
 ## Known limits
 
-- Rate limiter is **in-memory** and not shared across process instances.
-- `getRequestIp` trusts the **first** `X-Forwarded-For` value (then
-  `X-Real-IP`); a reverse proxy must set it correctly.
+- With `TRUSTED_PROXY_HOPS=0` (default) and no `X-Real-IP`, all clients share
+  the `"unknown"` IP bucket (40/15 min) — set `TRUSTED_PROXY_HOPS` to match the
+  real proxy chain in production.
+- An IP's own backoff grows with its failure count (capped at 15 min), so a
+  shared NAT with many failures is throttled sooner than the 40 ceiling.
+- A database outage blocks all logins (fail-closed by design).
