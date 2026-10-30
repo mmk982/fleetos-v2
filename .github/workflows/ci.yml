@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4.4.0
 
-      - uses: actions/setup-node@v4.2.0
+      - uses: actions/setup-node@v4.4.0
         with:
-          # Vitest 5 requires Node >= 22.12.0
+          # Vitest 5 requires Node >= 22.12.0; keep CI on 22.x LTS line.
           node-version: "22.12"
           cache: npm
 
@@ -35,32 +35,39 @@ jobs:
       - name: Test
         run: npm test
 
+  # Separate job so a Trivy DB/outage failure is visible and does not share
+  # the lint job's timeout. Gate fails only on *fixable* HIGH/CRITICAL.
   trivy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4.4.0
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
           exit-code: "1"
-          ignore-unfixed: false
+          cache: "true"
+          trivyignores: .trivyignore
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.8.0
+        uses: docker/setup-buildx-action@v3.11.1
 
       - name: Build image for scan
         run: docker build -t fleetos:ci-${{ github.sha }} .
 
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: fleetos:ci-${{ github.sha }}
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
           exit-code: "1"
-          ignore-unfixed: false
+          vuln-type: "os,library"
+          cache: "true"
+          trivyignores: .trivyignore

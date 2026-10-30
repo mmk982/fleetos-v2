@@ -1,0 +1,5 @@
+# FleetOS Trivy allow-list — empty by default.
+# Add CVE-IDs only with: one-line justification, owner, expiry (YYYY-MM-DD).
+# No wildcards. Example:
+#   # CVE-YYYY-NNNNN — false positive: … — owner: … — expires: 2027-01-01
+#   CVE-YYYY-NNNNN

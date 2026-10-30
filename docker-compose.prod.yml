@@ -48,7 +48,9 @@ services:
     # No `ports:` — not reachable from the host / public internet.
 
   migrate:
-    image: node:22.14.0-bookworm-slim
+    # Same Node 22.x patch as Dockerfile ARG NODE_VERSION (needs npm/tsx here;
+    # the app runtime image deliberately strips npm).
+    image: node:22.23.4-bookworm-slim
     restart: "no"
     working_dir: /app
     env_file:
@@ -150,7 +152,8 @@ services:
       - no-new-privileges:true
 
   caddy:
-    image: caddy:2.9.1-alpine
+    # 2.9.1 had fixable HIGH/CRITICAL (openssl/caddy Go deps); stay on Caddy 2.x.
+    image: caddy:2.11.7-alpine
     restart: unless-stopped
     # Only DOMAIN / ACME_EMAIL — never the full .env.production (DB + session secrets).
     environment:

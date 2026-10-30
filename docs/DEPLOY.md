@@ -7,7 +7,7 @@ Every step that needs the VPS, DNS, or cloud accounts is marked **`[HUMAN]`**.
 
 | Topic | Default in this repo | Confirm |
 | --- | --- | --- |
-| Reverse proxy | Caddy 2.9.x (auto TLS) | Keep Caddy vs alternate |
+| Reverse proxy | Caddy 2.11.7-alpine (auto TLS) | Keep Caddy vs alternate |
 | Disk encryption | **LUKS** at provision time (provider/image choice) | `[HUMAN]` enable at create — cannot be bolted on later safely |
 | Backup retention | 7 daily / 4 weekly / 6 monthly | Adjust `BACKUP_RETENTION_*` |
 | Body size (Caddy) | 12 MB (app limit **10 MB** in `certificate.controller.ts` `MAX_ATTACHMENT_BYTES`) | Keep headroom? |
@@ -162,6 +162,31 @@ curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
 - [ ] `LOGIN_RATE_LIMIT_UNAVAILABLE` not present in logs after first real bring-up
 
 Privacy drafts (pre-go-live reading): `docs/privacy/ROPA.md`, `BREACH_PROCEDURE.md`, `DATA_SUBJECT_REQUESTS.md`, `RETENTION_AND_GAPS.md`.
+
+## Image update policy
+
+Pinned production images (bump **patch** only within the same major/minor line unless a product/ops decision says otherwise):
+
+| Image | Pin (2026-10-30) | Notes |
+| --- | --- | --- |
+| App runtime / build | `node:22.23.4-bookworm-slim` (`Dockerfile` `ARG NODE_VERSION`) | Must stay ≥ `package.json` engines `>=22.12`. Optional digest in Dockerfile comment. |
+| `migrate` service | `node:22.23.4-bookworm-slim` | Full Node (keeps `npm`/`tsx`); app image strips global npm. |
+| Caddy | `caddy:2.11.7-alpine` | Same 2.x line; bump only for security patches in changelog. |
+| Postgres | `postgres:17.4` | Stay on **17.x**. Minor bumps are volume-compatible within major 17, but treat as an **ops decision** (read release notes, backup first). |
+
+**Cadence:** rebuild `fleetos:local` (or the deploy tag) and re-scan with Trivy **monthly**, and immediately on any HIGH/CRITICAL advisory that affects these base images.
+
+**How to bump a pin**
+
+1. Edit `Dockerfile` `ARG NODE_VERSION` (and the matching `migrate` `image:` in `docker-compose.prod.yml`) **or** the Caddy/Postgres `image:` lines.
+2. Prefer an exact version tag (never `latest`). Optionally refresh the Hub digest comment in the Dockerfile.
+3. `docker compose -f docker-compose.prod.yml --env-file .env.production build` then `up -d`.
+4. Run Trivy (`aquasec/trivy:<pinned>` — see CI) with `--severity HIGH,CRITICAL --ignore-unfixed`; CI job `trivy` must stay green.
+5. Smoke: migrate exit 0, app healthy, `/login` 200 + headers, one attachment round-trip.
+
+**Rollback:** retag/redeploy the previous known-good image tag (keep the prior Node/Caddy/Postgres pins in git history). Postgres: restore from the pre-bump age backup if a minor bump misbehaves — do not jump majors.
+
+**CI gate behaviour:** `.github/workflows/ci.yml` job `trivy` fails only on **fixable** HIGH/CRITICAL (`ignore-unfixed: true`, `exit-code: 1`, vuln types `os,library` for the image). Residual **unfixed** OS CVEs are expected until Debian/upstream ship patches; track them in scan JSON under `tmp-trivy/` (local) / CI logs — do not blanket-ignore. `.trivyignore` is for named CVE false positives only (id + justification + owner + expiry).
 
 ## Local verification (developer laptop)
 

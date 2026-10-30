@@ -135,3 +135,14 @@ restore host + run `restore.sh` + smoke tests (measure during the first
 drill).
 
 Full VPS ordering: `docs/DEPLOY.md`.
+
+## Image update policy
+
+Same pins and procedure as `docs/DEPLOY.md` → **Image update policy** (authoritative table lives there).
+
+Operators:
+
+1. **Monthly** (and on HIGH/CRITICAL base-image advisories): rebuild the app image, bump patch tags if Hub has a newer 22.x / Caddy 2.x / Postgres 17.x security release, rescan with Trivy `--ignore-unfixed --severity HIGH,CRITICAL`.
+2. **App image** intentionally has no `npm`/`npx`/`corepack` — runtime is `node server.js` only. Migrations stay on the compose `migrate` service (full Node image).
+3. **CI** job `trivy` fails only on fixable HIGH/CRITICAL; unfixed Debian/Node OS findings are residual risk until upstream fixes — do not silence the job with severity downgrades or wildcard ignores.
+4. **Rollback:** redeploy previous image tags from git; for Postgres minor bumps, restore from age backup if needed. Never jump Postgres major without an explicit migration plan.

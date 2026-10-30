@@ -118,7 +118,7 @@ Notes:
 | 348 | Tool: Claude Code | **SUPERSEDED** | Process instruction | Not a code deliverable |
 | 356 | docker-compose.prod.yml + scripts | **DONE** (local) | `docker-compose.prod.yml`, `scripts/backup/*`, `docs/DEPLOY.md` | VPS apply still `[HUMAN]` |
 | 357 | Eng.MHD Hetzner/B2/DNS | **CANNOT VERIFY** | Needs external accounts | — |
-| 358 | Trivy in CI | **NOT DONE** | `.github/workflows/ci.yml` on this lineage still lint/typecheck/test only | Audit high fixed locally; wire CI separately |
+| 358 | Trivy in CI | **DONE** (local proof 2026-10-30) | `ci.yml` job `trivy`: fs+image, `ignore-unfixed: true`, HIGH/CRITICAL, `trivy-action@v0.36.0`; local `aquasec/trivy:0.76.1` ignore-unfixed **exit 0** | Residual 56H+1C unfixed OS only; see image-hardening report |
 | 359 | Email provider provisioning | **CANNOT VERIFY** / **PARTIAL** | Env wiring exists; account/DNS/DPA external | — |
 | 367 | Full OWASP skill review Phases 3–7 | **NOT DONE** | No Phase-8 review artifact in repo | Partial earlier reviews ≠ this gate |
 | 368 | Human sign-off before go-live | **CANNOT VERIFY** | External | — |
@@ -170,7 +170,7 @@ Notes:
 |---:|---|---|---|---|
 | 205 | Broken Access Control | **PARTIAL** | Session + `assertModuleAccess`/`assertVesselScope` widespread | No Postgres RLS; IDOR relies on app layer |
 | 206 | Security Misconfiguration | **PARTIAL** | Headers in `next.config.ts` | Prod defaults/credentials/debug: **CANNOT VERIFY** without prod |
-| 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | 2026-10-30 `cursor/dev-deps-security`: full+prod `--audit-level=high` exit 0; residual moderate `drizzle-kit`→esbuild only; CI audit steps added; Trivy still absent | See SECURITY_PLAN §13 |
+| 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | 2026-10-30 `cursor/image-hardening`: npm high audits exit 0; Trivy ignore-unfixed gate exit 0; residual 56H+1C **unfixed OS** (zlib CRITICAL CVE-2023-45853); CI wired | See SECURITY_PLAN §13 |
 | 208 | Cryptographic Failures | **PARTIAL** | Argon2id in `password.ts` | TLS/backups: **CANNOT VERIFY** (needs prod/VPS) |
 | 209 | Injection | **DONE** | Drizzle builders; Zod on mutations; only `sql` template is singleton check in schema | Grep for raw string SQL interpolation: none found in controllers |
 | 210 | Insecure Design (whole-doc review) | **PARTIAL** | This review + prior docs | Formal Phase-8 pass still open |
@@ -205,7 +205,7 @@ Notes:
 | 1 | Postgres **RLS** + per-request `SET LOCAL` wrapper | NOT DONE | Decide: implement RLS wrapper in `getDb()` **or** formally document “app-layer only” and close MIP L74/L138/L346 |
 | 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | **PARTIAL** (2026-10-30 `cursor/prod-ready`) | Compose/Dockerfile/Caddy/DEPLOY from prod-stack merged onto deps-clean chain; `[HUMAN]` VPS/UFW/fail2ban/LUKS/DNS still open |
 | 3 | **Backup restore drill** + RUNBOOK backup TODO | **PARTIAL** | Scripts + prior local age drill; re-verify on this chain in Phase 2; `[HUMAN]` enable timers + monthly drill on VPS + B2 |
-| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** | Both audits (omit=dev + full) at high + Trivy fs/image in `ci.yml` (Node 22.12). Local high audits exit 0; residual moderate esbuild via drizzle-kit. Trivy green = CI evidence |
+| 4 | **Trivy / npm audit** gate in CI | **DONE** (local 2026-10-30) | Dual npm audit high + Trivy fs/image (`ignore-unfixed`) in `ci.yml`. Local ignore-unfixed image scan exit 0 after Node 22.23.4 + npm strip. Residual unfixed OS tracked; CI run on push still external until branch pushed |
 
 | 5 | **GDPR ROPA + breach notification** written artifacts | **DRAFTED** (2026-10-30) | `docs/privacy/*` — **not** complete until human/legal approval; framework unknown |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
@@ -336,4 +336,24 @@ Earlier prod-stack audit was red (Next/zod). This chain already cleared high/cri
 ### Local Docker proof (2026-10-30)
 
 Verified on throwaway compose: migrate 0029, RLS 25 tables, Caddy `/login` headers, admin bootstrap, vessel+cert+attachment, persistence, age backup/restore (attachment SHA256 match), checksum fail, restore refuse without flag. Fixes: app/caddy no longer ingest owner secrets via `env_file`; `restore.sh` ensures `fleetos_app` exists. VPS/DNS/LUKS/B2 remain `[HUMAN]`. See `docs/SESSION_NOTES_2026-10-30.md`.
+
+---
+
+## Image hardening (`cursor/image-hardening`) — 2026-10-30
+
+From `cursor/prod-ready` @ `edfd851`. **No commit/push.**
+
+### Trivy (`aquasec/trivy:0.76.1`) on `fleetos:local` — HIGH/CRITICAL
+
+| | Fixed OS | Unfixed OS | Fixed library | Unfixed library | Total H | Total C |
+|---|---:|---:|---:|---:|---:|---:|
+| **Before** (Node 22.14.0 + bundled npm) | 21 | 56 | 37 | 0 | 114 | 9 |
+| **After** (22.23.4, apt upgrade, npm/yarn stripped) | 0 | 56 | 0 | 0 | 56 | 1 |
+
+- Gate `--ignore-unfixed --severity HIGH,CRITICAL` → **exit 0**.
+- Residual CRITICAL: `CVE-2023-45853` (`zlib1g`) — no Debian fix. Remaining HIGH: util-linux / mount / libuuid family etc. (Debian bookworm — wait for upstream).
+- Before library mass was under Node.js global npm (`tar`, `brace-expansion`, `minimatch`, …); stripping `/usr/local` npm clears them. App `/app/node_modules` had **0** HIGH/CRITICAL.
+- Image size after: **448 MB**. CI: `trivy-action@v0.36.0`, `ignore-unfixed: true`. `.trivyignore` empty.
+- Pins: Node/migrate `22.23.4-bookworm-slim`, Caddy `2.11.7-alpine`, Postgres **stays `17.4`** (17.x minor bump = ops decision; informational scan still noisy).
+- Smoke re-verified: migrate 0, app non-root `uid=10001`, `npm` gone, `/login` 200 + headers, vessel+cert+PDF attach/download, restart persistence.
 
