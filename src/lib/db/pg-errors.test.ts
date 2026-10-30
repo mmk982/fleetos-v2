@@ -4,7 +4,9 @@ import {
   getPgConstraintName,
   getPgErrorCode,
   isPgForeignKeyViolation,
+  isPgInsufficientPrivilege,
   isPgInvalidTextRepresentation,
+  isPgRlsViolation,
   isPgUniqueViolation,
 } from "./pg-errors";
 
@@ -83,5 +85,14 @@ describe("isPg*Violation helpers", () => {
   it("still matches when code is on the outer object (legacy shape)", () => {
     expect(isPgUniqueViolation(pgShaped("23505"))).toBe(true);
     expect(isPgForeignKeyViolation(pgShaped("23503"))).toBe(true);
+  });
+
+  it("detects 42501 insufficient_privilege / RLS via Drizzle wrapping", () => {
+    const wrapped = new DrizzleQueryError("q", [], pgShaped("42501"));
+    expect(isPgInsufficientPrivilege(wrapped)).toBe(true);
+    expect(isPgRlsViolation(wrapped)).toBe(true);
+    expect(isPgInsufficientPrivilege(pgShaped("42501"))).toBe(true);
+    expect(isPgRlsViolation(new Error("plain"))).toBe(false);
+    expect(isPgRlsViolation(pgShaped("23505"))).toBe(false);
   });
 });

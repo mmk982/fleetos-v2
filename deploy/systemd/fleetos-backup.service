@@ -1,0 +1,17 @@
+[Unit]
+Description=FleetOS encrypted database + attachments backup
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+# EnvironmentFile holds AGE_RECIPIENT, DATABASE_MIGRATE_URL, RCLONE_REMOTE, etc.
+# [HUMAN] Create /etc/fleetos/backup.env with mode 0600 — never commit it.
+EnvironmentFile=-/etc/fleetos/backup.env
+WorkingDirectory=/opt/fleetos
+ExecStart=/opt/fleetos/scripts/backup/backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

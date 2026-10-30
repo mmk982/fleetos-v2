@@ -18,6 +18,8 @@ import {
   CrossOriginRequestError,
   getRequestIp,
   rejectCrossOrigin,
+  resetTrustedProxyHopsWarningForTests,
+  warnTrustedProxyHopsIfNeeded,
 } from "@/lib/auth/request-guard";
 
 function setHeaders(entries: Record<string, string | undefined>) {
@@ -251,5 +253,44 @@ describe("getRequestIp (TRUSTED_PROXY_HOPS)", () => {
       setHeaders({ "x-forwarded-for": "198.51.100.7" });
       expect(await getRequestIp()).toBe("unknown");
     });
+  });
+});
+
+describe("warnTrustedProxyHopsIfNeeded", () => {
+  beforeEach(() => {
+    resetTrustedProxyHopsWarningForTests();
+  });
+
+  afterEach(() => {
+    resetTrustedProxyHopsWarningForTests();
+    vi.restoreAllMocks();
+  });
+
+  it("warns once in production when hops are 0", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnTrustedProxyHopsIfNeeded({
+      NODE_ENV: "production",
+      TRUSTED_PROXY_HOPS: "0",
+    } as NodeJS.ProcessEnv);
+    warnTrustedProxyHopsIfNeeded({
+      NODE_ENV: "production",
+      TRUSTED_PROXY_HOPS: "0",
+    } as NodeJS.ProcessEnv);
+    expect(warn).toHaveBeenCalledTimes(1);
+    const line = String(warn.mock.calls[0]?.[0] ?? "");
+    expect(line).toContain("TRUSTED_PROXY_HOPS_ZERO");
+  });
+
+  it("does not warn when hops are 1 or NODE_ENV is not production", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnTrustedProxyHopsIfNeeded({
+      NODE_ENV: "production",
+      TRUSTED_PROXY_HOPS: "1",
+    } as NodeJS.ProcessEnv);
+    warnTrustedProxyHopsIfNeeded({
+      NODE_ENV: "development",
+      TRUSTED_PROXY_HOPS: "0",
+    } as NodeJS.ProcessEnv);
+    expect(warn).not.toHaveBeenCalled();
   });
 });

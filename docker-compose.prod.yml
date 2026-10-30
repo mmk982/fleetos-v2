@@ -1,0 +1,237 @@
+# Production stack — app + Postgres + Caddy (+ optional GlitchTip profile).
+# Usage (VPS): copy .env.production.example → .env.production, fill CHANGE_ME,
+# then: docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# Local throwaway verification: use a temp env file with throwaway passwords;
+# tear down with `docker compose -f docker-compose.prod.yml down -v`.
+#
+# Postgres publishes NO host port — only the internal compose network.
+
+name: fleetos-prod
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:17.4
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${POSTGRES_OWNER_USER:-fleetos}
+      POSTGRES_PASSWORD: ${POSTGRES_OWNER_PASSWORD:?set POSTGRES_OWNER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-fleetos}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    # No `ports:` — not reachable from the host / public internet.
+
+  migrate:
+    image: node:22.14.0-bookworm-slim
+    restart: "no"
+    working_dir: /app
+    env_file:
+      - .env.production
+    environment:
+      # Owner connection only in this one-shot service (docs/RLS.md deploy order).
+      DATABASE_URL: postgres://${POSTGRES_OWNER_USER:-fleetos}:${POSTGRES_OWNER_PASSWORD}@postgres:5432/${POSTGRES_DB:-fleetos}
+      DATABASE_MIGRATE_URL: postgres://${POSTGRES_OWNER_USER:-fleetos}:${POSTGRES_OWNER_PASSWORD}@postgres:5432/${POSTGRES_DB:-fleetos}
+      # ensure-app-role reads APP role password from env when set:
+      FLEETOS_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD}
+    volumes:
+      - ./:/app:ro
+      - migrate_node_modules:/app/node_modules
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        set -euo pipefail
+        apt-get update -qq
+        apt-get install -y -qq python3 make g++ >/dev/null
+        # tsx lives in devDependencies — need a full ci for migrate scripts.
+        npm ci --ignore-scripts
+        npm rebuild argon2 --silent || true
+        npx tsx scripts/ensure-app-role.ts
+        # Align password with env when role already came from initdb (local password).
+        # $$ escapes Compose interpolation so the container shell sees the var.
+        if [[ -n "$${FLEETOS_APP_PASSWORD:-}" ]]; then
+          node -e "
+            const { Client } = require('pg');
+            const c = new Client({ connectionString: process.env.DATABASE_MIGRATE_URL });
+            const pwd = process.env.FLEETOS_APP_PASSWORD || '';
+            (async () => {
+              await c.connect();
+              await c.query('ALTER ROLE fleetos_app WITH PASSWORD ' + c.escapeLiteral(pwd));
+              await c.end();
+              console.log('migrate: fleetos_app password synced from FLEETOS_APP_PASSWORD');
+            })().catch((e) => { console.error(e); process.exit(1); });
+          "
+        fi
+        npx tsx scripts/migrate.ts
+    logging: *default-logging
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fleetos:${FLEETOS_IMAGE_TAG:-local}
+    restart: unless-stopped
+    # Do NOT mount .env.production here — it contains POSTGRES_OWNER_* which
+    # must never enter the runtime container. Pass only the vars the app needs.
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      DATABASE_URL: postgres://${POSTGRES_APP_USER:-fleetos_app}:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-fleetos}
+      # Intentionally omit DATABASE_MIGRATE_URL / POSTGRES_OWNER_* — runtime is fleetos_app only.
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET}
+      APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL}
+      # Caddy is the sole reverse proxy in this compose file → hop count 1.
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
+      # Optional integrations (empty when unset — no secrets required).
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+    volumes:
+      - attachments:/app/data/attachments
+    networks:
+      - internal
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2.9.1-alpine
+    restart: unless-stopped
+    # Only DOMAIN / ACME_EMAIL — never the full .env.production (DB + session secrets).
+    environment:
+      DOMAIN: ${DOMAIN:-http://localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-ops@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      app:
+        condition: service_healthy
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # --- optional observability (not required for core prod) ---
+  valkey:
+    profiles: ["observability"]
+    image: valkey/valkey:8.0.2-alpine
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+
+  glitchtip-db:
+    profiles: ["observability"]
+    image: postgres:17.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:-CHANGE_ME_GLITCHTIP_DB}
+      POSTGRES_DB: glitchtip
+    volumes:
+      - glitchtip_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  glitchtip:
+    profiles: ["observability"]
+    image: glitchtip/glitchtip:v5.0.9
+    restart: unless-stopped
+    depends_on:
+      glitchtip-db:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:-CHANGE_ME_GLITCHTIP_DB}@glitchtip-db:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-CHANGE_ME_GLITCHTIP_DJANGO_SECRET}
+      VALKEY_URL: redis://valkey:6379/0
+      EMAIL_URL: consolemail://
+      DEFAULT_FROM_EMAIL: noreply@localhost
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-https://errors.example.com}
+      GLITCHTIP_EMBED_WORKER: "true"
+      ENABLE_USER_REGISTRATION: "false"
+    networks:
+      - internal
+    logging: *default-logging
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:
+  attachments:
+  caddy_data:
+  caddy_config:
+  migrate_node_modules:
+  glitchtip_pgdata:

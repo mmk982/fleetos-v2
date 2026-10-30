@@ -514,6 +514,11 @@ export async function uploadCrewCertificateAttachment(
       ) {
         throw error;
       }
+      if (isPgForeignKeyViolation(error)) {
+        throw new CrewCertificateConflictError(
+          "Cannot upload attachment: certificate or uploader reference is invalid.",
+        );
+      }
       logError("CREW_CERTIFICATE_ATTACHMENT_UPLOAD_FAILED", {
         error,
         crewCertificateId,

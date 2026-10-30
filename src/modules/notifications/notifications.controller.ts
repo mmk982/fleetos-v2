@@ -18,6 +18,7 @@ import {
   assertAuthenticatedAccess,
   assertModuleAccess,
   ForbiddenError,
+  isMissingVesselAssignmentError,
   requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
@@ -239,6 +240,19 @@ export async function syncNotifications(ctx: AccessContext): Promise<void> {
       }
     });
   } catch (error) {
+    // Scoped user with no vessel: dashboard still renders the no-vessel
+    // notice; skip the sweep instead of logging a scary ERROR.
+    if (isMissingVesselAssignmentError(error)) {
+      console.info(
+        JSON.stringify({
+          level: "info",
+          code: "NOTIFICATION_SYNC_SKIPPED_NO_VESSEL",
+          userId: ctx.userId,
+          ts: new Date().toISOString(),
+        }),
+      );
+      return;
+    }
     logError("NOTIFICATION_SYNC_FAILED", { error });
   }
 }

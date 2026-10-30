@@ -23,7 +23,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { Pool, type PoolClient } from "pg";
-import type { AccessContext } from "@/lib/auth/access";
+import { ForbiddenError, type AccessContext } from "@/lib/auth/access";
+import { isPgRlsViolation } from "@/lib/db/pg-errors";
 import * as schema from "./schema";
 import { resolveDatabaseUrl } from "./urls";
 
@@ -194,6 +195,13 @@ async function runWithClient<T>(
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
+      // RLS WITH CHECK / privilege denials surface as SQLSTATE 42501 after
+      // module checks; map to ForbiddenError so API/actions return 403.
+      if (isPgRlsViolation(error)) {
+        throw new ForbiddenError(
+          "Database policy denied this operation.",
+        );
+      }
       throw error;
     }
   } finally {

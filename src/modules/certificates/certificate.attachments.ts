@@ -21,10 +21,12 @@ import {
   openStoredAttachmentStream,
   removeStoredAttachmentFile,
 } from "@/lib/attachments/stream";
+import { isPgForeignKeyViolation } from "@/lib/db/pg-errors";
 import { logError } from "@/lib/logging";
 import {
   AttachmentNotFoundError,
   AttachmentValidationError,
+  CertificateConflictError,
   CertificateNotFoundError,
 } from "./certificate.shared";
 const ATTACHMENTS_DIR = path.join(process.cwd(), "data", "attachments");
@@ -110,6 +112,11 @@ export async function uploadCertificateAttachment(
         error instanceof AttachmentValidationError
       ) {
         throw error;
+      }
+      if (isPgForeignKeyViolation(error)) {
+        throw new CertificateConflictError(
+          "Cannot upload attachment: certificate or uploader reference is invalid.",
+        );
       }
       logError("CERTIFICATE_ATTACHMENT_UPLOAD_FAILED", {
         error,

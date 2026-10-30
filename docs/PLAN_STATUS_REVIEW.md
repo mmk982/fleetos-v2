@@ -84,7 +84,7 @@ Notes:
 | 139 | scrubCrewMemberPii (+ certs) | **DONE** | `src/modules/crew/scrub-pii.ts:51+` | Tests: `scrub-pii.test.ts` |
 | 140 | access_logs GDPR log | **DONE** | `\d access_logs` OK; writes in crew + attachment resolve + crew export | — |
 | 141 | Encryption at rest (LUKS) | **SUPERSEDED** | Item itself: not app code; Phase 7 | No LUKS in repo (expected) |
-| 142 | Breach procedure + ROPA docs | **NOT DONE** | Searched `docs/` — no ROPA / breach-notification artifact | Runbook exists but not these |
+| 142 | Breach procedure + ROPA docs | **DRAFTED** (not approved) | `docs/privacy/{ROPA,BREACH_PROCEDURE,DATA_SUBJECT_REQUESTS,RETENTION_AND_GAPS}.md` | Human/legal review still open |
 | 189–192 | Expiry engine tests + impl + TSDoc | **DONE** | `src/lib/expiry/`; vitest 31 tests green | — |
 | 193 | Commit (expiry) | **DONE** | Code present in tree | — |
 | 209–212 | Certificates schema/seed/backend/logError | **DONE** | `schema.ts` cert tables; `db/seed/certificates.ts`; `effectiveOffsetDays`; controller | Also `parentCertificateId` (later) |
@@ -102,11 +102,11 @@ Notes:
 | 268 | email_deliveries schema | **DONE** | `schema.ts` + migration | — |
 | 269 | sendEmail adapter | **DONE** | `src/lib/email/send.ts` Resend | — |
 | 270 | Digest job | **DONE** | `email-digest.controller.ts` `runEmailDigest` | — |
-| 271 | Cron in Phase 7 runbook | **PARTIAL** | App route + README curl; no `docker-compose.prod.yml` cron | Prod scheduler still missing |
+| 271 | Cron in Phase 7 runbook | **PARTIAL** | `deploy/systemd/fleetos-email-digest.timer` authored; not enabled on VPS | `[HUMAN]` enable timer |
 | 272 | Settings digest toggle | **DONE** | `src/lib/settings/email-digest.ts`; settings actions | — |
 | 273 | Deep links need session (no tokens) | **DONE** | Digest builds app URLs only (`email-digest.controller.ts`) | — |
 | 274 | email_deliveries logging | **DONE** | Inserts into `email_deliveries` | — |
-| 275 | GDPR ROPA line for email provider | **NOT DONE** | No ROPA doc | — |
+| 275 | GDPR ROPA line for email provider | **DRAFTED** (not approved) | Email processor row in `docs/privacy/ROPA.md` | Controller must confirm provider |
 | 276 | Doc-comment email/ | **DONE** | File headers present | Spot-check |
 | 277 | Commit digest | **DONE** | Feature in tree | — |
 | 342 | userRoleEnum + users.vesselId | **DONE** | `schema.ts` role enum + vessel_id FK | — |
@@ -116,7 +116,7 @@ Notes:
 | 346 | RLS policies after Phase 6 | **NOT DONE** | Same as L138 | — |
 | 347 | Sidebar visibility decision | **DONE** | `dashboard-sidebar.tsx` hides unauthorized leaves | Product choice: hide (not disable/403) |
 | 348 | Tool: Claude Code | **SUPERSEDED** | Process instruction | Not a code deliverable |
-| 356 | docker-compose.prod.yml + scripts | **NOT DONE** | `Test-Path docker-compose.prod.yml` → False | Only local `docker-compose.yml` |
+| 356 | docker-compose.prod.yml + scripts | **DONE** (local) | `docker-compose.prod.yml`, `scripts/backup/*`, `docs/DEPLOY.md` | VPS apply still `[HUMAN]` |
 | 357 | Eng.MHD Hetzner/B2/DNS | **CANNOT VERIFY** | Needs external accounts | — |
 | 358 | Trivy in CI | **NOT DONE** | `.github/workflows/ci.yml` on this lineage still lint/typecheck/test only | Audit high fixed locally; wire CI separately |
 | 359 | Email provider provisioning | **CANNOT VERIFY** / **PARTIAL** | Env wiring exists; account/DNS/DPA external | — |
@@ -178,7 +178,7 @@ Notes:
 | 212 | Data Integrity (FK delete policy) | **PARTIAL** | Schema annotations CASCADE/RESTRICT/SET NULL present | Full spot-check of every FK vs §0.9 not completed line-by-line |
 | 213 | Security logging & alerting | **PARTIAL** | `logError` → GlitchTip optional; login rate limit silent to user | No evidenced “5 fails → visible alert” end-to-end |
 | 214 | Exceptional conditions fail closed | **PARTIAL** | Auth helpers throw Forbidden; cron fail-closed | Prod stack-trace leakage: **CANNOT VERIFY** without prod `NODE_ENV` |
-| 215 | Backup restore drill | **CANNOT VERIFY** | `docs/RUNBOOK.md` still TODO backup procedure | — |
+| 215 | Backup restore drill | **PARTIAL** | Scripts + local age drill; prod monthly drill `[HUMAN]` | See prod-stack section |
 | 216 | Break-glass procedure known | **PARTIAL** | Script + RUNBOOK exist | “Known to more than one person” external |
 
 ### 2.4 Other docs (open items, not checkbox totals)
@@ -203,10 +203,11 @@ Notes:
 | # | Gap | Status | Smallest next action |
 |---:|---|---|---|
 | 1 | Postgres **RLS** + per-request `SET LOCAL` wrapper | NOT DONE | Decide: implement RLS wrapper in `getDb()` **or** formally document “app-layer only” and close MIP L74/L138/L346 |
-| 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | NOT DONE | Author prod compose + backup script stubs; Eng.MHD provisions VPS |
-| 3 | **Backup restore drill** + RUNBOOK backup TODO | CANNOT VERIFY / NOT DONE | Define backup procedure; run one restore on staging |
-| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** (2026-10-30 `cursor/dev-deps-security`) | CI now runs `npm audit --omit=dev --audit-level=high` **and** full `npm audit --audit-level=high` (Node 22.12). Trivy still missing; residual moderate esbuild via drizzle-kit |
-| 5 | **GDPR ROPA + breach notification** written artifacts | NOT DONE | Draft short docs under `docs/` before real crew PII |
+| 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | **PARTIAL** (2026-10-30 `cursor/prod-ready`) | Compose/Dockerfile/Caddy/DEPLOY from prod-stack merged onto deps-clean chain; `[HUMAN]` VPS/UFW/fail2ban/LUKS/DNS still open |
+| 3 | **Backup restore drill** + RUNBOOK backup TODO | **PARTIAL** | Scripts + prior local age drill; re-verify on this chain in Phase 2; `[HUMAN]` enable timers + monthly drill on VPS + B2 |
+| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** | Both audits (omit=dev + full) at high + Trivy fs/image in `ci.yml` (Node 22.12). Local high audits exit 0; residual moderate esbuild via drizzle-kit. Trivy green = CI evidence |
+
+| 5 | **GDPR ROPA + breach notification** written artifacts | **DRAFTED** (2026-10-30) | `docs/privacy/*` — **not** complete until human/legal approval; framework unknown |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
 | 8 | Vessels **`@drawer` intercepting routes** | **SUPERSEDED** | Owner may overrule; see `docs/ACCESSIBILITY.md` Part D |
@@ -310,3 +311,29 @@ Dashboard routes exist for: alerts, audits, certificates, crew, deficiencies, dr
 - **Part B:** Dashboard / nav-badges / monthly-forms period selection and top-bar date use company day (`businessToday` / `businessNow`); client forms take props from server. `export/http.ts` stays UTC.
 - **Part C:** Unused `company_profile.date_format` removed (app + migration `0029_drop_date_format`); DB had only empty/null values.
 - **Part D:** `certificate.controller.ts` split into lookups/queries/mutations/events/attachments/shared with stable barrel re-exports; behaviour unchanged.
+
+---
+
+## Production stack (`cursor/prod-stack` → `cursor/prod-ready`) — 2026-10-29 / 2026-10-30
+
+Originally cut from older RLS base; merged onto `cursor/dev-deps-security` (deps-clean, migrations through 0029). **Merge left uncommitted on `cursor/prod-ready`.**
+
+### Files from prod-stack kept
+
+| Path | Notes |
+|---|---|
+| `Dockerfile`, `.dockerignore` | Multi-stage Node, non-root `fleetos`, healthcheck `/login` |
+| `docker-compose.prod.yml` | `app` / `postgres` (no host port) / `caddy` / one-shot `migrate` |
+| `Caddyfile` | `{env.DOMAIN}`, body max **12MB** (app **10MB** attachments) |
+| `.env.production.example`, backup/systemd scripts | Placeholders; age + pg_dump; timers |
+| `docs/DEPLOY.md`, RUNBOOK updates | Deploy procedure |
+| CI Trivy job | Alongside this chain’s dual `npm audit` gates |
+
+### Stale prod-stack notes superseded
+
+Earlier prod-stack audit was red (Next/zod). This chain already cleared high/critical; CI Node is **22.12**.
+
+### Local Docker proof (2026-10-30)
+
+Verified on throwaway compose: migrate 0029, RLS 25 tables, Caddy `/login` headers, admin bootstrap, vessel+cert+attachment, persistence, age backup/restore (attachment SHA256 match), checksum fail, restore refuse without flag. Fixes: app/caddy no longer ingest owner secrets via `env_file`; `restore.sh` ensures `fleetos_app` exists. VPS/DNS/LUKS/B2 remain `[HUMAN]`. See `docs/SESSION_NOTES_2026-10-30.md`.
+

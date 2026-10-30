@@ -138,6 +138,30 @@ describe("RLS phase 1", () => {
     });
   });
 
+  it("maps RLS INSERT denial (42501) through withDb to ForbiddenError", async ({
+    skip,
+  }) => {
+    if (!dbAvailable) skip();
+    const { ForbiddenError } = await import("@/lib/auth/access");
+    const access = ctx({
+      userId: fixtures.users.vesselUserA,
+      role: "vessel_user",
+      vesselId: fixtures.vesselA,
+    });
+
+    // Module checks would normally stop a cross-vessel write; call the
+    // wrapper directly so only RLS WITH CHECK can deny.
+    await expect(
+      withDb(access, async () => {
+        await getDb().insert(certificates).values({
+          vesselId: fixtures.vesselB,
+          certificateTypeId: fixtures.certificateTypeId,
+          lifecycleStatus: "active",
+        });
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
   it("scoped user on A cannot UPDATE a B certificate (0 rows)", async ({
     skip,
   }) => {

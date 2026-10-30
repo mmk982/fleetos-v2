@@ -44,6 +44,12 @@ if (!isDev) {
 }
 
 const nextConfig: NextConfig = {
+  // Standalone output for the production Docker image (`Dockerfile`):
+  // smaller runtime than copying full node_modules. Tradeoff: must copy
+  // `public/` and `.next/static` into the standalone tree after build
+  // (see Dockerfile). Does not change request handling.
+  // Docs: node_modules/next + Context7 `/vercel/next.js` output standalone.
+  output: "standalone",
   serverExternalPackages: ["pg", "@sentry/node", "argon2"],
   // Pin Turbopack to the repo root — Windows/agent runs sometimes infer
   // `src/app` as the workspace root and then fail to resolve `next`.

@@ -2,9 +2,9 @@
  * Ensures local/runtime role `fleetos_app` exists and can use the schema.
  * Safe to re-run. Uses the migrate/owner URL (superuser locally).
  *
- * Does not embed a production password — local password is `fleetos_app`.
- * On the VPS, create the role once with a secret password, then run this
- * for grants (see docs/RLS.md).
+ * Local default password is `fleetos_app`. Production: set
+ * `FLEETOS_APP_PASSWORD` (never commit) so CREATE ROLE uses that secret;
+ * if the role already exists, this script only applies grants (docs/RLS.md).
  *
  * Import {@link ensureAppRoleGrants} from migrate / tests. Running this
  * file directly via `npx tsx scripts/ensure-app-role.ts` also works.
@@ -22,6 +22,11 @@ function quoteIdent(ident: string): string {
   return `"${ident}"`;
 }
 
+/** Escape a value for use inside a single-quoted SQL string literal. */
+function sqlStringLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 /** Creates `fleetos_app` (if missing) and grants table/sequence privileges. */
 export async function ensureAppRoleGrants(
   connectionString: string,
@@ -29,13 +34,15 @@ export async function ensureAppRoleGrants(
   const url = new URL(connectionString);
   const dbName =
     decodeURIComponent(url.pathname.replace(/^\//, "")) || "fleetos";
+  const appPassword =
+    process.env.FLEETOS_APP_PASSWORD?.trim() || LOCAL_APP_PASSWORD;
   const pool = new Pool({ connectionString });
   try {
     await pool.query(`
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fleetos_app') THEN
-          CREATE ROLE fleetos_app LOGIN PASSWORD '${LOCAL_APP_PASSWORD}'
+          CREATE ROLE fleetos_app LOGIN PASSWORD '${sqlStringLiteral(appPassword)}'
             NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
         END IF;
       END

@@ -69,3 +69,21 @@ export function isPgForeignKeyViolation(error: unknown): boolean {
 export function isPgInvalidTextRepresentation(error: unknown): boolean {
   return getPgErrorCode(error) === "22P02";
 }
+
+/**
+ * SQLSTATE `42501` — insufficient_privilege.
+ * Covers GRANT denials and RLS policy violations that raise (e.g. INSERT
+ * WITH CHECK failures). Prefer {@link isPgRlsViolation} at API boundaries
+ * when the intent is specifically "policy denied this row".
+ */
+export function isPgInsufficientPrivilege(error: unknown): boolean {
+  return getPgErrorCode(error) === "42501";
+}
+
+/**
+ * Alias for {@link isPgInsufficientPrivilege}: Postgres reports RLS WITH
+ * CHECK / USING failures that raise as `42501` (same code as missing GRANTs).
+ */
+export function isPgRlsViolation(error: unknown): boolean {
+  return isPgInsufficientPrivilege(error);
+}

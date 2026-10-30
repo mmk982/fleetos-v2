@@ -82,12 +82,46 @@ export async function rejectCrossOrigin(): Promise<NextResponse | null> {
  * Parses `TRUSTED_PROXY_HOPS` (default `0`). Invalid / negative / non-integer
  * values fall back to `0` (trust nothing) rather than guessing.
  */
-function trustedProxyHops(): number {
+export function trustedProxyHops(): number {
   const raw = process.env.TRUSTED_PROXY_HOPS?.trim();
   if (!raw || !/^\d+$/.test(raw)) {
     return 0;
   }
   return Number.parseInt(raw, 10);
+}
+
+let trustedProxyHopsWarned = false;
+
+/**
+ * Logs once in production when `TRUSTED_PROXY_HOPS` is effectively `0`
+ * (missing, invalid, or explicit). Does not throw — login still works, but
+ * IP rate-limit buckets may collapse to `"unknown"` / forgeable `X-Real-IP`.
+ * Exported for unit tests; also invoked from {@link getRequestIp}.
+ */
+export function warnTrustedProxyHopsIfNeeded(
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  if (trustedProxyHopsWarned) return;
+  if (env.NODE_ENV !== "production") return;
+  const raw = env.TRUSTED_PROXY_HOPS?.trim();
+  const hops =
+    raw && /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : 0;
+  if (hops !== 0) return;
+  trustedProxyHopsWarned = true;
+  console.warn(
+    JSON.stringify({
+      level: "warn",
+      code: "TRUSTED_PROXY_HOPS_ZERO",
+      message:
+        "TRUSTED_PROXY_HOPS is 0 in production — X-Forwarded-For is ignored; set to 1 behind Caddy (see docs/DEPLOY.md).",
+      ts: new Date().toISOString(),
+    }),
+  );
+}
+
+/** Test-only: reset the one-shot production warning latch. */
+export function resetTrustedProxyHopsWarningForTests(): void {
+  trustedProxyHopsWarned = false;
 }
 
 /**
@@ -110,6 +144,7 @@ function trustedProxyHops(): number {
  *   `"unknown"`.
  */
 export async function getRequestIp(): Promise<string> {
+  warnTrustedProxyHopsIfNeeded();
   const h = await headers();
   const hops = trustedProxyHops();
 

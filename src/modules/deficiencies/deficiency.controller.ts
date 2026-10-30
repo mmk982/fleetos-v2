@@ -882,6 +882,11 @@ export async function uploadDeficiencyAttachment(
       ) {
         throw error;
       }
+      if (isPgForeignKeyViolation(error)) {
+        throw new DeficiencyConflictError(
+          "Cannot upload attachment: deficiency or uploader reference is invalid.",
+        );
+      }
       logError("DEFICIENCY_ATTACHMENT_UPLOAD_FAILED", {
         error,
         deficiencyId,

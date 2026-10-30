@@ -92,9 +92,29 @@ curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
 | `npm run db:migrate` | `tsx scripts/migrate.ts` |
 | `npm run dev` | `next dev` (after `predev` migrate) |
 
+## Production deploy (Phase 7)
+
+Authoritative runbook: **`docs/DEPLOY.md`**. Compose file:
+`docker-compose.prod.yml` (app + Postgres + Caddy; optional GlitchTip
+profile). Env template: `.env.production.example` → `.env.production` on the
+host (git-ignored). Backups: `scripts/backup/` + `docs/RUNBOOK.md`.
+
+Local image build (no secrets baked in):
+
+```bash
+docker build -t fleetos:local .
+```
+
+VPS hardening, DNS, TLS, LUKS, B2, and age key custody are **`[HUMAN]`** steps
+in `docs/DEPLOY.md` — this agent cannot reach the VPS.
+
+Privacy drafts (controller review required — **not** legal approval):
+`docs/privacy/ROPA.md`, `BREACH_PROCEDURE.md`, `DATA_SUBJECT_REQUESTS.md`,
+`RETENTION_AND_GAPS.md`.
+
 ## CI / staging deploy
 
-- **CI** (`.github/workflows/ci.yml`): lint (`npm run lint`), typecheck (`npx tsc --noEmit`), and tests (`npm test`) on every push/PR.
+- **CI** (`.github/workflows/ci.yml`): lint, typecheck, tests, `npm audit --omit=dev --audit-level=high`, and Trivy (filesystem + image after `docker build`) on every push/PR.
 - **Staging deploy** (`.github/workflows/deploy-staging.yml`): manual `workflow_dispatch`, gated on the GitHub Environment named `staging`. It is still a **scaffold**: when staging secrets are missing it prints warnings and **exits 0**.
 
 Required Action secrets (document only — never commit values):
@@ -137,3 +157,6 @@ Required Action secrets (document only — never commit values):
 | `PROJECT_REVIEW_2026-10-28.md` | 2026-10-28 project review report (Arabic) |
 | `diagrams/` | Mermaid diagrams (architecture, ERD, phases, …) |
 | `docs/RUNBOOK.md` | Operations runbook (break-glass, secrets, migrations) |
+| `docs/DEPLOY.md` | Production deploy + pre-go-live checklist |
+| `docs/privacy/` | DRAFT ROPA / breach / DSR / retention gaps (human review) |
+| `docs/SESSION_NOTES_2026-10-30.md` | Prod-ready merge session notes |
