@@ -4,7 +4,7 @@ Maritime fleet-compliance app (Next.js App Router, Drizzle ORM, PostgreSQL).
 
 ## Requirements
 
-- **Node.js 22** (CI uses `node-version: 22` in `.github/workflows/ci.yml`)
+- **Node.js ≥ 22.12** (Vitest 5; CI uses `node-version: "22.12"` in `.github/workflows/ci.yml`)
 - **Docker** (local Postgres via `docker-compose.yml`)
 - **npm** (CI runs `npm ci`)
 

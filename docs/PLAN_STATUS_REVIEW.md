@@ -170,7 +170,7 @@ Notes:
 |---:|---|---|---|---|
 | 205 | Broken Access Control | **PARTIAL** | Session + `assertModuleAccess`/`assertVesselScope` widespread | No Postgres RLS; IDOR relies on app layer |
 | 206 | Security Misconfiguration | **PARTIAL** | Headers in `next.config.ts` | Prod defaults/credentials/debug: **CANNOT VERIFY** without prod |
-| 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | Local high+ clean on `cursor/deps-security`; residual moderate exceljs/uuid; CI audit/Trivy still absent on this base | See deps-security section |
+| 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | 2026-10-30 `cursor/dev-deps-security`: full+prod `--audit-level=high` exit 0; residual moderate `drizzle-kit`→esbuild only; CI audit steps added; Trivy still absent | See SECURITY_PLAN §13 |
 | 208 | Cryptographic Failures | **PARTIAL** | Argon2id in `password.ts` | TLS/backups: **CANNOT VERIFY** (needs prod/VPS) |
 | 209 | Injection | **DONE** | Drizzle builders; Zod on mutations; only `sql` template is singleton check in schema | Grep for raw string SQL interpolation: none found in controllers |
 | 210 | Insecure Design (whole-doc review) | **PARTIAL** | This review + prior docs | Formal Phase-8 pass still open |
@@ -205,7 +205,7 @@ Notes:
 | 1 | Postgres **RLS** + per-request `SET LOCAL` wrapper | NOT DONE | Decide: implement RLS wrapper in `getDb()` **or** formally document “app-layer only” and close MIP L74/L138/L346 |
 | 2 | **Production stack** (`docker-compose.prod.yml`, UFW, backups, LUKS) | NOT DONE | Author prod compose + backup script stubs; Eng.MHD provisions VPS |
 | 3 | **Backup restore drill** + RUNBOOK backup TODO | CANNOT VERIFY / NOT DONE | Define backup procedure; run one restore on staging |
-| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** (2026-10-29 `cursor/deps-security`) | Local high+ audit **exit 0** (`next@16.4.3`, `zod@4.6.6`); residual moderate `exceljs→uuid`. **CI still missing** audit/Trivy on `rls-phase1` lineage — merge/add from prod-stack or add here |
+| 4 | **Trivy / npm audit** gate in CI | **PARTIAL** (2026-10-30 `cursor/dev-deps-security`) | CI now runs `npm audit --omit=dev --audit-level=high` **and** full `npm audit --audit-level=high` (Node 22.12). Trivy still missing; residual moderate esbuild via drizzle-kit |
 | 5 | **GDPR ROPA + breach notification** written artifacts | NOT DONE | Draft short docs under `docs/` before real crew PII |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
@@ -264,13 +264,27 @@ Branch from `cursor/rls-phase1`. **No commit/push.**
 
 `@next/*` 16.2.4→16.4.3; `postcss` 8.5.10→8.5.23; `sharp` 0.34.5→0.35.5; `nanoid` 3.3.11→3.3.20; `source-map-js` 1.2.1→1.2.2; `brace-expansion` 1.1.14→1.1.21; `baseline-browser-mapping` 2.10.21→2.11.34
 
-### Residual
+### Residual (superseded 2026-10-30)
 
-- `uuid@8.3.2` via `exceljs@4.4.0` (moderate GHSA-w5hq-g745-h8pq). Plan: wait for exceljs release that bumps uuid; **do not** `npm audit fix --force` (would install exceljs@3.4.0).
+- Was `uuid@8.3.2` via exceljs — cleared on `cursor/dev-deps-security` via `overrides.uuid=11.1.1` (see `docs/DEPS_SECURITY_2026-10-30.md`).
 
 ### Verify
 
 tsc / eslint / vitest 211 / integration 14 / db:check / `next build --webpack` — all exit 0. Browser smoke admin1 + vuA OK under `next start` with `DATABASE_URL=fleetos_app`. Unauth prefetch matrix: no protected data before or after (AFTER also redirects `/dashboard*.rsc` → `/login`).
+
+---
+
+## Dev + prod dependency security (`cursor/dev-deps-security`) — 2026-10-30
+
+From `cursor/a11y-pass`. **No commit/push.** Detail: `docs/DEPS_SECURITY_2026-10-30.md`.
+
+| Audit | Exit |
+|---|---|
+| `--omit=dev --audit-level=high` | **0** |
+| full `--audit-level=high` | **0** |
+| full (any severity) | 1 (4× moderate esbuild via drizzle-kit only) |
+
+Direct majors: `vitest` 3.2.7→5.0.5, `happy-dom` 15→21.0.4, `playwright` 1.49→1.64.1, `@types/node` 20→22. CI: Node 22.12 + both audit gates. Tests: 299 unit + 62 integration unchanged counts.
 
 ---
 

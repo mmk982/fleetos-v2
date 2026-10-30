@@ -1,8 +1,19 @@
 # Accessibility audit — WCAG 2.1 AA
 
 **Date:** 2026-10-30  
-**Branch:** `cursor/a11y-pass` (uncommitted; no commit/push)  
+**Branch:** originally `cursor/a11y-pass`; tooling versions refreshed on `cursor/dev-deps-security` (2026-10-30).  
 **Scope:** English UI only. Arabic/RTL out of scope. No RLS / migrations / permissions / business-logic changes.
+
+## Tooling versions (devDependencies)
+
+| Package | Version used for audit / re-smoke |
+|---|---|
+| `axe-core` | `^4.14.0` |
+| `playwright` | `^1.64.1` (patched GHSA-7mvr-c777-76hp; ≥1.55.1) |
+| `happy-dom` | `^21.0.4` (a11y unit-test environment) |
+| `vitest` | `^5.0.5` |
+
+Smoke after deps bump: `node scripts/a11y-axe-two-pages.mjs` (login + dashboard).
 
 ## Method
 
