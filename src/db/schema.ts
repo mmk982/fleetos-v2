@@ -104,14 +104,18 @@ export type UserInsert = typeof users.$inferInsert;
  * invalidate every session for that account. That is *not* the
  * log-userId `SET NULL` pattern used on activity/access logs.
  */
-export const sessions = pgTable("sessions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("sessions_user_id_idx").on(t.userId)],
+);
 
 /** A session row as read from the database. */
 export type SessionRow = typeof sessions.$inferSelect;
@@ -176,7 +180,6 @@ export const companyProfile = pgTable(
     contactEmail: text("contact_email"),
     contactPhone: text("contact_phone"),
     timezone: text("timezone"),
-    dateFormat: text("date_format"),
     /** Relative path under `data/attachments/` (same convention as module uploads). */
     logoPath: text("logo_path"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -370,6 +373,7 @@ export const certificates = pgTable(
     index("certificates_certificate_type_id_idx").on(t.certificateTypeId),
     index("certificates_lifecycle_status_idx").on(t.lifecycleStatus),
     index("certificates_parent_certificate_id_idx").on(t.parentCertificateId),
+    index("certificates_issuing_authority_id_idx").on(t.issuingAuthorityId),
   ],
 );
 
@@ -382,19 +386,23 @@ export type CertificateInsert = typeof certificates.$inferInsert;
  * In-place extension / renewal / revocation history. Owned child —
  * `ON DELETE CASCADE` with the parent certificate (§0.9).
  */
-export const certificateEvents = pgTable("certificate_events", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  certificateId: uuid("certificate_id")
-    .notNull()
-    .references(() => certificates.id, { onDelete: "cascade" }),
-  eventType: text("event_type", { enum: certificateEventTypeEnum }).notNull(),
-  eventDate: date("event_date").notNull(),
-  newExpiryDate: date("new_expiry_date"),
-  note: text("note"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const certificateEvents = pgTable(
+  "certificate_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    certificateId: uuid("certificate_id")
+      .notNull()
+      .references(() => certificates.id, { onDelete: "cascade" }),
+    eventType: text("event_type", { enum: certificateEventTypeEnum }).notNull(),
+    eventDate: date("event_date").notNull(),
+    newExpiryDate: date("new_expiry_date"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("certificate_events_certificate_id_idx").on(t.certificateId)],
+);
 
 /** A row as read from {@link certificateEvents}. */
 export type CertificateEventRow = typeof certificateEvents.$inferSelect;
@@ -407,20 +415,27 @@ export type CertificateEventInsert = typeof certificateEvents.$inferInsert;
  * authenticated `/api/attachments/[id]` route (`SECURITY_PLAN.md` §6).
  * Owned child — `ON DELETE CASCADE`. `uploadedBy` SET NULL on user delete.
  */
-export const certificateAttachments = pgTable("certificate_attachments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  certificateId: uuid("certificate_id")
-    .notNull()
-    .references(() => certificates.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
-  uploadedBy: uuid("uploaded_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const certificateAttachments = pgTable(
+  "certificate_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    certificateId: uuid("certificate_id")
+      .notNull()
+      .references(() => certificates.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("certificate_attachments_certificate_id_idx").on(t.certificateId),
+    index("certificate_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
+);
 
 /** A row as read from {@link certificateAttachments}. */
 export type CertificateAttachmentRow = typeof certificateAttachments.$inferSelect;
@@ -512,25 +527,29 @@ export const pscInspectionResultEnum = [
 /** Union of {@link pscInspectionResultEnum} literals. */
 export type PscInspectionResult = (typeof pscInspectionResultEnum)[number];
 
-export const pscInspections = pgTable("psc_inspections", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  vesselId: uuid("vessel_id")
-    .notNull()
-    .references(() => vessels.id, { onDelete: "restrict" }),
-  port: text("port").notNull(),
-  inspectionDate: date("inspection_date").notNull(),
-  authority: text("authority").notNull(),
-  result: text("result", { enum: pscInspectionResultEnum }).notNull(),
-  detained: boolean("detained").notNull().default(false),
-  inspectorName: text("inspector_name"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const pscInspections = pgTable(
+  "psc_inspections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    port: text("port").notNull(),
+    inspectionDate: date("inspection_date").notNull(),
+    authority: text("authority").notNull(),
+    result: text("result", { enum: pscInspectionResultEnum }).notNull(),
+    detained: boolean("detained").notNull().default(false),
+    inspectorName: text("inspector_name"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("psc_inspections_vessel_id_idx").on(t.vesselId)],
+);
 
 /** A row as read from {@link pscInspections}. */
 export type PscInspectionRow = typeof pscInspections.$inferSelect;
@@ -546,23 +565,27 @@ export const auditTypeEnum = ["ISSC", "MLC", "SMC", "DOC", "Other"] as const;
 /** Union of {@link auditTypeEnum} literals. */
 export type AuditType = (typeof auditTypeEnum)[number];
 
-export const audits = pgTable("audits", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  vesselId: uuid("vessel_id")
-    .notNull()
-    .references(() => vessels.id, { onDelete: "restrict" }),
-  auditType: text("audit_type", { enum: auditTypeEnum }).notNull(),
-  auditDate: date("audit_date").notNull(),
-  auditor: text("auditor"),
-  findingsCount: integer("findings_count").notNull().default(0),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const audits = pgTable(
+  "audits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    vesselId: uuid("vessel_id")
+      .notNull()
+      .references(() => vessels.id, { onDelete: "restrict" }),
+    auditType: text("audit_type", { enum: auditTypeEnum }).notNull(),
+    auditDate: date("audit_date").notNull(),
+    auditor: text("auditor"),
+    findingsCount: integer("findings_count").notNull().default(0),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("audits_vessel_id_idx").on(t.vesselId)],
+);
 
 /** A row as read from {@link audits}. */
 export type AuditRow = typeof audits.$inferSelect;
@@ -612,6 +635,9 @@ export const deficiencies = pgTable(
     index("deficiencies_vessel_id_idx").on(t.vesselId),
     index("deficiencies_status_idx").on(t.status),
     index("deficiencies_due_date_idx").on(t.dueDate),
+    index("deficiencies_psc_inspection_id_idx").on(t.pscInspectionId),
+    index("deficiencies_severity_level_id_idx").on(t.severityLevelId),
+    index("deficiencies_source_id_idx").on(t.sourceId),
   ],
 );
 
@@ -626,20 +652,27 @@ export type DeficiencyInsert = typeof deficiencies.$inferInsert;
  * §2 originally said free-text pending Phase 3; Auth already shipped, so
  * we match Certificates rather than regress to free text.
  */
-export const deficiencyAttachments = pgTable("deficiency_attachments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  deficiencyId: uuid("deficiency_id")
-    .notNull()
-    .references(() => deficiencies.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
-  uploadedBy: uuid("uploaded_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const deficiencyAttachments = pgTable(
+  "deficiency_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    deficiencyId: uuid("deficiency_id")
+      .notNull()
+      .references(() => deficiencies.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("deficiency_attachments_deficiency_id_idx").on(t.deficiencyId),
+    index("deficiency_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
+);
 
 /** A row as read from {@link deficiencyAttachments}. */
 export type DeficiencyAttachmentRow = typeof deficiencyAttachments.$inferSelect;
@@ -767,6 +800,7 @@ export const crewCertificates = pgTable(
   (t) => [
     index("crew_certificates_crew_member_id_idx").on(t.crewMemberId),
     index("crew_certificates_expiry_date_idx").on(t.expiryDate),
+    index("crew_certificates_endorsement_type_id_idx").on(t.endorsementTypeId),
   ],
 );
 
@@ -796,6 +830,12 @@ export const crewCertificateAttachments = pgTable(
       .notNull()
       .defaultNow(),
   },
+  (t) => [
+    index("crew_certificate_attachments_crew_certificate_id_idx").on(
+      t.crewCertificateId,
+    ),
+    index("crew_certificate_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
 );
 
 /** A row as read from {@link crewCertificateAttachments}. */
@@ -826,16 +866,20 @@ export type AccessLogType = (typeof accessLogTypeEnum)[number];
  * Phase 4 / `PROJECT_PLAN.md` §6). Scoped to `crew_members` /
  * `crew_certificates` / `crew_certificate_attachments` only.
  */
-export const accessLogs = pgTable("access_logs", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-  moduleName: text("module_name").notNull(),
-  recordId: uuid("record_id").notNull(),
-  accessType: text("access_type", { enum: accessLogTypeEnum }).notNull(),
-  accessedAt: timestamp("accessed_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const accessLogs = pgTable(
+  "access_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    moduleName: text("module_name").notNull(),
+    recordId: uuid("record_id").notNull(),
+    accessType: text("access_type", { enum: accessLogTypeEnum }).notNull(),
+    accessedAt: timestamp("accessed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("access_logs_user_id_idx").on(t.userId)],
+);
 
 /** A row as read from {@link accessLogs}. */
 export type AccessLogRow = typeof accessLogs.$inferSelect;
@@ -847,17 +891,21 @@ export type AccessLogInsert = typeof accessLogs.$inferInsert;
  * (`PROJECT_PLAN.md` §5 / §6). `recordId` is polymorphic by `moduleName` —
  * not a typed FK. `userId` uses SET NULL (log-userId category, §0.9).
  */
-export const activityLogs = pgTable("activity_logs", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-  actionType: text("action_type").notNull(),
-  moduleName: text("module_name").notNull(),
-  recordId: uuid("record_id").notNull(),
-  description: text("description").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const activityLogs = pgTable(
+  "activity_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    actionType: text("action_type").notNull(),
+    moduleName: text("module_name").notNull(),
+    recordId: uuid("record_id").notNull(),
+    description: text("description").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("activity_logs_user_id_idx").on(t.userId)],
+);
 
 /** A row as read from {@link activityLogs}. */
 export type ActivityLogRow = typeof activityLogs.$inferSelect;
@@ -928,6 +976,7 @@ export const notifications = pgTable(
     index("notifications_user_id_idx").on(t.userId),
     index("notifications_user_read_idx").on(t.userId, t.isRead),
     index("notifications_created_at_idx").on(t.createdAt),
+    index("notifications_vessel_id_idx").on(t.vesselId),
   ],
 );
 
@@ -1031,20 +1080,29 @@ export type InsurancePolicyInsert = typeof insurancePolicies.$inferInsert;
  * Files attached to an insurance policy. Same on-disk / serve conventions as
  * other `*_attachments` tables. Out of GDPR `access_logs` scope (§6b).
  */
-export const insuranceAttachments = pgTable("insurance_attachments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  insurancePolicyId: uuid("insurance_policy_id")
-    .notNull()
-    .references(() => insurancePolicies.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
-  uploadedBy: uuid("uploaded_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const insuranceAttachments = pgTable(
+  "insurance_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    insurancePolicyId: uuid("insurance_policy_id")
+      .notNull()
+      .references(() => insurancePolicies.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("insurance_attachments_insurance_policy_id_idx").on(
+      t.insurancePolicyId,
+    ),
+    index("insurance_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
+);
 
 /** A row as read from {@link insuranceAttachments}. */
 export type InsuranceAttachmentRow = typeof insuranceAttachments.$inferSelect;
@@ -1126,20 +1184,27 @@ export type IsmTemplateInsert = typeof ismTemplates.$inferInsert;
  * Blank-form PDF (etc.) attachments for an ISM template. Same on-disk /
  * serve conventions as other `*_attachments` tables. Out of GDPR scope.
  */
-export const ismTemplateAttachments = pgTable("ism_template_attachments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  ismTemplateId: uuid("ism_template_id")
-    .notNull()
-    .references(() => ismTemplates.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
-  uploadedBy: uuid("uploaded_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const ismTemplateAttachments = pgTable(
+  "ism_template_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ismTemplateId: uuid("ism_template_id")
+      .notNull()
+      .references(() => ismTemplates.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("ism_template_attachments_ism_template_id_idx").on(t.ismTemplateId),
+    index("ism_template_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
+);
 
 /** A row as read from {@link ismTemplateAttachments}. */
 export type IsmTemplateAttachmentRow =
@@ -1216,6 +1281,7 @@ export const manualRevisions = pgTable(
   (t) => [
     index("manual_revisions_manual_id_idx").on(t.manualId),
     index("manual_revisions_is_current_idx").on(t.isCurrentVersion),
+    index("manual_revisions_uploaded_by_idx").on(t.uploadedBy),
   ],
 );
 
@@ -1287,20 +1353,27 @@ export type DrawingInsert = typeof drawings.$inferInsert;
  * File attachments for a drawing. Same on-disk / serve conventions as
  * other `*_attachments` tables. Out of GDPR access-log scope.
  */
-export const drawingAttachments = pgTable("drawing_attachments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  drawingId: uuid("drawing_id")
-    .notNull()
-    .references(() => drawings.id, { onDelete: "cascade" }),
-  fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
-  uploadedBy: uuid("uploaded_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  uploadedAt: timestamp("uploaded_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const drawingAttachments = pgTable(
+  "drawing_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    drawingId: uuid("drawing_id")
+      .notNull()
+      .references(() => drawings.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("drawing_attachments_drawing_id_idx").on(t.drawingId),
+    index("drawing_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
+);
 
 /** A row as read from {@link drawingAttachments}. */
 export type DrawingAttachmentRow = typeof drawingAttachments.$inferSelect;
@@ -1360,6 +1433,7 @@ export const monthlyFormRequirements = pgTable(
       t.ismTemplateId,
     ),
     index("monthly_form_requirements_vessel_id_idx").on(t.vesselId),
+    index("monthly_form_requirements_ism_template_id_idx").on(t.ismTemplateId),
   ],
 );
 
@@ -1414,6 +1488,8 @@ export const monthlyExecutedForms = pgTable(
     index("monthly_executed_forms_vessel_id_idx").on(t.vesselId),
     index("monthly_executed_forms_period_idx").on(t.year, t.month),
     index("monthly_executed_forms_status_idx").on(t.status),
+    index("monthly_executed_forms_ism_template_id_idx").on(t.ismTemplateId),
+    index("monthly_executed_forms_uploaded_by_idx").on(t.uploadedBy),
   ],
 );
 
@@ -1442,6 +1518,12 @@ export const monthlyExecutedFormAttachments = pgTable(
       .notNull()
       .defaultNow(),
   },
+  (t) => [
+    index("monthly_executed_form_attachments_executed_form_id_idx").on(
+      t.executedFormId,
+    ),
+    index("monthly_executed_form_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
 );
 
 /** A row as read from {@link monthlyExecutedFormAttachments}. */
@@ -1522,6 +1604,12 @@ export const vesselParticularsAttachments = pgTable(
       .notNull()
       .defaultNow(),
   },
+  (t) => [
+    index("vessel_particulars_attachments_particulars_id_idx").on(
+      t.particularsId,
+    ),
+    index("vessel_particulars_attachments_uploaded_by_idx").on(t.uploadedBy),
+  ],
 );
 
 /** A row as read from {@link vesselParticularsAttachments}. */

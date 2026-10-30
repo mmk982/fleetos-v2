@@ -7,6 +7,8 @@ import { toAccessContext } from "@/lib/auth/access";
 import { planMonthlyFormsPageData } from "@/lib/auth/page-access";
 import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
 import { requireSession } from "@/lib/auth/session";
+import { businessToday } from "@/lib/settings/business-time";
+import { monthYearOfDay } from "@/lib/settings/timezone";
 import type { UserRole } from "@/db/schema";
 
 export default async function NewMonthlyFormPage() {
@@ -36,6 +38,8 @@ export default async function NewMonthlyFormPage() {
     throw error;
   }
 
+  const { month, year } = monthYearOfDay(businessToday());
+
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <Link
@@ -51,7 +55,12 @@ export default async function NewMonthlyFormPage() {
         Create a form outside the checklist generator (on-demand or one-off).
       </p>
       <div className="mt-8 max-w-xl">
-        <MonthlyFormCreateForm vessels={vessels} templates={templates} />
+        <MonthlyFormCreateForm
+          vessels={vessels}
+          templates={templates}
+          defaultMonth={month}
+          defaultYear={year}
+        />
       </div>
     </main>
   );

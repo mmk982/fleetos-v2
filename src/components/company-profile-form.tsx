@@ -110,18 +110,6 @@ export function CompanyProfileForm({
               className={inputClass}
             />
           </div>
-          <div>
-            <label htmlFor="dateFormat" className={labelClass}>
-              Date format
-            </label>
-            <input
-              id="dateFormat"
-              name="dateFormat"
-              placeholder="e.g. YYYY-MM-DD"
-              defaultValue={profile.dateFormat ?? ""}
-              className={inputClass}
-            />
-          </div>
           <div className="sm:col-span-2">
             <label htmlFor="address" className={labelClass}>
               Address

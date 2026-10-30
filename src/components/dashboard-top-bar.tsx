@@ -43,7 +43,12 @@ export async function DashboardTopBar() {
   }
 
   const name = profile.companyName?.trim() || "FleetOS";
-  const today = new Date().toLocaleDateString();
+  const companyDay = businessToday();
+  // Format the company day at UTC noon in UTC so the label never shifts day.
+  const today = new Date(`${companyDay}T12:00:00.000Z`).toLocaleDateString(
+    undefined,
+    { timeZone: "UTC" },
+  );
   const initials = initialsFromName(session.user.name ?? "");
 
   return (
@@ -72,7 +77,7 @@ export async function DashboardTopBar() {
           items={items}
         />
         <time
-          dateTime={businessToday()}
+          dateTime={companyDay}
           className="hidden text-[13px] text-[var(--text-tertiary)] sm:inline"
         >
           {today}

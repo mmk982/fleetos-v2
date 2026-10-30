@@ -11,6 +11,8 @@ import {
   toAccessContext,
 } from "@/lib/auth/access";
 import { requireSession } from "@/lib/auth/session";
+import { businessToday } from "@/lib/settings/business-time";
+import { monthYearOfDay } from "@/lib/settings/timezone";
 import type { MonthlyFormStatus, UserRole, VesselRow } from "@/db/schema";
 import {
   MONTHLY_FORM_STATUSES,
@@ -97,6 +99,7 @@ export default async function MonthlyFormsPage(props: {
         canManageRequirements={plan.canManageRequirements}
         canCreateAdHoc={plan.canCreateAdHoc}
         canGenerateChecklist={plan.canGenerateChecklist}
+        yearNow={monthYearOfDay(businessToday()).year}
         initialFilters={{
           vesselId: sp.vesselId ?? "",
           month: sp.month ?? "",

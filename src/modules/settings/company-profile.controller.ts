@@ -45,7 +45,6 @@ export type CompanyProfileUpdateInput = {
   contactEmail?: string | null;
   contactPhone?: string | null;
   timezone?: string | null;
-  dateFormat?: string | null;
 };
 
 type UploadFile = { name: string; type: string; size: number; bytes: Buffer };
@@ -102,8 +101,6 @@ export async function updateCompanyProfile(
   if (input.contactEmail !== undefined) patch.contactEmail = input.contactEmail;
   if (input.contactPhone !== undefined) patch.contactPhone = input.contactPhone;
   if (input.timezone !== undefined) patch.timezone = input.timezone;
-  if (input.dateFormat !== undefined) patch.dateFormat = input.dateFormat;
-
   try {
     const updated = await getDb()
       .update(companyProfile)

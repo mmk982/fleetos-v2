@@ -49,7 +49,10 @@ export function MonthlyFormsList({
   canCreateAdHoc = true,
   canGenerateChecklist = true,
   initialFilters,
+  yearNow,
 }: {
+  /** Company-calendar year from the server page (anchors the year filter). */
+  yearNow: number;
   rows: MonthlyFormListItem[];
   requirements: MonthlyFormRequirementListItem[];
   vessels: VesselRow[];
@@ -112,7 +115,6 @@ export function MonthlyFormsList({
   }, [rows, filters.formType, filters.displayStatus, searchValue]);
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const yearNow = new Date().getFullYear();
   const years = [yearNow - 1, yearNow, yearNow + 1];
 
   const filterControls = (

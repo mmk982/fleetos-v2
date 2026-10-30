@@ -4,7 +4,7 @@
  * Checklist generation, ad-hoc create, submit (status mutation + attachment),
  * and attachment CRUD. Display "overdue" is derived, never stored.
  */
-import { businessToday } from "@/lib/settings/business-time";
+import { businessNow, businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -224,6 +224,7 @@ export async function listMonthlyForms(
           r.form.status,
           r.form.month,
           r.form.year,
+          businessNow(),
         ),
         attachmentCount: Number(countRows[0]?.n ?? 0),
       });
@@ -275,6 +276,7 @@ export async function getMonthlyFormById(
         row.form.status,
         row.form.month,
         row.form.year,
+        businessNow(),
       ),
       attachmentCount: attachments.length,
       attachments,

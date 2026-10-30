@@ -1,5 +1,7 @@
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import type { SessionContext } from "@/lib/auth/session";
+import { businessToday } from "@/lib/settings/business-time";
+import { monthYearOfDay } from "@/lib/settings/timezone";
 import { getAlerts } from "@/modules/alerts/alerts.controller";
 import { getOpenDeficienciesCount } from "@/modules/deficiencies/deficiency.controller";
 import { listMonthlyForms } from "@/modules/monthly-forms/monthlyForm.controller";
@@ -31,9 +33,8 @@ export const EMPTY_NAV_BADGES: NavBadges = {
 /** Aggregate sidebar badge counts from existing alert/deficiency/form queries. */
 export async function getNavBadges(session: SessionContext): Promise<NavBadges> {
   const access = toAccessContext(session);
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  // Company calendar day, not the server-local clock.
+  const { month, year } = monthYearOfDay(businessToday());
 
   try {
     // Sequential: each helper may open withDb on the pool; avoid stacking

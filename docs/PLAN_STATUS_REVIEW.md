@@ -289,3 +289,10 @@ Status note (no plan checkbox changes; row 124 stays **DONE**, now stronger). **
 Controllers present under `src/modules/`: activity-log, alerts, audits, certificates, crew (+ crew-certificate), deficiencies, drawings, email-digest, insurance, ism-templates, manuals, monthly-forms (+ requirements), notifications, psc, reminders, settings (users, company-profile), ship-particulars (+ vessel-notes), vessels. Auth has actions only.
 
 Dashboard routes exist for: alerts, audits, certificates, crew, deficiencies, drawings, insurance, ism-templates, manuals, monthly-forms, notifications, particulars, psc, reminders, settings, vessels.
+
+## Indexes and cleanups (cursor/indexes-and-cleanups) — 2026-10-30
+
+- **Part A:** Migration `0028_fk_indexes` adds 32 single-column FK indexes (parent-child CASCADE lookups, list filters, SET NULL `uploaded_by` / log `user_id` scans). Skipped `users.vessel_id` and `vessel_notes.author_id` (tiny tables). Scratch-DB EXPLAIN: attachment list Seq Scan → Bitmap Index Scan; CASCADE trigger ~3.7ms → ~0.9ms.
+- **Part B:** Dashboard / nav-badges / monthly-forms period selection and top-bar date use company day (`businessToday` / `businessNow`); client forms take props from server. `export/http.ts` stays UTC.
+- **Part C:** Unused `company_profile.date_format` removed (app + migration `0029_drop_date_format`); DB had only empty/null values.
+- **Part D:** `certificate.controller.ts` split into lookups/queries/mutations/events/attachments/shared with stable barrel re-exports; behaviour unchanged.

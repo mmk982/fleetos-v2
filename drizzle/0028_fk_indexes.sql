@@ -1,0 +1,33 @@
+-- CREATE INDEX (not CONCURRENTLY): migrations run in a transaction; tables are small.
+CREATE INDEX "access_logs_user_id_idx" ON "access_logs" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "activity_logs_user_id_idx" ON "activity_logs" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "audits_vessel_id_idx" ON "audits" USING btree ("vessel_id");--> statement-breakpoint
+CREATE INDEX "certificate_attachments_certificate_id_idx" ON "certificate_attachments" USING btree ("certificate_id");--> statement-breakpoint
+CREATE INDEX "certificate_attachments_uploaded_by_idx" ON "certificate_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "certificate_events_certificate_id_idx" ON "certificate_events" USING btree ("certificate_id");--> statement-breakpoint
+CREATE INDEX "certificates_issuing_authority_id_idx" ON "certificates" USING btree ("issuing_authority_id");--> statement-breakpoint
+CREATE INDEX "crew_certificate_attachments_crew_certificate_id_idx" ON "crew_certificate_attachments" USING btree ("crew_certificate_id");--> statement-breakpoint
+CREATE INDEX "crew_certificate_attachments_uploaded_by_idx" ON "crew_certificate_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "crew_certificates_endorsement_type_id_idx" ON "crew_certificates" USING btree ("endorsement_type_id");--> statement-breakpoint
+CREATE INDEX "deficiencies_psc_inspection_id_idx" ON "deficiencies" USING btree ("psc_inspection_id");--> statement-breakpoint
+CREATE INDEX "deficiencies_severity_level_id_idx" ON "deficiencies" USING btree ("severity_level_id");--> statement-breakpoint
+CREATE INDEX "deficiencies_source_id_idx" ON "deficiencies" USING btree ("source_id");--> statement-breakpoint
+CREATE INDEX "deficiency_attachments_deficiency_id_idx" ON "deficiency_attachments" USING btree ("deficiency_id");--> statement-breakpoint
+CREATE INDEX "deficiency_attachments_uploaded_by_idx" ON "deficiency_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "drawing_attachments_drawing_id_idx" ON "drawing_attachments" USING btree ("drawing_id");--> statement-breakpoint
+CREATE INDEX "drawing_attachments_uploaded_by_idx" ON "drawing_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "insurance_attachments_insurance_policy_id_idx" ON "insurance_attachments" USING btree ("insurance_policy_id");--> statement-breakpoint
+CREATE INDEX "insurance_attachments_uploaded_by_idx" ON "insurance_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "ism_template_attachments_ism_template_id_idx" ON "ism_template_attachments" USING btree ("ism_template_id");--> statement-breakpoint
+CREATE INDEX "ism_template_attachments_uploaded_by_idx" ON "ism_template_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "manual_revisions_uploaded_by_idx" ON "manual_revisions" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "monthly_executed_form_attachments_executed_form_id_idx" ON "monthly_executed_form_attachments" USING btree ("executed_form_id");--> statement-breakpoint
+CREATE INDEX "monthly_executed_form_attachments_uploaded_by_idx" ON "monthly_executed_form_attachments" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "monthly_executed_forms_ism_template_id_idx" ON "monthly_executed_forms" USING btree ("ism_template_id");--> statement-breakpoint
+CREATE INDEX "monthly_executed_forms_uploaded_by_idx" ON "monthly_executed_forms" USING btree ("uploaded_by");--> statement-breakpoint
+CREATE INDEX "monthly_form_requirements_ism_template_id_idx" ON "monthly_form_requirements" USING btree ("ism_template_id");--> statement-breakpoint
+CREATE INDEX "notifications_vessel_id_idx" ON "notifications" USING btree ("vessel_id");--> statement-breakpoint
+CREATE INDEX "psc_inspections_vessel_id_idx" ON "psc_inspections" USING btree ("vessel_id");--> statement-breakpoint
+CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "vessel_particulars_attachments_particulars_id_idx" ON "vessel_particulars_attachments" USING btree ("particulars_id");--> statement-breakpoint
+CREATE INDEX "vessel_particulars_attachments_uploaded_by_idx" ON "vessel_particulars_attachments" USING btree ("uploaded_by");

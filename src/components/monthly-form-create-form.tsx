@@ -16,11 +16,16 @@ const errorText = "mt-1 text-sm text-red-600 dark:text-red-400";
 export function MonthlyFormCreateForm({
   vessels,
   templates,
+  defaultMonth,
+  defaultYear,
 }: {
   vessels: VesselRow[];
   templates: IsmTemplateListItem[];
+  /** Company-calendar month (1–12) from the server page. */
+  defaultMonth?: number;
+  /** Company-calendar year from the server page. */
+  defaultYear?: number;
 }) {
-  const now = new Date();
   const [state, formAction, pending] = useActionState(
     createMonthlyFormAction,
     undefined as MonthlyFormActionState | undefined,
@@ -109,7 +114,7 @@ export function MonthlyFormCreateForm({
             min={1}
             max={12}
             required
-            defaultValue={now.getMonth() + 1}
+            defaultValue={defaultMonth}
             className={inputClass}
           />
         </div>
@@ -125,7 +130,7 @@ export function MonthlyFormCreateForm({
             min={2000}
             max={2100}
             required
-            defaultValue={now.getFullYear()}
+            defaultValue={defaultYear}
             className={inputClass}
           />
         </div>

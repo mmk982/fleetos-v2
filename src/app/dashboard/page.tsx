@@ -24,6 +24,8 @@ import {
   STATUS_LABELS,
   type ComplianceStatus,
 } from "@/lib/expiry";
+import { businessToday } from "@/lib/settings/business-time";
+import { monthYearOfDay } from "@/lib/settings/timezone";
 import { getRecentActivity } from "@/modules/activity-log/activity-log.controller";
 import { getAlerts } from "@/modules/alerts/alerts.controller";
 import {
@@ -60,9 +62,8 @@ export default async function DashboardPage() {
   const skipRecentActivity =
     access.role === "management_user" || access.role === "vessel_user";
 
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  // Company calendar day, not the server-local clock.
+  const { month, year } = monthYearOfDay(businessToday());
 
   let healthAlerts;
   let certificateStatuses;

@@ -48,6 +48,15 @@ export function todayInTimeZone(
 }
 
 /**
+ * Splits a `YYYY-MM-DD` calendar day into numeric month (1–12) and year —
+ * the period shape monthly-form queries take.
+ */
+export function monthYearOfDay(isoDay: string): { month: number; year: number } {
+  const [year, month] = isoDay.split("-");
+  return { month: Number(month), year: Number(year) };
+}
+
+/**
  * UTC-midnight `Date` for the company's current calendar day — the shape the
  * expiry engine expects for its `now` input.
  */

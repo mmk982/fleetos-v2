@@ -1,0 +1,1 @@
+ALTER TABLE "company_profile" DROP COLUMN "date_format";

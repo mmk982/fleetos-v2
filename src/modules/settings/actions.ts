@@ -83,7 +83,6 @@ const companyProfileSchema = z.object({
     (v) => v == null || isValidTimeZone(v),
     "Enter a valid IANA time zone (e.g. Asia/Dubai).",
   ),
-  dateFormat: optionalTrimmedString,
 });
 
 function readFormString(formData: FormData, key: string): string | undefined {
@@ -106,7 +105,6 @@ export async function updateCompanyProfileAction(
     contactEmail: readFormString(formData, "contactEmail"),
     contactPhone: readFormString(formData, "contactPhone"),
     timezone: readFormString(formData, "timezone"),
-    dateFormat: readFormString(formData, "dateFormat"),
   });
   if (!parsed.success) {
     return { ok: false, message: "Please fix the highlighted fields." };
