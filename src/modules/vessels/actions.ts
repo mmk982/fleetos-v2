@@ -191,16 +191,29 @@ export async function updateVesselAction(
  * the `VesselActionState` shape, and hence throwing on a missing id instead
  * of returning a field error there's no form to display it against.
  */
-export async function deleteVesselFormAction(formData: FormData): Promise<void> {
+export type VesselDeleteActionResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+export async function deleteVesselFormAction(
+  formData: FormData,
+): Promise<VesselDeleteActionResult> {
   await assertSameOriginMutation();
   const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
 
   const id = formData.get("id");
   if (typeof id !== "string" || id.length === 0) {
-    throw new Error("Missing vessel id");
+    return { ok: false, message: "Missing vessel id" };
   }
-  await deleteVessel(access, id);
+  try {
+    await deleteVessel(access, id);
+  } catch (error) {
+    if (error instanceof VesselConflictError) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
   revalidatePath(vesselsPath);
   redirect(vesselsPath);
 }

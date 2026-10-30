@@ -22,13 +22,15 @@ import type {
   CertificateUpdateInput,
 } from "./validation";
 import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+import {
   assertValidParentLink,
   CertificateConflictError,
   CertificateNotFoundError,
   CertificateTypeNotFoundError,
   countChildCertificates,
-  isPgForeignKeyViolation,
-  isPgUniqueViolation,
   loadType,
   refreshCachedStatus,
 } from "./certificate.shared";

@@ -17,11 +17,13 @@ import {
 } from "@/lib/auth/access";
 import { logError } from "@/lib/logging";
 import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+import {
   CertificateConflictError,
   CertificateTypeNotFoundError,
   IssuingAuthorityNotFoundError,
-  isPgForeignKeyViolation,
-  isPgUniqueViolation,
 } from "./certificate.shared";
 /** Certificate types for form dropdowns, grouped by authority at the UI layer. */
 export async function listCertificateTypes(

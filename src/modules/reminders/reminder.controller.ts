@@ -6,6 +6,10 @@
  */
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+} from "@/lib/db/pg-errors";
+
 import { and, asc, desc, eq, type SQL } from "drizzle-orm";
 import { getDb, withDb } from "@/db/client";
 import {
@@ -45,15 +49,6 @@ export class ReminderConflictError extends Error {
     super(message);
     this.name = "ReminderConflictError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
 }
 
 export type ReminderListFilters = {

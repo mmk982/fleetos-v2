@@ -20,6 +20,10 @@
 import "server-only";
 
 import { asc, count, eq } from "drizzle-orm";
+import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
 import { getDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
 import {
@@ -47,16 +51,6 @@ export class VesselConflictError extends Error {
     super(message);
     this.name = "VesselConflictError";
   }
-}
-
-/** True if `error` is a Postgres unique-constraint violation (SQLSTATE `23505`). */
-function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
 }
 
 /**
@@ -277,14 +271,12 @@ export async function updateVessel(
 /**
  * Hard-deletes a vessel row.
  *
- * Note for future modules: once Certificates/Deficiencies/Crew/Insurance
- * exist, `vesselId` on those tables is `ON DELETE RESTRICT`
- * (`PROJECT_PLAN.md` §0.9) — deleting a vessel that still has real content
- * pointing at it will fail at the database level, not silently cascade.
- * This function doesn't pre-check for that; it surfaces whatever the
- * database itself decides.
+ * Dependent rows use `ON DELETE RESTRICT` (`PROJECT_PLAN.md` §0.9) — deleting
+ * a vessel that still has certificates / crew / etc. raises a foreign-key
+ * violation, mapped to {@link VesselConflictError}.
  *
  * @throws {VesselNotFoundError} if `id` doesn't exist.
+ * @throws {VesselConflictError} if dependents still reference the vessel.
  */
 export async function deleteVessel(ctx: AccessContext, id: string): Promise<void> {
   assertAuthenticatedAccess(ctx, id);
@@ -300,6 +292,11 @@ export async function deleteVessel(ctx: AccessContext, id: string): Promise<void
   } catch (error) {
     if (error instanceof VesselNotFoundError) {
       throw error;
+    }
+    if (isPgForeignKeyViolation(error)) {
+      throw new VesselConflictError(
+        "Cannot delete: this vessel is still referenced by other records.",
+      );
     }
     logError("VESSEL_DELETE_FAILED", { error, vesselId: id });
     throw error;

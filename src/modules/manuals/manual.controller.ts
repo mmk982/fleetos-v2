@@ -8,6 +8,10 @@
  */
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+} from "@/lib/db/pg-errors";
+
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -77,15 +81,6 @@ export class AttachmentValidationError extends Error {
     super(message);
     this.name = "AttachmentValidationError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
 }
 
 function extensionForMime(mime: string): string {

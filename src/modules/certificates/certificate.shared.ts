@@ -79,24 +79,6 @@ export class AttachmentNotFoundError extends Error {
   }
 }
 
-export function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
-}
-
-export function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
-
 export function deriveForCertificate(
   cert: CertificateRow,
   type: Pick<CertificateTypeRow, "ruleKind" | "offsetDays">,

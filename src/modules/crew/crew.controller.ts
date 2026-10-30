@@ -7,6 +7,11 @@
  */
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+
 import { and, asc, eq, type SQL } from "drizzle-orm";
 import { getDb, withDb } from "@/db/client";
 import {
@@ -61,24 +66,6 @@ export class EndorsementTypeNotFoundError extends Error {
     super(`Endorsement type not found: ${id}`);
     this.name = "EndorsementTypeNotFoundError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
-
-function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
 }
 
 export type CrewListFilters = {

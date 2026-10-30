@@ -11,6 +11,11 @@
 import { businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -106,24 +111,6 @@ export class DeficiencySourceNotFoundError extends Error {
     super(`Deficiency source not found: ${id}`);
     this.name = "DeficiencySourceNotFoundError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
-
-function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
 }
 
 function todayIso(): string {

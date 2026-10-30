@@ -6,6 +6,11 @@
  */
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+
 import { and, asc, eq, type SQL } from "drizzle-orm";
 import { getDb, withDb } from "@/db/client";
 import {
@@ -43,24 +48,6 @@ export class MonthlyFormRequirementConflictError extends Error {
     super(message);
     this.name = "MonthlyFormRequirementConflictError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
-
-function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
 }
 
 function assertFullMonthlyFormAccess(ctx: AccessContext): void {

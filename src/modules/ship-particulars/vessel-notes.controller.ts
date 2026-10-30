@@ -5,6 +5,10 @@
  */
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+} from "@/lib/db/pg-errors";
+
 import { desc, eq } from "drizzle-orm";
 import { getDb, withDb } from "@/db/client";
 import {
@@ -43,15 +47,6 @@ export class VesselNoteConflictError extends Error {
 export type VesselNoteListItem = VesselNoteRow & {
   authorName: string | null;
 };
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
 
 export async function listVesselNotes(
   ctx: AccessContext,

@@ -7,6 +7,11 @@
 import { businessNow, businessToday } from "@/lib/settings/business-time";
 import "server-only";
 
+import {
+  isPgForeignKeyViolation,
+  isPgUniqueViolation,
+} from "@/lib/db/pg-errors";
+
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -81,24 +86,6 @@ export class AttachmentNotFoundError extends Error {
     super(`Attachment not found: ${id}`);
     this.name = "AttachmentNotFoundError";
   }
-}
-
-function isPgForeignKeyViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23503"
-  );
-}
-
-function isPgUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
 }
 
 function extensionForMime(mime: string): string {
