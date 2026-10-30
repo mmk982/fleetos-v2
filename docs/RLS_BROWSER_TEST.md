@@ -527,3 +527,90 @@ Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel
 - `NOTIFICATION_SYNC_FAILED` log for vuNone — page is 200; sync error logging left as-is.
 - Re-running a fresh monthly submit for vuA — form A already **Submitted** with attachments from §11; list/detail/new gates verified this session.
 
+
+
+---
+
+## 13. Certificate WRITE-path smoke (controller split) — 2026-10-30
+
+**Branch:** `cursor/indexes-and-cleanups` @ `9861525` (clean tree at start; verification only — no app code changes).  
+**App:** fresh `npm run dev` on :3000; `DATABASE_URL` role `fleetos_app`.  
+**Prefix:** `RLS-TEST-W`.  
+**Verdict:** No controller-split wiring regression on the exercised write paths (lookups / mutations / events / attachments / queries via barrel). Two **pre-existing** FK-handling defects (500 instead of clean 4xx) in `certificate.shared.ts` `isPgForeignKeyViolation` (does not unwrap Drizzle `cause`).
+
+### 13.1 IDs created (leave in place)
+
+| Kind | Id | Notes |
+|---|---|---|
+| Issuing authority | `da86c825-5a38-43d6-93ef-53db63460dd8` | RLS-TEST-W Authority Edited |
+| Issuing authority (unused) | `c8307fa6-c118-4767-8d8f-910a8cc142b6` | created then deleted successfully |
+| Certificate type | `aa6bf142-df78-4aa4-b09a-f618e5307709` | RLS-TEST-W Type Edited |
+| Cert VALID | `4dd9d875-7720-49a9-8230-8a62a60680e4` | Vessel A; events + PDF attach |
+| Cert VALID dup# | `a7c0ec4d-4233-4c75-a9b0-a51a4379083e` | same number allowed (no unique rule) |
+| Cert EXPIRED | `8d0eff47-1335-4251-a366-2f1543858159` | |
+| Cert CRITICAL | `d929dfc3-2423-47b0-a364-88fb3ecd15b3` | expiry 2026-11-03 → Critical 4d |
+| Cert SUB | `c690cac6-671c-4859-8a54-b7c68770b05a` | parent = VALID |
+| Cert ORPHAN-SUB | `4b7f0851-c8ff-4a0f-bc79-ab0e19c15d5e` | parent SET NULL after victim delete |
+| Events | `abbd27c3-…` renewed; `32abc4f8-…` extended | on VALID |
+| Attachment PDF | `f24d5522-bc26-4058-ae25-30ef3f4aaab6` | file kept under `data/attachments/` |
+| Attachment PNG | `64d8b7a6-7cc7-4c96-b403-e1d3b4295267` | deleted (DB + file gone) |
+| Cascade victim | `7dffe3b2-ed89-4ea4-934f-187837c5bd38` | deleted (events/atts cascaded; file removed) |
+| Super1 A/B | `67a81735-…` / `ada089ea-…` | created+edited+deleted during matrix |
+
+### 13.2 Flow results
+
+| Flow | Expected | Observed | Result |
+|---|---|---|---|
+| 1 Lookups create/edit auth+type | UI success | Created; edited names visible; banners Saved/Added | **PASS** |
+| 1 Delete unused authority | Success | Banner `Deleted.`; row gone | **PASS** |
+| 1 Delete in-use authority | Clean refusal (not 500) | FK 23503 → **HTTP 500**; server `CERTIFICATE`/delete failed query; UI error boundary. Row **not** deleted (DB still has authority). | **FAIL** |
+| 2 Create valid / expired / critical | Live statuses + dashboard move | Detail: Valid 427d / Expired -516d / Critical 4d. Dashboard Expired 31→32, Critical 0→1, VALID CERTS 50→52, DUE CERTS 2→3 | **PASS** |
+| 2 Nav badge | Changes after reload | Health summary / due counts updated; dedicated sidebar numeric badge not clearly observed | **PARTIAL** |
+| 3 Validation missing / expiry&lt;issue | 400 field errors | 400 with `fieldErrors` | **PASS** |
+| 3 Duplicate number | Per schema | No unique on `certificate_number`; second create **201** | **PASS** (N/A unique) |
+| 3 Invalid vessel id | Clean 4xx | **500**; log `CERTIFICATE_CREATE_FAILED` FK `certificates_vessel_id_vessels_id_fk` in `certificate.mutations.ts:63` | **FAIL** |
+| 4 Edit expiry+remarks | Status follows dates | PATCH 200; UI Status Critical 5d then restored Valid; remarks/expiry updated; `cachedStatus` null in API body (live derive) | **PASS** |
+| 5 Sub-cert + self/cycle | Parent lists; refuse cycle | Sub created; parent SUB-ITEMS 1; self-parent **409**; cycle **409** | **PASS** |
+| 6 Events | Show ordered; activity if written | UI newest-first Extended then Renewed; `certificate.events` does **not** call `writeActivityLog` | **PASS** (UI); activity for events **N/A** |
+| 7 Attachments upload/list/dl | PDF+PNG; checksum/size | 201; list 2; dl size+magic match; CT pdf/png | **PASS** |
+| 7 Disallowed / oversize | Clean 400 | 400 messages as coded (10 MB) | **PASS** |
+| 7 Delete attachment | Gone + dl fails + file cleaned | UI gone; GET **404**; `Test-Path` PNG file **False** | **PASS** |
+| 8 Delete cert cascade | Events/atts gone; sub SET NULL; files cleaned; counts | DELETE 204; victim rows gone; orphan `parent_certificate_id` null; victim PDF file **False**; VALID CERTS 55→54; activity `1 sub-item detached` | **PASS** |
+| 9 Export xlsx filter | Rows present/absent | Vessel A xlsx sharedStrings include RLS-TEST-W-*; Vessel B none; status=expired has EXPIRED not VALID/CRITICAL | **PASS** |
+| 9 Export pdf filter | Same | 200 PDF; size A 2118 vs expired 1780; **could not** decode Flate text for string assert | **CANNOT VERIFY** (content) |
+| ro1 / mgmtA / vuA write UI hidden | Hidden | Add/Edit/Delete/Upload absent | **PASS** |
+| ro1 / mgmtA / vuA write API | 403 | POST/PATCH/DELETE/upload all **403** | **PASS** |
+| mgmtA/vuA create on Vessel B | Refused | **403** (module write) | **PASS** |
+| super1 CRUD both vessels | Works | create/patch/delete A+B 201/200/204 | **PASS** |
+| vuB cannot see/dl Vessel A | Hidden / 404 | List no A; detail page **404**; att **404** | **PASS** |
+| vuNone notice + write refuse | 200 notice; write refuse | Notice shown; POST **403** | **PASS** |
+| Cross-origin bad Origin | 403 | `Cross-origin mutating request blocked.` **403** | **PASS** |
+| idle in transaction after burst | 0 | 15 list + 5 detail all 200; `pg_stat_activity` idle-in-tx for `fleetos_app` = **0** | **PASS** |
+
+### 13.3 Defects
+
+1. **In-use issuing authority delete → 500**  
+   - Steps: Settings → System Lists → Issuing Authorities → Remove `RLS-TEST-W Authority Edited` while certs reference it.  
+   - Status: **500**; console: FK `certificates_issuing_authority_id_issuing_authorities_id_fk`; stack `certificate.lookups.ts:144` / `deleteIssuingAuthorityFormAction`.  
+   - Classification: **pre-existing app bug** — `isPgForeignKeyViolation` in `certificate.shared.ts` checks `error.code === '23503'` but Drizzle wraps PG error under `cause`, so `CertificateConflictError` is never thrown. Not a split-wiring miss (handler exists; detector fails).
+
+2. **Invalid vessel UUID on create → 500**  
+   - Steps: `POST /api/certificates` with nonexistent `vesselId` `00000000-0000-4000-8000-000000000099`.  
+   - Status: **500**; log `CERTIFICATE_CREATE_FAILED`; same FK-unwrap gap in `certificate.mutations.ts`.  
+   - Classification: **pre-existing app bug** (same helper).
+
+### 13.4 Server console notes
+
+- `CERTIFICATE_CREATE_FAILED` + uncaught FK on invalid vessel (defect 2).  
+- Uncaught FK on in-use authority delete → dashboard `error.tsx` (defect 1).  
+- `NOTIFICATION_SYNC_FAILED` / `MissingVesselAssignmentError` for `vuNone` (known).  
+- Browser: script-tag warning on 404 page (Next).  
+- No `idle in transaction` after parallel burst.
+
+### 13.5 CANNOT VERIFY
+
+- PDF export **content** strings for RLS-TEST-W (binary Flate streams not decoded in-browser; HTTP 200 + size delta only).  
+- Distinct sidebar **nav badge** numeral (dashboard health/due counts verified instead).  
+- Activity log for **events** (module does not write one — by code).  
+- `access_logs` for certificate attachment downloads (resolver notes crew-only; count 0).
+
