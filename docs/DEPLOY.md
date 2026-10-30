@@ -39,6 +39,7 @@ sudo chown deploy:deploy /opt/fleetos /var/backups/fleetos
 cp /opt/fleetos/.env.production.example /opt/fleetos/.env.production
 chmod 600 /opt/fleetos/.env.production
 # Edit CHANGE_ME values (DOMAIN, passwords, SESSION_SECRET, CRON_SECRET, …).
+# Keep TRUSTED_PROXY_HOPS=1 (Caddy is the only proxy) — see "Login rate limiter & client IP" below.
 ```
 
 Generate secrets (≥32 chars):
@@ -82,6 +83,26 @@ docker compose -f docker-compose.prod.yml run --rm -e DATABASE_URL=… migrate \
 3. As owner: `SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname='fleetos_app';` → `f/f`.
 4. `SELECT relname, relrowsecurity FROM pg_class WHERE relname IN ('certificates','crew_members','crew_certificates','crew_certificate_attachments','access_logs');` → all `t`.
 5. Confirm Postgres is **not** listening on the public interface (`ss -lntp` — no `:5432` on 0.0.0.0).
+
+6. **Client IP / rate limiter** — see the section below: confirm the app records the real client IP (rightmost `X-Forwarded-For` hop) and that a forged `X-Forwarded-For` does not change the IP bucket.
+
+### Login rate limiter & client IP — production notes
+
+Added with migration `login_attempts` (auth-hardening branch). Read before go-live:
+
+1. **Set `TRUSTED_PROXY_HOPS=1`** in `.env.production`. With Caddy as the only proxy, the application takes the address Caddy appended (the rightmost `X-Forwarded-For` entry). With `0` (the code default) `X-Forwarded-For` is ignored and the code falls back to `X-Real-IP`, which a client can set itself if it can reach the app, or to the shared `"unknown"` bucket — in that case one attacker's 40 failures lock the IP bucket for **everyone**. `0` is acceptable on a developer laptop only.
+2. **The app must only be reachable through Caddy.** No published app port in `docker-compose.prod.yml` (check with `docker compose -f docker-compose.prod.yml ps` and `ss -lntp`); otherwise the header can be forged by connecting to the app directly.
+3. **Verify on the real server `[HUMAN]`** (cannot be verified from a laptop):
+   - From a machine outside the VPS send 2–3 wrong logins to `https://$DOMAIN/login` with a forged header, e.g. `curl -s -o /dev/null -H 'X-Forwarded-For: 1.2.3.4' -X POST …` (use the form/action your browser uses, or just a browser).
+   - As the DB owner: `SELECT scope, left(key_hash,8) AS k, failure_count FROM login_attempts ORDER BY updated_at DESC;`
+   - Expected: the `ip` row's hash prefix is the **same** whether or not you forge a leftmost value, and it changes only when you connect from a different real address. If it changes with the forged value, `TRUSTED_PROXY_HOPS` or the proxy chain is wrong — stop and fix before go-live.
+   - Entries contain hashes only (no e-mails or IPs in clear text).
+4. **Policy facts to know:** 5 failures per account and 40 per IP per 15 minutes, with exponential backoff (`min(2^(n-1) s, 15 min)`) per bucket. Because the IP bucket also backs off, **about 10 failures from one address delay all users behind that address for 8+ minutes** (offices behind one NAT share it). Product decision: keep, or raise the IP ceiling / soften the IP backoff.
+5. **Targeted lockout:** anyone can lock a known account for the rest of the window by failing 5 logins (no CAPTCHA/MFA in v1). Break-glass for an administrator locked out: `DELETE FROM login_attempts WHERE scope = 'account';` as the DB owner (keys are hashed, so single accounts cannot be selected by e-mail), then log in.
+6. **Fail-closed:** if the limiter cannot read the table (database error, or `SESSION_SECRET` missing/<32 chars) logins are refused with the generic "invalid email or password" and `LOGIN_RATE_LIMIT_UNAVAILABLE` is logged (no personal data). Watch for that code in the logs / GlitchTip after every deploy.
+7. **Rotating `SESSION_SECRET`** signs everyone out and orphans existing rate-limit rows (they expire within 15 minutes). Do it in a quiet window.
+8. **Table growth:** expired rows are removed opportunistically (about 1 % of recorded failures trigger a cleanup). If you ever want a hard bound, a daily `DELETE FROM login_attempts WHERE window_started_at < now() - interval '1 hour';` is safe.
+9. **Open follow-up (app change, not in this branch):** log a startup warning in production when `TRUSTED_PROXY_HOPS` is `0`.
 
 ### 6. Backups & digest scheduling — `[HUMAN]` (units not enabled by this agent)
 
@@ -127,6 +148,9 @@ curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
 - [ ] One successful `verify-restore.sh` drill logged
 - [ ] Email provider DPA / DNS (SPF/DKIM) if digest enabled
 - [ ] Break-glass admin recovery known to more than one person
+- [ ] `TRUSTED_PROXY_HOPS=1` set; forged `X-Forwarded-For` test done on the real server (section above)
+- [ ] App reachable only through Caddy (no published app port)
+- [ ] `LOGIN_RATE_LIMIT_UNAVAILABLE` not present in logs after first bring-up
 
 ## Local verification (developer laptop)
 
