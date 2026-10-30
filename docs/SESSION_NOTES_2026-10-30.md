@@ -50,3 +50,12 @@ Next schema change number: **0030** (e.g. Arabic/RTL if revived).
 - Always pass `--env-file .env.production` to compose commands after removing `env_file` from `app`
 - Bootstrap admin: override migrate entrypoint; use **owner** `DATABASE_URL`; do not print passwords
 - Local Caddy: `DOMAIN=http://localhost` (plain HTTP, no ACME)
+
+## Update — end of day (image hardening)
+
+- Branch `cursor/image-hardening` committed locally: `955a2c0` (on top of prod-ready `edfd851`). Not pushed.
+- Changes: Node base `22.23.4-bookworm-slim` (app + migrate), npm/npx/corepack stripped from app runtime, apt upgrade, Caddy `2.11.7-alpine`, Trivy gate `ignore-unfixed: true`, pinned actions (`trivy-action v0.36.0`, `checkout v4.4.0`, `setup-buildx v3.11.1` — tags confirmed to exist), empty `.trivyignore`, "Image update policy" in DEPLOY/RUNBOOK.
+- Cursor-reported (not re-run by reviewer): Trivy 114H/9C -> 56H (all unfixed OS)/1C (CVE-2023-45853 zlib1g, unfixed); image 448 MB; tests 304 unit / 63 integration; both `npm audit` gates exit 0.
+- Unverified by reviewer: Docker/Trivy runs, caddy 2.11.7 tag in registry.
+- Open: Postgres 17.x minor bump (after backup); owner decisions (a)-(e) above; legal/privacy review; VPS human-only items.
+- Push order: rls-phase1 -> deps-security -> rls-phase2 -> fix-access-500s -> auth-hardening -> indexes-and-cleanups -> pg-error-handling -> a11y-pass -> dev-deps-security -> prod-ready -> image-hardening.
