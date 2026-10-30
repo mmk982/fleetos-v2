@@ -2,14 +2,17 @@
  * Side drawer (desktop) / full-screen sheet (mobile).
  *
  * Breakpoint switch is CSS-only via `md:` so resize does not flash
- * (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 5). Uses logical `end-0` so
- * the panel mirrors correctly in RTL. Escape closes; body scroll locks while
- * open. Full Tab focus-trap deferred until Task 9.
+ * (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 5). Escape closes; body
+ * scroll locks; Tab is trapped; opener focus restored; app shell marked
+ * inert while open (see `useDialogA11y`).
  */
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { useDialogA11y } from "@/lib/a11y/use-dialog-a11y";
+import { useIsClient } from "@/lib/a11y/use-is-client";
 
 export function Drawer({
   open,
@@ -22,28 +25,24 @@ export function Drawer({
   title: string;
   children: ReactNode;
 }) {
+  const isClient = useIsClient();
   const titleId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onClose]);
+  useDialogA11y({
+    open,
+    ready: isClient,
+    onClose,
+    containerRef,
+    initialFocusRef: closeRef,
+  });
 
-  if (!open) return null;
+  if (!open || !isClient) return null;
 
-  return (
+  return createPortal(
     <div
+      ref={containerRef}
       className="fixed inset-0 z-50"
       role="dialog"
       aria-modal="true"
@@ -84,6 +83,7 @@ export function Drawer({
         </div>
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

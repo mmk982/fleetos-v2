@@ -159,7 +159,7 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                   >
                     <Identifier>{v.name}</Identifier>
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
+                  <div className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
                       <span className="text-[var(--text-tertiary)]">IMO · </span>
                       <Identifier mono>{formatImo(v.imoNumber)}</Identifier>
@@ -168,7 +168,7 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                       <span className="text-[var(--text-tertiary)]">Flag · </span>
                       {v.flagState ?? "—"}
                     </div>
-                  </dl>
+                  </div>
                 </li>
               ))}
             </ul>

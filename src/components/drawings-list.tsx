@@ -161,7 +161,7 @@ export function DrawingsList({
                   <th className="px-4 py-3 font-medium">Vessel</th>
                   <th className="px-4 py-3 font-medium">Category</th>
                   <th className="px-4 py-3 font-medium">Revision</th>
-                  <th className="px-4 py-3 font-medium" />
+                  <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">

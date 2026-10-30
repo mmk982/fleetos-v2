@@ -18,7 +18,8 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-tertiary: #64748b;
-  --text-muted: #94a3b8;
+  /* Was #94a3b8 (2.56:1 on white). Stepped to tertiary value for WCAG AA. */
+  --text-muted: #64748b;
   --font-latin: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-arabic: var(--font-tajawal), var(--font-inter), ui-sans-serif,
     system-ui, sans-serif;
@@ -46,7 +47,8 @@
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
-  --text-muted: #64748b;
+  /* Was #64748b (3.75:1 on card). Stepped to tertiary value for WCAG AA. */
+  --text-muted: #94a3b8;
   --tone-blue-bg: rgba(30, 58, 138, 0.3);
   --tone-blue-fg: #60a5fa;
   --tone-orange-bg: rgba(124, 45, 18, 0.3);
@@ -91,4 +93,15 @@ html[dir="rtl"] body {
 
 .nums {
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

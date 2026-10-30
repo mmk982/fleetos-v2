@@ -79,7 +79,7 @@ export default async function InsuranceDetailPage(props: PageProps) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/insurance/${row.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
           >
             Edit
           </Link>

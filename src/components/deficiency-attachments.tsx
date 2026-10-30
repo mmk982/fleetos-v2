@@ -78,6 +78,7 @@ export function DeficiencyAttachments({ deficiencyId, attachments }: Props) {
           id="file"
           name="file"
           type="file"
+          aria-label="Choose file to upload"
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
           required
           className={inputClass}

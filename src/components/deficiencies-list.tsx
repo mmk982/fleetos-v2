@@ -288,7 +288,7 @@ export function DeficienciesList({
                   >
                     {row.title}
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
+                  <div className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
                       <span className="text-[var(--text-tertiary)]">Vessel · </span>
                       <Identifier>{row.vesselName}</Identifier>
@@ -297,7 +297,7 @@ export function DeficienciesList({
                       <span className="text-[var(--text-tertiary)]">Due · </span>
                       {row.dueDate ?? "—"}
                     </div>
-                  </dl>
+                  </div>
                 </li>
               ))}
             </ul>

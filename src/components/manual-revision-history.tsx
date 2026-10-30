@@ -46,7 +46,7 @@ export function ManualRevisionHistory({
               <th className="px-4 py-3 font-medium">File</th>
               <th className="px-4 py-3 font-medium">Uploaded by</th>
               <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium" />
+              <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">

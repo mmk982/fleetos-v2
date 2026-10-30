@@ -2,12 +2,14 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 const VARIANTS = {
   primary:
-    "bg-[var(--accent)] text-white shadow-xs hover:opacity-90 hover:shadow-md hover:-translate-y-px active:translate-y-0",
+    // Dark accent (#60a5fa) fails AA with white; use page ink token instead.
+    "bg-[var(--accent)] text-white shadow-xs hover:opacity-90 hover:shadow-md hover:-translate-y-px active:translate-y-0 dark:text-[var(--bg-page)]",
   secondary:
     "border border-[var(--border-strong)] bg-[var(--bg-card)] text-[var(--text-secondary)] shadow-xs hover:bg-[var(--bg-page)] hover:shadow-md hover:-translate-y-px",
   ghost:
     "text-[var(--text-secondary)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)]",
-  destructive: "bg-[var(--error)] text-white shadow-xs hover:opacity-90",
+  destructive:
+    "bg-[var(--error)] text-white shadow-xs hover:opacity-90 dark:text-[var(--bg-page)]",
 } as const;
 
 const SIZES = {
@@ -33,7 +35,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       {...props}
-      className={`rounded-md font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={`rounded-md font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
     />
   );
 });

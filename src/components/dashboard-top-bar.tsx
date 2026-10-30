@@ -84,7 +84,7 @@ export async function DashboardTopBar() {
         </time>
         <ThemeToggle />
         <span
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-medium text-white"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-medium text-white dark:text-[var(--bg-page)]"
           aria-hidden="true"
           title={session.user.name}
         >

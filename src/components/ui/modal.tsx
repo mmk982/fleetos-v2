@@ -1,13 +1,16 @@
 /**
  * Modal — bottom sheet on mobile, centered dialog on desktop.
  *
- * Same Escape / body-scroll-lock pattern as {@link Drawer}. Callers whose
- * content has no visible heading should pass `ariaLabel`
- * (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 5). Focus trap deferred to Task 9.
+ * Same Escape / body-scroll-lock / focus-trap pattern as {@link Drawer}.
+ * Callers whose content has no visible heading should pass `ariaLabel`
+ * (`DESIGN_SYSTEM_IMPLEMENTATION_PLAN.md` Task 5).
  */
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useDialogA11y } from "@/lib/a11y/use-dialog-a11y";
+import { useIsClient } from "@/lib/a11y/use-is-client";
 
 export function Modal({
   open,
@@ -21,27 +24,23 @@ export function Modal({
   /** Accessible name when children do not start with a labelled heading. */
   ariaLabel?: string;
 }) {
+  const isClient = useIsClient();
+  const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onClose]);
+  useDialogA11y({
+    open,
+    ready: isClient,
+    onClose,
+    containerRef,
+    initialFocusRef: panelRef,
+  });
 
-  if (!open) return null;
+  if (!open || !isClient) return null;
 
-  return (
+  return createPortal(
     <div
+      ref={containerRef}
       className="fixed inset-0 z-50 flex items-end justify-center md:items-center"
       role="dialog"
       aria-modal="true"
@@ -63,6 +62,7 @@ export function Modal({
         />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

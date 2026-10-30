@@ -191,7 +191,7 @@ export function RemindersList({
         </div>
         <Link
           href="/dashboard/reminders/new"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
         >
           Add reminder
         </Link>
@@ -220,7 +220,7 @@ export function RemindersList({
                   <th className="px-4 py-3 font-medium">Priority</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Related</th>
-                  <th className="px-4 py-3 font-medium" />
+                  <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">

@@ -784,7 +784,7 @@ export function Drawer({
 
 `inset-y-0 end-0` (logical `end`, not `right`) is what makes this slide from the correct trailing edge in both LTR and RTL per §4.1 ("right in LTR, left in RTL — a true mirror").
 
-**Not yet handled: a real focus trap** (Tab/Shift+Tab cycling within the open drawer rather than escaping to the page behind it). `role="dialog"`/`aria-modal`/Escape/scroll-lock above cover the most common WCAG findings cheaply — the accessibility gap Cursor's review flagged; a full focus trap is enough additional logic (or a small dependency) that it's called out here explicitly rather than silently included — add one (hand-rolled or a small library) before Task 9's accessibility pass, not after.
+**Focus trap: DONE (2026-10-30, `cursor/a11y-pass`).** Tab/Shift+Tab cycle, return-focus, `[data-app-shell]` inert, nested dialog stack — `src/lib/a11y/*` + Drawer/Modal portals. Evidence: `docs/ACCESSIBILITY.md` Part A; tests `src/lib/a11y/*.test.ts`.
 
 - [x] **Step 4: Modal (centered desktop / bottom sheet mobile, per §4.2 and §4.4)**
 
@@ -844,7 +844,7 @@ export function Modal({
 }
 ```
 
-**Same focus-trap caveat as Drawer** — Tab cycling within the open modal isn't implemented here either; add before Task 9's accessibility pass.
+**Focus trap: DONE** — shared with Drawer via `useDialogA11y` (`docs/ACCESSIBILITY.md`).
 
 - [x] **Step 5: Commit**
 
@@ -895,28 +895,12 @@ git commit -m "feat(design-system): retrofit Vessels list to canonical list patt
 
 ---
 
-### Task 8: Vessels add/edit retrofit to the Drawer pattern
+### Task 8: Vessels add/edit retrofit to the Drawer pattern — **SUPERSEDED (2026-10-30)**
 
-Currently `/dashboard/vessels/new` and `/dashboard/vessels/[id]/edit` are full page navigations (see `src/app/dashboard/vessels/new/page.tsx`, `src/app/dashboard/vessels/[id]/edit/page.tsx`). Per §4.1, add/edit must appear as a drawer **over** the list (dimmed backdrop showing the list, search/filter/export row included, behind it) — not a separate page.
+**Recommendation (owner may overrule):** do **not** implement Next.js `@drawer` parallel/intercepting routes for vessels. Sixteen modules already use in-page `Drawer` via `new-*-drawer.tsx` / `edit-*-drawer.tsx`; vessel add/edit is admin-only. Downsides flagged in-plan (route complexity, hard-refresh behaviour, close-semantics/`redirect` coupling) outweigh the consistency upside. Prefer wrapping vessel forms in the existing `Drawer` primitive on full pages (same pattern as crew/deficiencies) if visual parity is needed — without intercepting routes. Evidence: `docs/ACCESSIBILITY.md` Part D.
 
-**Files:**
-- Modify: `src/app/dashboard/vessels/layout.tsx` (create if it doesn't exist — check first), `src/app/dashboard/vessels/new/page.tsx`, `src/app/dashboard/vessels/[id]/edit/page.tsx`
-- The concrete mechanism is Next.js App Router **parallel + intercepting routes** (a `@drawer` slot in `vessels/layout.tsx`, with `(.)new/page.tsx` and `(.)[id]/edit/page.tsx` intercepting the direct-navigation versions) — this is the standard "modal over a list" pattern in App Router, but confirm the exact folder-naming convention against `node_modules/next/dist/docs/` for Next 16.2.4 before building it (per the Global Constraints Next-16 warning) rather than assuming it's unchanged from Next 13/14 docs.
-
-**Close-semantics decision (flagged by Cursor's review, decided by Eng.MHD this session):** `createVesselAction`/`updateVesselAction` (`src/modules/vessels/actions.ts`) currently `redirect()` to the vessel detail page on success (`${vesselsPath}/${vessel.id}`) — a leftover from the pre-drawer, full-page-navigation flow. Decision: **redirect to the vessels list (`vesselsPath`) instead of the detail page**, not a return-state-and-self-close pattern. Concretely, as part of Step 3 below, change both `redirect(\`${vesselsPath}/${vessel.id}\`)` (create, currently line 96) and `redirect(\`${vesselsPath}/${id}\`)` (update, currently line 161) to `redirect(vesselsPath)`, and update the `VesselActionState` doc comment (currently says callers "read [the created/updated row] via `redirect()` to the detail page instead" — no longer accurate once this lands). This is a smaller change than a full return-state/self-close rework, at the cost of still doing a full navigation/reload rather than an in-place close — acceptable per Eng.MHD's decision. Cursor also recommended treating Vessels as a single pilot of the intercepting-route pattern before Task 10 replicates it 12 more times; this redirect-target change is part of that pilot.
-
-- [ ] **Step 1:** Read the routing/parallel-routes doc under `node_modules/next/dist/docs/` and confirm the intercepting-route convention (`(.)folder`, `(..)folder`) is unchanged in 16.2.4.
-- [ ] **Step 2:** Add the `@drawer` parallel slot to `src/app/dashboard/vessels/layout.tsx`, rendering `<Drawer>` (Task 5) around the intercepted content when present, `null` otherwise.
-- [ ] **Step 2a: Add `src/app/dashboard/vessels/@drawer/default.tsx` returning `null`.** Gap caught in Cursor's review: any named parallel slot (`@drawer`) that isn't matched by the current URL needs a `default.tsx`, or Next.js 404s when navigating to a sibling route under `vessels/` (e.g. the list itself, or `[id]/page.tsx`) that has no corresponding `@drawer` segment. Without this file the retrofit breaks plain list navigation, not just the drawer case.
-- [ ] **Step 3:** Move the `<VesselForm mode="create">` / `<VesselForm mode="edit">` markup into the intercepted routes; keep the existing `src/modules/vessels/actions.ts` Server Actions unchanged — this is a presentation-layer change, not a data-layer one.
-- [ ] **Step 4:** Confirm direct navigation to `/dashboard/vessels/new` (e.g. a hard refresh, or a shared link) still renders a full, usable page — the non-intercepted fallback route — not a broken drawer-with-no-list-behind-it.
-- [ ] **Step 5: Verify** open/close, backdrop dimming, and the mobile full-screen-sheet variant in light/dark × EN/AR.
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/app/dashboard/vessels/
-git commit -m "feat(design-system): retrofit Vessels add/edit to Drawer pattern"
-```
+- [x] **SUPERSEDED:** `@drawer` intercepting-route Steps 1–6 — not implemented; see recommendation above.
+- [ ] *(Optional follow-up, not intercepting routes)* Present vessel create/edit inside `<Drawer>` on the existing pages if product wants list-behind dimming without App Router slots.
 
 ---
 
@@ -924,9 +908,9 @@ git commit -m "feat(design-system): retrofit Vessels add/edit to Drawer pattern"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1:** For each of Login, Vessels list, Vessels add/edit drawer — check all 8 combinations: {light, dark} × {EN, AR} × {desktop ≥1280px, mobile 375-414px}. Use the `design:accessibility-review` skill for a WCAG 2.1 AA pass per `DESIGN_HANDOFF.md` §6 (not yet formally audited anywhere in the project).
+- [x] **Step 1:** WCAG 2.1 AA axe + manual pass on the real pages — matrix is **4 combinations** (English-only): {light, dark} × {desktop ≥1280px, mobile ~390px}. Artifact: `docs/ACCESSIBILITY.md` (+ `docs/_a11y-axe-before.json` / `_a11y-axe-after.json`). Remaining owner decision: StatusPill brand colour contrast on tinted fills.
 - [x] **Step 2:** Confirm no component still uses a physical-direction Tailwind class (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`, `border-l-`, `border-r-`) where a logical one (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `border-s-`, `border-e-`) belongs — grep for these across the files touched in Tasks 4-8.
-- [ ] **Step 3:** File any gaps found as follow-up items rather than silently patching around them mid-QA. (PARTIAL: some gaps in PLAN_REVIEW only)
+- [x] **Step 3:** Gaps filed in `docs/ACCESSIBILITY.md` (owner contrast decisions, touch targets, per-route titles, no screen-reader run).
 
 ---
 

@@ -79,7 +79,7 @@ export default async function CertificatesPage(props: {
         {canWrite ? (
           <Link
             href="/dashboard/certificates/new"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
           >
             Add certificate
           </Link>

@@ -86,7 +86,7 @@ export function UsersRolesPanel({
               <th className="px-4 py-3 font-medium">Role</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Last login</th>
-              <th className="px-4 py-3 font-medium" />
+              <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">

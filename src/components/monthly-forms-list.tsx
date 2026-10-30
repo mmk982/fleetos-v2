@@ -246,7 +246,7 @@ export function MonthlyFormsList({
           {canCreateAdHoc ? (
             <Link
               href="/dashboard/monthly-forms/new"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
             >
               Add ad-hoc form
             </Link>
@@ -352,7 +352,7 @@ export function MonthlyFormsList({
                         <th className="px-2 py-2 font-medium">Template</th>
                         <th className="px-2 py-2 font-medium">Frequency</th>
                         <th className="px-2 py-2 font-medium">Active</th>
-                        <th className="px-2 py-2 font-medium" />
+                        <th className="px-2 py-2 font-medium"><span className="sr-only">Actions</span></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border)]">

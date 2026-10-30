@@ -89,6 +89,7 @@ export function InsuranceAttachments({
           id="file"
           name="file"
           type="file"
+          aria-label="Choose file to upload"
           accept=".pdf,image/jpeg,image/png,application/pdf"
           required
           className={inputClass}

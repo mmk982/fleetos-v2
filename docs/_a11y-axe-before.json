@@ -1,0 +1,2873 @@
+{
+  "generatedAt": "2026-10-30T11:45:35.504Z",
+  "phase": "before",
+  "byRule": {
+    "color-contrast": 1028,
+    "label": 8,
+    "empty-table-header": 8,
+    "definition-list": 240,
+    "region": 2
+  },
+  "results": [
+    {
+      "page": "login",
+      "path": "http://localhost:3000/login",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "dashboard",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 29
+        }
+      ]
+    },
+    {
+      "page": "vessels-list",
+      "path": "http://localhost:3000/dashboard/vessels",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 15
+        }
+      ]
+    },
+    {
+      "page": "vessel-detail",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 17
+        }
+      ]
+    },
+    {
+      "page": "certificates-list",
+      "path": "http://localhost:3000/dashboard/certificates",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 101
+        }
+      ]
+    },
+    {
+      "page": "certificates-detail",
+      "path": "http://localhost:3000/dashboard/certificates/7fbde685-ed4a-47fd-aed6-520e774ad723",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 25
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "certificates-new",
+      "path": "http://localhost:3000/dashboard/certificates/new",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "crew-list",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 10
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(5)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-detail",
+      "path": "http://localhost:3000/dashboard/crew/eaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 14
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file-faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-drawer",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 10
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(5)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-list",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 16
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-drawer",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 16
+        }
+      ]
+    },
+    {
+      "page": "monthly-forms-list",
+      "path": "http://localhost:3000/dashboard/monthly-forms",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 5
+        }
+      ]
+    },
+    {
+      "page": "alerts",
+      "path": "http://localhost:3000/dashboard/alerts",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 44
+        }
+      ]
+    },
+    {
+      "page": "notifications",
+      "path": "http://localhost:3000/dashboard/notifications",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "settings-company",
+      "path": "http://localhost:3000/dashboard/settings/company-profile",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "settings-users",
+      "path": "http://localhost:3000/dashboard/settings/users",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 86
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(6)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "settings-system-lists",
+      "path": "http://localhost:3000/dashboard/settings/system-lists",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "confirm-delete-modal",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "light-desktop",
+      "theme": "light",
+      "viewport": "1280x800",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "login",
+      "path": "http://localhost:3000/login",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".transition-all"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "dashboard",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 18
+        }
+      ]
+    },
+    {
+      "page": "vessels-list",
+      "path": "http://localhost:3000/dashboard/vessels",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 13
+        }
+      ]
+    },
+    {
+      "page": "vessel-detail",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 18
+        }
+      ]
+    },
+    {
+      "page": "certificates-list",
+      "path": "http://localhost:3000/dashboard/certificates",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 14
+        }
+      ]
+    },
+    {
+      "page": "certificates-detail",
+      "path": "http://localhost:3000/dashboard/certificates/7fbde685-ed4a-47fd-aed6-520e774ad723",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 28
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "certificates-new",
+      "path": "http://localhost:3000/dashboard/certificates/new",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        }
+      ]
+    },
+    {
+      "page": "crew-list",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(5)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-detail",
+      "path": "http://localhost:3000/dashboard/crew/eaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].px-2"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 18
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file-faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-drawer",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(5)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-list",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 15
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-drawer",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 15
+        }
+      ]
+    },
+    {
+      "page": "monthly-forms-list",
+      "path": "http://localhost:3000/dashboard/monthly-forms",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].text-\\[11px\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 5
+        }
+      ]
+    },
+    {
+      "page": "alerts",
+      "path": "http://localhost:3000/dashboard/alerts",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[11px\\].text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        }
+      ]
+    },
+    {
+      "page": "notifications",
+      "path": "http://localhost:3000/dashboard/notifications",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "settings-company",
+      "path": "http://localhost:3000/dashboard/settings/company-profile",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        }
+      ]
+    },
+    {
+      "page": "settings-users",
+      "path": "http://localhost:3000/dashboard/settings/users",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.text-\\[var\\(--text-muted\\)\\].uppercase"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 7
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(6)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "settings-system-lists",
+      "path": "http://localhost:3000/dashboard/settings/system-lists",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > .py-1.uppercase.tracking-wide"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 6
+        }
+      ]
+    },
+    {
+      "page": "confirm-delete-modal",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "dark-desktop",
+      "theme": "dark",
+      "viewport": "1280x800",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".mt-5 > .bg-\\[var\\(--error\\)\\].hover\\:opacity-90.shadow-xs"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.69 (foreground color: #ffffff, background color: #fb7185, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "login",
+      "path": "http://localhost:3000/login",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "dashboard",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".py-1.gap-1\\.5.text-\\[13px\\]:nth-child(2) > .ring-1.ring-\\[var\\(--warning\\)\\]\\/40.dark\\:ring-\\[var\\(--warning\\)\\]\\/40"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.89 (foreground color: #d97706, background color: #fdf2ea, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".py-1.gap-1\\.5.text-\\[13px\\]:nth-child(3) > .bg-\\[color-mix\\(in_oklab\\,var\\(--warning\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--warning\\)_25\\%\\,white\\)\\].dark\\:border-\\[var\\(--warning\\)\\]\\/40"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.89 (foreground color: #d97706, background color: #fdf2ea, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 23
+        }
+      ]
+    },
+    {
+      "page": "vessels-list",
+      "path": "http://localhost:3000/dashboard/vessels",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 3
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 3
+        }
+      ]
+    },
+    {
+      "page": "vessel-detail",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".rounded-xl.border-zinc-200.bg-white:nth-child(1) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".rounded-xl.border-zinc-200.bg-white:nth-child(2) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".rounded-xl.border-zinc-200.bg-white:nth-child(3) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 11
+        }
+      ]
+    },
+    {
+      "page": "certificates-list",
+      "path": "http://localhost:3000/dashboard/certificates",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .relative > .end-0.top-0.max-w-\\[55\\%\\] > .bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--error\\)_25\\%\\,white\\)\\].dark\\:bg-\\[var\\(--error\\)\\]\\/20"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .relative > .end-0.top-0.max-w-\\[55\\%\\] > .bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--error\\)_25\\%\\,white\\)\\].dark\\:bg-\\[var\\(--error\\)\\]\\/20"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .relative > .end-0.top-0.max-w-\\[55\\%\\] > .bg-\\[color-mix\\(in_oklab\\,var\\(--success\\)_10\\%\\,white\\)\\].text-\\[var\\(--success\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--success\\)_25\\%\\,white\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 87
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            }
+          ],
+          "nodeCount": 113
+        }
+      ]
+    },
+    {
+      "page": "certificates-detail",
+      "path": "http://localhost:3000/dashboard/certificates/7fbde685-ed4a-47fd-aed6-520e774ad723",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".bg-white.py-3.dark\\:bg-zinc-950:nth-child(1) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".bg-white.py-3.dark\\:bg-zinc-950:nth-child(2) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".bg-white.py-3.dark\\:bg-zinc-950:nth-child(3) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 19
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "certificates-new",
+      "path": "http://localhost:3000/dashboard/certificates/new",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "crew-list",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 4
+        }
+      ]
+    },
+    {
+      "page": "crew-detail",
+      "path": "http://localhost:3000/dashboard/crew/eaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "div:nth-child(1) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a3b8, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(2) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a3b8, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "div:nth-child(3) > dt"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a3b8, background color: #f8fafc, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 8
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file-faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-drawer",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .items-start.gap-2.justify-between > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 4
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-list",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-drawer",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .end-4.top-4.absolute > .gap-1\\.5.py-0\\.5.whitespace-nowrap"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "monthly-forms-list",
+      "path": "http://localhost:3000/dashboard/monthly-forms",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".gap-1\\.5"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "alerts",
+      "path": "http://localhost:3000/dashboard/alerts",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .items-start.justify-between.gap-2 > .bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--error\\)_25\\%\\,white\\)\\].dark\\:bg-\\[var\\(--error\\)\\]\\/20"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .items-start.justify-between.gap-2 > .bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--error\\)_25\\%\\,white\\)\\].dark\\:bg-\\[var\\(--error\\)\\]\\/20"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .items-start.justify-between.gap-2 > .bg-\\[color-mix\\(in_oklab\\,var\\(--error\\)_10\\%\\,white\\)\\].border-\\[color-mix\\(in_oklab\\,var\\(--error\\)_25\\%\\,white\\)\\].dark\\:bg-\\[var\\(--error\\)\\]\\/20"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.12 (foreground color: #e11d48, background color: #ffecec, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 38
+        }
+      ]
+    },
+    {
+      "page": "notifications",
+      "path": "http://localhost:3000/dashboard/notifications",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "settings-company",
+      "path": "http://localhost:3000/dashboard/settings/company-profile",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "settings-users",
+      "path": "http://localhost:3000/dashboard/settings/users",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "tr:nth-child(1) > td:nth-child(4) > .text-\\[11px\\].border-\\[color-mix\\(in_oklab\\,var\\(--success\\)_25\\%\\,white\\)\\].bg-\\[color-mix\\(in_oklab\\,var\\(--success\\)_10\\%\\,white\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "tr:nth-child(2) > td:nth-child(4) > .text-\\[11px\\].border-\\[color-mix\\(in_oklab\\,var\\(--success\\)_25\\%\\,white\\)\\].bg-\\[color-mix\\(in_oklab\\,var\\(--success\\)_10\\%\\,white\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "tr:nth-child(3) > td:nth-child(4) > .text-\\[11px\\].border-\\[color-mix\\(in_oklab\\,var\\(--success\\)_25\\%\\,white\\)\\].bg-\\[color-mix\\(in_oklab\\,var\\(--success\\)_10\\%\\,white\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.35 (foreground color: #059669, background color: #eaf4ef, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 80
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(6)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "settings-system-lists",
+      "path": "http://localhost:3000/dashboard/settings/system-lists",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "confirm-delete-modal",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "page": "mobile-nav-overlay",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "light-mobile",
+      "theme": "light",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(1) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(2) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(3) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.56 (foreground color: #94a3b8, background color: #ffffff, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 29
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": [
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > .h-14.border-b.justify-between > .text-lg.tracking-tight[href$=\"dashboard\"]"
+              ],
+              "summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "login",
+      "path": "http://localhost:3000/login",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".transition-all"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "dashboard",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "section:nth-child(3) > .overflow-x-auto.rounded-xl.border-\\[var\\(--border\\)\\] > table > thead > tr > th:nth-child(1)"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 9.0pt (12px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "section:nth-child(3) > .overflow-x-auto.rounded-xl.border-\\[var\\(--border\\)\\] > table > thead > tr > th:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 9.0pt (12px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 13
+        }
+      ]
+    },
+    {
+      "page": "vessels-list",
+      "path": "http://localhost:3000/dashboard/vessels",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "a[href$=\"new\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 3
+        }
+      ]
+    },
+    {
+      "page": "vessel-detail",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".h-10"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            },
+            {
+              "target": [
+                ".bg-\\[var\\(--error\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.69 (foreground color: #ffffff, background color: #fb7185, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 13
+        }
+      ]
+    },
+    {
+      "page": "certificates-list",
+      "path": "http://localhost:3000/dashboard/certificates",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                "a[href$=\"new\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            },
+            {
+              "target": [
+                "li:nth-child(3) > .relative > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span"
+            }
+          ],
+          "nodeCount": 113
+        }
+      ]
+    },
+    {
+      "page": "certificates-detail",
+      "path": "http://localhost:3000/dashboard/certificates/7fbde685-ed4a-47fd-aed6-520e774ad723",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".h-10"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            },
+            {
+              "target": [
+                ".bg-\\[var\\(--error\\)\\].shadow-xs.hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.69 (foreground color: #ffffff, background color: #fb7185, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 23
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "certificates-new",
+      "path": "http://localhost:3000/dashboard/certificates/new",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".shadow-xs"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "crew-list",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "crew-detail",
+      "path": "http://localhost:3000/dashboard/crew/eaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".h-10"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            },
+            {
+              "target": [
+                ".bg-\\[var\\(--error\\)\\].hover\\:opacity-90.shadow-xs:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.69 (foreground color: #ffffff, background color: #fb7185, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 13
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "help": "Form elements must have labels",
+          "nodes": [
+            {
+              "target": [
+                "#file-faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "crew-drawer",
+      "path": "http://localhost:3000/dashboard/crew",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-list",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "deficiencies-drawer",
+      "path": "http://localhost:3000/dashboard/deficiencies",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(1) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > span, div > #text"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "monthly-forms-list",
+      "path": "http://localhost:3000/dashboard/monthly-forms",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "alerts",
+      "path": "http://localhost:3000/dashboard/alerts",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".mt-10 > .text-\\[var\\(--text-muted\\)\\]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.23 (foreground color: #64748b, background color: #020617, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "notifications",
+      "path": "http://localhost:3000/dashboard/notifications",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "settings-company",
+      "path": "http://localhost:3000/dashboard/settings/company-profile",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".hover\\:opacity-90"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        }
+      ]
+    },
+    {
+      "page": "settings-users",
+      "path": "http://localhost:3000/dashboard/settings/users",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".shadow-xs"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 2
+        },
+        {
+          "id": "empty-table-header",
+          "impact": "minor",
+          "help": "Table header text should not be empty",
+          "nodes": [
+            {
+              "target": [
+                "th:nth-child(6)"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have text that is visible to screen readers"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "settings-system-lists",
+      "path": "http://localhost:3000/dashboard/settings/system-lists",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".w-7"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.54 (foreground color: #ffffff, background color: #60a5fa, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "confirm-delete-modal",
+      "path": "http://localhost:3000/dashboard/vessels/caab021a-85af-45cd-aa90-9eb9c9c3a6c4",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".mt-5 > .bg-\\[var\\(--error\\)\\].hover\\:opacity-90.shadow-xs"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.69 (foreground color: #ffffff, background color: #fb7185, font size: 10.5pt (14px), font weight: normal). E"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    },
+    {
+      "page": "mobile-nav-overlay",
+      "path": "http://localhost:3000/dashboard",
+      "combo": "dark-mobile",
+      "theme": "dark",
+      "viewport": "390x844",
+      "violationCount": 2,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(1) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(2) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            },
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > nav > div:nth-child(3) > .text-\\[11px\\].tracking-wide.py-1"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #64748b, background color: #0f172a, font size: 8.3pt (11px), font weight: normal). Ex"
+            }
+          ],
+          "nodeCount": 18
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": [
+            {
+              "target": [
+                ".inset-y-0 > .border-e.bg-\\[var\\(--bg-sidebar\\)\\].h-full > .h-14.border-b.justify-between > .text-lg.tracking-tight[href$=\"dashboard\"]"
+              ],
+              "summary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ],
+          "nodeCount": 1
+        }
+      ]
+    }
+  ]
+}

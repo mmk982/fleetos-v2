@@ -368,7 +368,10 @@ export function DashboardSidebar({
             aria-hidden="true"
           />
           <div className="absolute inset-y-0 inset-s-0 w-64 shadow-lg">
-            <div className="flex h-full w-64 flex-col border-e border-[var(--border)] bg-[var(--bg-sidebar)]">
+            <nav
+              aria-label="Main navigation"
+              className="flex h-full w-64 flex-col border-e border-[var(--border)] bg-[var(--bg-sidebar)]"
+            >
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-4">
                 <Link
                   href="/dashboard"
@@ -387,7 +390,7 @@ export function DashboardSidebar({
                   ✕
                 </Button>
               </div>
-              <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3">
+              <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3">
                 {entries.map((group) => (
                   <div key={group.label}>
                     <div className="px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
@@ -442,8 +445,8 @@ export function DashboardSidebar({
                     </div>
                   </div>
                 ))}
-              </nav>
-            </div>
+              </div>
+            </nav>
           </div>
         </div>
       ) : null}

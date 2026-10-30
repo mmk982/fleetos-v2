@@ -230,7 +230,7 @@ export function AuditsList({
                   >
                     {auditTypeLabel(row.auditType)}
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
+                  <div className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
                       <span className="text-[var(--text-tertiary)]">Vessel · </span>
                       <Identifier>{row.vesselName}</Identifier>
@@ -239,7 +239,7 @@ export function AuditsList({
                       <span className="text-[var(--text-tertiary)]">Date · </span>
                       {row.auditDate}
                     </div>
-                  </dl>
+                  </div>
                 </li>
               ))}
             </ul>

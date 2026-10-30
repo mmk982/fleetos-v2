@@ -148,7 +148,7 @@ Notes:
 | 590 | Wire into dashboard layout | **DONE** | `dashboard/layout.tsx` | — |
 | 617 | Verify 4 combinations | **CANNOT VERIFY** | Manual | — |
 | 621 | Commit shell | **DONE** | In tree | — |
-| 642–789 | StatusPill, ListToolbar, Drawer, Modal | **DONE** | `components/ui/*` | Focus-trap deferred in comments |
+| 642–789 | StatusPill, ListToolbar, Drawer, Modal | **DONE** | `components/ui/*` + `src/lib/a11y/*` | Focus-trap delivered 2026-10-30 (`docs/ACCESSIBILITY.md`) |
 | 849 | Commit primitives | **DONE** | In tree | — |
 | 865 | Build login screen | **PARTIAL** | `login/page.tsx` tokenized | Defers EN/AR polish in comments |
 | 867 | Verify login 4 combos | **CANNOT VERIFY** | Manual | — |
@@ -156,8 +156,8 @@ Notes:
 | 886–887 | Vessels list + mobile cards | **DONE** | `vessels-list.tsx` ListToolbar/StatusPill/Identifier/mobile cards | — |
 | 888 | Verify vessels EN/AR | **CANNOT VERIFY** | Manual | — |
 | 889 | Commit vessels list | **DONE** | In tree | — |
-| 908–914 | `@drawer` intercepting routes | **NOT DONE** | No `src/app/dashboard/vessels/@drawer` | Add/edit remain full pages |
-| 927 | WCAG 8-combo QA | **CANNOT VERIFY** / **NOT DONE** | No audit artifact | HANDOFF notes AA not formalized |
+| 908–914 | `@drawer` intercepting routes | **SUPERSEDED** | Plan + `docs/ACCESSIBILITY.md` Part D | Prefer existing Drawer components; owner may overrule |
+| 927 | WCAG 4-combo QA (EN-only) | **DONE** (residual owner contrast) | `docs/ACCESSIBILITY.md` | Was 8-combo EN/AR; UI is English-only |
 | 928 | No physical ml/mr/pl/pr/left/right | **DONE** | Grep in `src/components`: 0 matches for those prefixes | Residual `text-left`/`text-right` ~36 |
 | 929 | File gaps as follow-ups | **PARTIAL** | Some gaps in PLAN_REVIEW; not all filed from Task 9 | — |
 | 940 | Skill → DESIGN_HANDOFF | **NOT DONE** | No skill referencing handoff primitives | — |
@@ -194,7 +194,7 @@ Notes:
 | System list seed values | Seeds exist for some lists; exact counts vs mockup unverified |
 | vessel_notes proposed | **DONE** table + Notes tab |
 
-**`PLAN_REVIEW.md` / `DESIGN_HANDOFF.md`:** open concerns still accurate for locale persistence, `@drawer`, WCAG formal audit, tablet band, Settings Reports gap.
+**`PLAN_REVIEW.md` / `DESIGN_HANDOFF.md`:** locale persistence, tablet band, Settings Reports gap still open. `@drawer` **SUPERSEDED**; WCAG formal audit recorded in `docs/ACCESSIBILITY.md` (StatusPill contrast owner decision remains).
 
 ---
 
@@ -209,8 +209,8 @@ Notes:
 | 5 | **GDPR ROPA + breach notification** written artifacts | NOT DONE | Draft short docs under `docs/` before real crew PII |
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
-| 8 | Vessels **`@drawer` intercepting routes** | NOT DONE | Implement `@drawer` **or** mark plan SUPERSEDED in favour of full-page forms |
-| 9 | Formal **WCAG / 8-combo visual QA** record | CANNOT VERIFY | Run Task 9 checklist; store results |
+| 8 | Vessels **`@drawer` intercepting routes** | **SUPERSEDED** | Owner may overrule; see `docs/ACCESSIBILITY.md` Part D |
+| 9 | Formal **WCAG / 4-combo QA** record | **DONE** (residuals) | `docs/ACCESSIBILITY.md`; decide StatusPill brand contrast |
 | 10 | Phase 8 **OWASP skill review + human sign-off** | NOT DONE / CANNOT VERIFY | Schedule security-review skill pass before go-live |
 
 ---
@@ -223,7 +223,7 @@ Notes:
 | DESIGN_HANDOFF Arabic IBM Plex Sans Arabic | Tajawal in `layout.tsx` / `globals.css` | Code |
 | DESIGN plan `NAV_GROUPS` export name | `NAV` in sidebar | Code |
 | DESIGN full-screen mobile nav | Side drawer `w-64` | Code |
-| DESIGN `@drawer` for vessels add/edit | Full pages `vessels/new`, `vessels/[id]/edit` | Code (plan unfinished) |
+| DESIGN `@drawer` for vessels add/edit | Full pages `vessels/new`, `vessels/[id]/edit` | **SUPERSEDED** — keep full pages / optional plain Drawer wrap |
 | PROJECT_PLAN 5×3 tier RBAC | Binary MODULE_PERMISSIONS (MIP Phase 6) | **MIP/code** (PROJECT_PLAN status section outdated) |
 | MIP “only vessels table today” (Task 2.1 prose) | Full multi-module schema | Prose historical; ignore |
 | Prompt/repo fact “24 migrations” | **25** `drizzle/*.sql` files (0000–0024) | Count files |

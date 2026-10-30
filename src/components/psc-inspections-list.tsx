@@ -225,7 +225,7 @@ export function PscInspectionsList({
                   >
                     {row.port}
                   </Link>
-                  <dl className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
+                  <div className="mt-2 space-y-1 text-xs text-[var(--text-secondary)]">
                     <div>
                       <span className="text-[var(--text-tertiary)]">Vessel · </span>
                       <Identifier>{row.vesselName}</Identifier>
@@ -234,7 +234,7 @@ export function PscInspectionsList({
                       <span className="text-[var(--text-tertiary)]">Date · </span>
                       {row.inspectionDate}
                     </div>
-                  </dl>
+                  </div>
                 </li>
               ))}
             </ul>

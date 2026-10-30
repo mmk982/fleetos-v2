@@ -429,7 +429,7 @@ export function CertificatesList({
                         ) : null}
                       </div>
                       {typeCell(row, false)}
-                      <dl className="mt-2 space-y-1 pe-28 text-xs text-[var(--text-secondary)]">
+                      <div className="mt-2 space-y-1 pe-28 text-xs text-[var(--text-secondary)]">
                         <div>
                           <span className="text-[var(--text-tertiary)]">Vessel · </span>
                           <Identifier>{row.vesselName}</Identifier>
@@ -438,7 +438,7 @@ export function CertificatesList({
                           <span className="text-[var(--text-tertiary)]">Number · </span>
                           <Identifier mono>{row.certificateNumber ?? "—"}</Identifier>
                         </div>
-                      </dl>
+                      </div>
                     </div>
                     {showChildren ? (
                       <ul className="mt-3 space-y-2 border-s border-[var(--border)] ps-3">

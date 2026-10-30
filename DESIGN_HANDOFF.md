@@ -178,7 +178,7 @@ Applies to: Vessels, Certificates, Deficiencies, Crew, Insurance, Manuals, ISM T
 - Icon-only buttons require an `aria-label`; decorative icons get `aria-hidden="true"`.
 - Status pills communicate meaning through both color and text label — never color alone.
 - Focus order follows visual order (top-to-bottom, leading-to-trailing edge — respecting RTL mirroring).
-- Run a full WCAG 2.1 AA pass (contrast, keyboard nav, touch target size) before final ship — flagged as a follow-up, not yet formally audited.
+- Formal WCAG 2.1 AA pass (axe + manual, English-only 4-combo matrix) recorded in `docs/ACCESSIBILITY.md` (2026-10-30). Remaining owner decision: StatusPill brand-token contrast on tinted fills; mobile 44px touch targets still partial.
 
 ---
 
@@ -224,4 +224,4 @@ Every module below has dark, light, and Arabic RTL variants at both desktop and 
 
 - Empty, loading, and error states are not individually mocked per screen (see §7) — apply the stated conventions rather than improvising per-screen.
 - Tablet breakpoint (768-1023px) is assumed to inherit desktop, not independently verified.
-- No formal WCAG audit has been run yet (see §6).
+- Formal WCAG audit recorded in `docs/ACCESSIBILITY.md` (see §6); StatusPill contrast + 44px targets remain open.

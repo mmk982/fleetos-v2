@@ -255,7 +255,7 @@ function SystemListsModal({
                 onClick={() => onActiveChange(item.key)}
                 className={`mb-0.5 h-auto w-full justify-start px-2 py-2 text-start ${
                   active === item.key
-                    ? "bg-[var(--accent)] text-white hover:bg-[var(--accent)]"
+                    ? "bg-[var(--accent)] text-white dark:text-[var(--bg-page)] hover:bg-[var(--accent)]"
                     : ""
                 }`}
               >

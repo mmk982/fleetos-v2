@@ -31,7 +31,15 @@ export default function RootLayout({
       className={`${inter.variable} ${tajawal.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {/*
+            Dialogs portal to body and mark this shell inert so the
+            page behind is removed from the tab/AT order while open.
+          */}
+          <div data-app-shell className="flex min-h-full flex-1 flex-col">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

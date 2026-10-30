@@ -185,7 +185,7 @@ export function ManualsList({
                   <th className="px-4 py-3 font-medium">Vessel</th>
                   <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Current revision</th>
-                  <th className="px-4 py-3 font-medium" />
+                  <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
