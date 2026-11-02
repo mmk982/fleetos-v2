@@ -8,7 +8,7 @@ Maritime fleet-compliance app (Next.js App Router, Drizzle ORM, PostgreSQL).
 - **Docker** (local Postgres via `docker-compose.yml`)
 - **npm** (CI runs `npm ci`)
 
-Both `package-lock.json` and `pnpm-lock.yaml` exist in the repo. CI uses `npm ci`.
+`package-lock.json` is the only lockfile. CI and the Docker build use `npm ci`; do not add `pnpm-lock.yaml`.
 
 ## Local setup
 
