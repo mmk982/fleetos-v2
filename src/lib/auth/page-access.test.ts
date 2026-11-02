@@ -97,12 +97,12 @@ describe("planMonthlyFormsPageData", () => {
 });
 
 describe("planVesselRegistryPageAccess", () => {
-  it("allows roles with vessels read/write; denies none", () => {
+  it("allows any role with vessels read/write; denies null", () => {
     expect(planVesselRegistryPageAccess("admin")).toBe("allow");
     expect(planVesselRegistryPageAccess("vessel_user")).toBe("allow");
     expect(planVesselRegistryPageAccess("management_user")).toBe("allow");
-    expect(planVesselRegistryPageAccess("superintendent")).toBe("deny");
-    expect(planVesselRegistryPageAccess("read_only")).toBe("deny");
+    expect(planVesselRegistryPageAccess("superintendent")).toBe("allow");
+    expect(planVesselRegistryPageAccess("read_only")).toBe("allow");
     expect(planVesselRegistryPageAccess(null)).toBe("deny");
   });
 });

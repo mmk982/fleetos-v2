@@ -363,9 +363,9 @@ From `cursor/prod-ready` @ `edfd851`. **No commit/push.**
 
 From `cursor/image-hardening`. **No commit/push.**
 
-- `MODULE_PERMISSIONS`: `vessel_user` / `management_user` → `vessels: "read"`; superintendent/read_only stay `"none"` (owner question).
+- `MODULE_PERMISSIONS`: `vessel_user` / `management_user` → `vessels: "read"` (own); later same day `superintendent` / `read_only` → fleet-wide read (`cursor/vessel-read-fleet-roles`).
 - App-layer scope on `listVessels` / `getVesselById` / `getVesselCount`; UI gates Add/Edit/Delete/notes; `/new`+`/edit` AccessDenied for non-writers.
 - `vessels` table **not under RLS** (documented); notes/particulars remain RLS’d.
 - StatusPill: `--success-text`/`--warning-text`/`--error-text` (≥4.5:1 light); dark unchanged brand text. Vitest contrast guard added.
-- Browser smoke: vuA / vuNone / admin vessel pages — see `docs/RLS_BROWSER_TEST.md` §14.
+- Browser smoke: vuA / vuNone / admin / super1 / ro1 — see `docs/RLS_BROWSER_TEST.md` §14 / §14.1.
 

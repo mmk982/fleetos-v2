@@ -26,7 +26,7 @@ describe("MODULE_PERMISSIONS matrix", () => {
       Partial<Record<ModuleKey, ModuleAccess>>
     > = {
       superintendent: {
-        vessels: "none",
+        vessels: "read",
         certificates: "write",
         deficiencies: "write",
         psc: "write",
@@ -83,7 +83,7 @@ describe("MODULE_PERMISSIONS matrix", () => {
         export: "none",
       },
       read_only: {
-        vessels: "none",
+        vessels: "read",
         certificates: "read",
         deficiencies: "read",
         psc: "read",
@@ -114,16 +114,14 @@ describe("MODULE_PERMISSIONS matrix", () => {
     expect(getModuleAccess(null, "certificates")).toBe("none");
   });
 
-  it("vessels: write only for admin; read for vessel_user and management_user", () => {
+  it("vessels: write only for admin; read for all other roles", () => {
     const roles = Object.keys(MODULE_PERMISSIONS) as UserRole[];
     for (const role of roles) {
       const access = MODULE_PERMISSIONS[role].vessels;
       if (role === "admin") {
         expect(access).toBe("write");
-      } else if (role === "vessel_user" || role === "management_user") {
-        expect(access).toBe("read");
       } else {
-        expect(access).toBe("none");
+        expect(access).toBe("read");
       }
     }
   });

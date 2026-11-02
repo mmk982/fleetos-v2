@@ -149,21 +149,91 @@ describe("vessel.controller access", () => {
     },
   );
 
-  it("createVessel ForbiddenError for superintendent (vessels none)", async () => {
-    await expect(
-      createVessel(
-        { userId: USER, role: "superintendent", vesselId: null },
-        { name: "X", status: "active" },
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenError);
-  });
+  it.each(["superintendent", "read_only"] as const)(
+    "listVessels returns full fleet for %s (no vessel filter)",
+    async (role) => {
+      const fleet = [vesselRow(VESSEL_A), vesselRow(VESSEL_B, "Beta")];
+      getDb.mockReturnValue({
+        select: () => ({
+          from: () => ({
+            orderBy: async () => fleet,
+          }),
+        }),
+      });
+
+      const rows = await listVessels({
+        userId: USER,
+        role,
+        vesselId: null,
+      });
+      expect(rows).toEqual(fleet);
+    },
+  );
+
+  it.each(["superintendent", "read_only"] as const)(
+    "getVesselById allows any vessel id for %s",
+    async (role) => {
+      const other = vesselRow(VESSEL_B, "Beta");
+      getDb.mockReturnValue({
+        select: () => ({
+          from: () => ({
+            where: () => ({
+              limit: async () => [other],
+            }),
+          }),
+        }),
+      });
+
+      const row = await getVesselById(
+        { userId: USER, role, vesselId: null },
+        VESSEL_B,
+      );
+      expect(row?.id).toBe(VESSEL_B);
+    },
+  );
+
+  it.each(["superintendent", "read_only"] as const)(
+    "createVessel ForbiddenError for %s (read-only vessels)",
+    async (role) => {
+      await expect(
+        createVessel(
+          { userId: USER, role, vesselId: null },
+          { name: "X", status: "active" },
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    },
+  );
+
+  it.each(["superintendent", "read_only"] as const)(
+    "updateVessel ForbiddenError for %s",
+    async (role) => {
+      await expect(
+        updateVessel(
+          { userId: USER, role, vesselId: null },
+          VESSEL_A,
+          { name: "Renamed" },
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    },
+  );
+
+  it.each(["superintendent", "read_only"] as const)(
+    "deleteVessel ForbiddenError for %s",
+    async (role) => {
+      await expect(
+        deleteVessel({ userId: USER, role, vesselId: null }, VESSEL_A),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    },
+  );
 });
 
 describe("vessel notes write remains particulars:write", () => {
-  it("documents that vessel_user/management_user cannot write notes via particulars matrix", async () => {
+  it("documents particulars access unchanged for all roles", async () => {
     const { getModuleAccess } = await import("@/lib/auth/permissions");
     expect(getModuleAccess("vessel_user", "particulars")).toBe("read");
     expect(getModuleAccess("management_user", "particulars")).toBe("read");
+    expect(getModuleAccess("read_only", "particulars")).toBe("read");
+    expect(getModuleAccess("superintendent", "particulars")).toBe("write");
     expect(getModuleAccess("admin", "particulars")).toBe("write");
   });
 });

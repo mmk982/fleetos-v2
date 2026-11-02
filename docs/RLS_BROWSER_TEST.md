@@ -633,5 +633,20 @@ Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel
 | `mgmtA` | Same read pattern as vuA | **PASS** (spot-check via same matrix after login) |
 | Console | vuA vessel pages | No app errors observed (HMR / React DevTools only) |
 
-**Owner question (unchanged):** keep `superintendent` / `read_only` at `vessels: none`?
+### 14.1 Fleet-wide vessel read — superintendent / read_only (`cursor/vessel-read-fleet-roles`) — 2026-11-02
+
+**Decision:** `superintendent` / `read_only` → `vessels: read` **fleet-wide** (office roles; no vessel filter). Still no vessel write. Particulars/notes unchanged (super write, read_only read).
+
+| Actor | Check | Result |
+|---|---|---|
+| `super1` | Sidebar **Vessels**; list A+B (+ other fleet) | **PASS**; no Add/Edit |
+| `super1` | Detail + notes tab | **PASS** — notes form + note delete visible (`particulars: write`) |
+| `super1` | `/new` | **PASS** — AccessDeniedNotice |
+| `ro1` | Sidebar **Vessels**; list A+B | **PASS**; no Add/Edit |
+| `ro1` | Notes tab | **PASS** — notes visible; no form/delete |
+| `ro1` | `/edit` | **PASS** — AccessDeniedNotice |
+| `vuA` | Regression: list still only Vessel A | **PASS** |
+| Console | super/ro/vuA vessel pages | No app errors (HMR / React DevTools only) |
+
+**Cross-org isolation:** N/A — schema is single-tenant (no org id on vessels). App-layer vessel scope unchanged for scoped roles.
 

@@ -60,10 +60,12 @@ const ALL_WRITE = {
  * `audits` was added later; defaults mirror `deficiencies` / `psc` (vessel-side
  * event log).
  *
- * `vessels` (2026-11-02 owner decision): `vessel_user` / `management_user` get
- * **read** of their assigned vessel only (app-layer scope; `vessels` table is
- * not RLS’d). Writes stay admin-only. `superintendent` / `read_only` remain
- * `none` (fleet roles already use other modules; owner may revisit).
+ * `vessels` (2026-11-02 owner decisions):
+ * - `vessel_user` / `management_user`: **read** of assigned vessel only
+ *   (app-layer scope; `vessels` table is not RLS’d).
+ * - `superintendent` / `read_only`: **read** fleet-wide (all vessels; office
+ *   roles — `requireScopedVesselId` applies no filter).
+ * - Writes stay **admin-only**. Particulars/notes permissions unchanged.
  */
 export const MODULE_PERMISSIONS: Record<
   UserRole,
@@ -71,7 +73,7 @@ export const MODULE_PERMISSIONS: Record<
 > = {
   admin: { ...ALL_WRITE },
   superintendent: {
-    vessels: "none",
+    vessels: "read",
     certificates: "write",
     deficiencies: "write",
     psc: "write",
@@ -128,7 +130,7 @@ export const MODULE_PERMISSIONS: Record<
     export: "none",
   },
   read_only: {
-    vessels: "none",
+    vessels: "read",
     certificates: "read",
     deficiencies: "read",
     psc: "read",
