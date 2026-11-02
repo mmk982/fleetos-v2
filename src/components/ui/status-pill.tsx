@@ -13,11 +13,11 @@ import {
 
 const TONE_CLASSES = {
   success:
-    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success)]",
+    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success-text)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success-text)]",
   warning:
-    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)]",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning-text)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning-text)]",
   danger:
-    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error)]",
+    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error-text)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error-text)]",
   neutral:
     "bg-[var(--tone-slate-bg)] text-[var(--tone-slate-fg)] border-[var(--border-strong)]",
 } as const;

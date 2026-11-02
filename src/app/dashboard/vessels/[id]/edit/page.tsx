@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AccessDeniedNotice } from "@/components/access-denied-notice";
 import { VesselForm } from "@/components/vessel-form";
 import { getVesselById } from "@/modules/vessels/vessel.controller";
 import { toAccessContext } from "@/lib/auth/access";
 import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
+import type { UserRole } from "@/db/schema";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -12,6 +15,15 @@ export default async function EditVesselPage(props: PageProps) {
   const session = await requireSession();
   const access = toAccessContext(session);
   const { id } = await props.params;
+
+  if (getModuleAccess(access.role as UserRole | null, "vessels") !== "write") {
+    return (
+      <AccessDeniedNotice
+        title="You don't have access to this page"
+        description="Only Admin users can edit vessels."
+      />
+    );
+  }
 
   let vessel;
   try {

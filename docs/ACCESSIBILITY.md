@@ -51,21 +51,26 @@ login, dashboard, vessels list/detail, certificates list/detail/new, crew list/d
 
 Node-level `color-contrast` counts: before **1028** → after first fix pass **557** (mostly StatusPill / brand tokens).
 
-## Remaining contrast — owner decision (do not change palette without sign-off)
+## StatusPill contrast — resolved 2026-11-02 (`cursor/vessel-read-pill-contrast`)
 
-Computed from `globals.css` tokens (WCAG 2.1 AA normal text needs ≥ 4.5:1):
+Owner decision: darken/lighten **pill text only** (new `--*-text` tokens); keep brand fills/borders/dots.
 
-| Pair | Ratio | Verdict | Nearest existing step / impact |
-|---|---:|---|---|
-| `--text-muted` light `#94a3b8` on `#fff` | 2.56 | **Fixed** by stepping muted → tertiary `#64748b` (4.76) | Muted and tertiary now match in light |
-| `--text-muted` dark `#64748b` on `#0f172a` | 3.75 | **Fixed** by stepping muted → tertiary `#94a3b8` (6.96) | Same |
-| `--accent` dark `#60a5fa` + white button text | 2.54 | **Fixed** mechanistically: `dark:text-[var(--bg-page)]` on accent buttons | Slightly darker label on blue chips |
-| `--error` dark `#fb7185` + white | 2.69 | **Fixed** on `Button` destructive the same way | — |
-| `--success` `#059669` on tinted pill bg | ~3.35 | **FAIL — owner** | Darken success text toward `--text-primary` / deeper green; changes StatusPill look |
-| `--warning` `#d97706` on tinted pill bg | ~2.89 | **FAIL — owner** | Same for warning/critical pills |
-| `--error` `#e11d48` on tinted pill bg | ~3.7–4.12 | **FAIL — owner** (borderline / fails on tint) | Darken error text on light tints |
+Approx sRGB model of `color-mix(… 10%, white)` / dark `bg/20` over `--bg-card`:
 
-**Decision text for owner:** Keep brand StatusPill colours as-is (fail AA on tinted fills) **or** approve darker pill foregrounds (recommend `--text-primary` or a dedicated `--tone-*-fg` step ≥ 4.5:1 on the tint). Visual impact: pills read heavier / less “pastel brand”.
+| Pair | Before text | Before ratio | After text | After ratio |
+|---|---|---:|---|---:|
+| light success on tint | `#059669` | 3.35 | `--success-text` `#047857` | 4.88 |
+| light warning on tint | `#d97706` | 2.86 | `--warning-text` `#b45309` | 4.50 |
+| light error on tint | `#e11d48` | 4.00 | `--error-text` `#be123c` | 5.36 |
+| light slate fg on slate bg | `#475569` | 6.92 | unchanged | 6.92 |
+| dark success on 20% tint | `#34d399` | 6.15 | `--success-text` same | 6.15 |
+| dark warning on 20% tint | `#fbbf24` | 6.90 | `--warning-text` same | 6.90 |
+| dark error on 20% tint | `#fb7185` | 4.92 | `--error-text` same | 4.92 |
+| dark slate | `#94a3b8` on `#1e293b` | 5.71 | unchanged | 5.71 |
+
+Regression guard: `src/components/ui/status-pill-contrast.test.ts`. Same `STATUS_STYLES` primitive is also used on Settings system-list sample chips (inherits text tokens).
+
+Earlier `--text-muted` / accent-button ink fixes (2026-10-30) unchanged.
 
 ## Manual checks (representative subset)
 

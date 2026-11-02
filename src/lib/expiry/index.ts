@@ -107,13 +107,13 @@ export const STATUS_LABELS: Record<ComplianceStatus, string> = {
  */
 export const STATUS_STYLES: Record<ComplianceStatus, string> = {
   valid:
-    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success)]",
+    "bg-[color-mix(in_oklab,var(--success)_10%,white)] text-[var(--success-text)] border-[color-mix(in_oklab,var(--success)_25%,white)] dark:bg-[var(--success)]/20 dark:border-[var(--success)]/40 dark:text-[var(--success-text)]",
   expiring:
-    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)]",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning-text)] border-[color-mix(in_oklab,var(--warning)_25%,white)] dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning-text)]",
   critical:
-    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_25%,white)] font-semibold ring-1 ring-[var(--warning)]/40 dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning)] dark:ring-[var(--warning)]/40",
+    "bg-[color-mix(in_oklab,var(--warning)_10%,white)] text-[var(--warning-text)] border-[color-mix(in_oklab,var(--warning)_25%,white)] font-semibold ring-1 ring-[var(--warning)]/40 dark:bg-[var(--warning)]/20 dark:border-[var(--warning)]/40 dark:text-[var(--warning-text)] dark:ring-[var(--warning)]/40",
   expired:
-    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error)]",
+    "bg-[color-mix(in_oklab,var(--error)_10%,white)] text-[var(--error-text)] border-[color-mix(in_oklab,var(--error)_25%,white)] dark:bg-[var(--error)]/20 dark:border-[var(--error)]/40 dark:text-[var(--error-text)]",
   unknown:
     "bg-[var(--tone-slate-bg)] text-[var(--tone-slate-fg)] border-[var(--border-strong)]",
   revoked:

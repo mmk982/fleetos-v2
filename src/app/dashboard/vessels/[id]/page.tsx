@@ -14,9 +14,10 @@ import {
   VesselTabsNav,
   type VesselTabKey,
 } from "@/components/vessel-tabs-nav";
-import type { VesselParticularsRow, VesselRow } from "@/db/schema";
+import type { UserRole, VesselParticularsRow, VesselRow } from "@/db/schema";
 import { toAccessContext } from "@/lib/auth/access";
 import { noticeForPageAccessError } from "@/lib/auth/page-access-ui";
+import { getModuleAccess } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import { listCertificates } from "@/modules/certificates/certificate.controller";
 import {
@@ -120,6 +121,10 @@ export default async function VesselDetailPage(props: PageProps) {
     throw error;
   }
 
+  const role = access.role as UserRole | null;
+  const canWriteVessel = getModuleAccess(role, "vessels") === "write";
+  const canWriteNotes = getModuleAccess(role, "particulars") === "write";
+
   return (
     <main className="flex flex-1 flex-col p-4 sm:p-8" dir="auto">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -134,20 +139,22 @@ export default async function VesselDetailPage(props: PageProps) {
             <Identifier>{vessel.name}</Identifier>
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/dashboard/vessels/${vessel.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
-          >
-            Edit
-          </Link>
-          <ConfirmDeleteButton
-            id={vessel.id}
-            title="Delete vessel?"
-            description="This permanently removes the vessel. Certificates and other linked records will block delete via RESTRICT if still present."
-            action={deleteVesselFormAction}
-          />
-        </div>
+        {canWriteVessel ? (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/dashboard/vessels/${vessel.id}/edit`}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-white dark:text-[var(--bg-page)]"
+            >
+              Edit
+            </Link>
+            <ConfirmDeleteButton
+              id={vessel.id}
+              title="Delete vessel?"
+              description="This permanently removes the vessel. Certificates and other linked records will block delete via RESTRICT if still present."
+              action={deleteVesselFormAction}
+            />
+          </div>
+        ) : null}
       </div>
 
       <VesselTabsNav vesselId={vessel.id} active={active} />
@@ -183,7 +190,7 @@ export default async function VesselDetailPage(props: PageProps) {
           <DeficienciesPanel vesselId={id} rows={deficiencies} />
         ) : null}
         {active === "notes" && notes ? (
-          <NotesPanel vesselId={id} rows={notes} />
+          <NotesPanel vesselId={id} rows={notes} canWrite={canWriteNotes} />
         ) : null}
       </div>
     </main>
@@ -818,9 +825,11 @@ function DeficienciesPanel({
 function NotesPanel({
   vesselId,
   rows,
+  canWrite,
 }: {
   vesselId: string;
   rows: VesselNoteListItem[];
+  canWrite: boolean;
 }) {
   return (
     <section className="max-w-3xl space-y-6">
@@ -828,7 +837,7 @@ function NotesPanel({
         Notes
       </h2>
 
-      <VesselNoteForm vesselId={vesselId} />
+      {canWrite ? <VesselNoteForm vesselId={vesselId} /> : null}
 
       {rows.length === 0 ? (
         <EmptyHint>No notes yet.</EmptyHint>
@@ -850,13 +859,15 @@ function NotesPanel({
                   </time>
                 </p>
               </div>
-              <ConfirmDeleteButton
-                id={note.id}
-                label="Delete"
-                title="Delete note?"
-                description="This permanently removes the note. There is no undo."
-                action={deleteVesselNoteFormAction}
-              />
+              {canWrite ? (
+                <ConfirmDeleteButton
+                  id={note.id}
+                  label="Delete"
+                  title="Delete note?"
+                  description="This permanently removes the note. There is no undo."
+                  action={deleteVesselNoteFormAction}
+                />
+              ) : null}
             </li>
           ))}
         </ul>

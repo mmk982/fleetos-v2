@@ -20,7 +20,14 @@ import type { VesselRow } from "@/db/schema";
 const selectClass =
   "h-10 rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 text-sm text-[var(--text-primary)]";
 
-export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
+export function VesselsList({
+  vessels,
+  canWrite = false,
+}: {
+  vessels: VesselRow[];
+  /** Admin vessel registry write — hides Edit / create links when false. */
+  canWrite?: boolean;
+}) {
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -80,14 +87,20 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-sm">
         {visible.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
-            No vessels match.{" "}
-            <Link
-              href="/dashboard/vessels/new"
-              className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
-            >
-              Create a vessel
-            </Link>
-            .
+            {canWrite ? (
+              <>
+                No vessels match.{" "}
+                <Link
+                  href="/dashboard/vessels/new"
+                  className="font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+                >
+                  Create a vessel
+                </Link>
+                .
+              </>
+            ) : (
+              "No vessels match."
+            )}
           </div>
         ) : (
           <>
@@ -100,7 +113,9 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                     <th className="px-4 py-3">Flag</th>
                     <th className="px-4 py-3">Type</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    {canWrite ? (
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
@@ -131,14 +146,16 @@ export function VesselsList({ vessels }: { vessels: VesselRow[] }) {
                           {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
                         </StatusPill>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/dashboard/vessels/${v.id}/edit`}
-                          className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
-                        >
-                          Edit
-                        </Link>
-                      </td>
+                      {canWrite ? (
+                        <td className="px-4 py-3 text-right">
+                          <Link
+                            href={`/dashboard/vessels/${v.id}/edit`}
+                            className="text-sm font-medium text-[var(--text-secondary)] underline-offset-4 hover:underline"
+                          >
+                            Edit
+                          </Link>
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>

@@ -58,7 +58,12 @@ const ALL_WRITE = {
  * `psc` was added later (PROJECT_PLAN.md §7b); defaults mirror `deficiencies`
  * (same table for PSC-sourced findings; inspections are the natural analog).
  * `audits` was added later; defaults mirror `deficiencies` / `psc` (vessel-side
- * event log). Confirm with Eng.MHD if vessel_user / read_only should differ.
+ * event log).
+ *
+ * `vessels` (2026-11-02 owner decision): `vessel_user` / `management_user` get
+ * **read** of their assigned vessel only (app-layer scope; `vessels` table is
+ * not RLS’d). Writes stay admin-only. `superintendent` / `read_only` remain
+ * `none` (fleet roles already use other modules; owner may revisit).
  */
 export const MODULE_PERMISSIONS: Record<
   UserRole,
@@ -85,7 +90,7 @@ export const MODULE_PERMISSIONS: Record<
     export: "write",
   },
   management_user: {
-    vessels: "none",
+    vessels: "read",
     certificates: "read",
     deficiencies: "write",
     psc: "write",
@@ -104,7 +109,7 @@ export const MODULE_PERMISSIONS: Record<
     export: "write",
   },
   vessel_user: {
-    vessels: "none",
+    vessels: "read",
     certificates: "read",
     deficiencies: "read",
     psc: "read",

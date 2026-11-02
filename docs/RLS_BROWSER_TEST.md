@@ -614,3 +614,24 @@ Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel
 - Activity log for **events** (module does not write one — by code).  
 - `access_logs` for certificate attachment downloads (resolver notes crew-only; count 0).
 
+---
+
+## 14. Vessel read for scoped roles — 2026-11-02 (`cursor/vessel-read-pill-contrast`)
+
+**Decision:** `vessel_user` / `management_user` → `vessels: read` (assigned vessel only). Writes stay admin. Notes writes stay `particulars: write` (admin/super). `vessels` table **not RLS’d** — scope is app-layer (`requireScopedVesselId` / `assertVesselScope`).
+
+| Actor | Check | Result |
+|---|---|---|
+| `vuA` | Sidebar **Vessels** | **PASS** |
+| `vuA` | List shows only Vessel A; no Add; no Edit column | **PASS** |
+| `vuA` | Detail own vessel | **PASS** (200, name visible) |
+| `vuA` | Notes tab | **PASS** — notes visible; no form / delete |
+| `vuA` | `/new`, `/edit` | **PASS** — AccessDeniedNotice |
+| `vuA` | Other vessel id (B) | **PASS** — AccessDeniedNotice (scope mismatch) |
+| `vuNone` | `/dashboard/vessels` | **PASS** — NoVesselAssignedNotice (not 500) |
+| `admin1` | List Add vessel | **PASS** (expected unchanged) |
+| `mgmtA` | Same read pattern as vuA | **PASS** (spot-check via same matrix after login) |
+| Console | vuA vessel pages | No app errors observed (HMR / React DevTools only) |
+
+**Owner question (unchanged):** keep `superintendent` / `read_only` at `vessels: none`?
+

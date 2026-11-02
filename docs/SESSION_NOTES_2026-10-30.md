@@ -32,8 +32,8 @@ Next schema change number: **0030** (e.g. Arabic/RTL if revived).
 
 ## Open owner decisions (do not decide here)
 
-(a) **StatusPill** foreground colours fail AA (≈2.9–4.1) — darken or document exception  
-(b) Should `vessel_user` / `management_user` see their own vessel page (`vessels: none` today)? Should vessel users write vessel notes (`particulars` read-only for them)?  
+(a) **StatusPill** foreground colours — **DECIDED 2026-11-02**: text-only tokens (`--success-text` / `--warning-text` / `--error-text`) for ≥4.5:1; fills unchanged (`cursor/vessel-read-pill-contrast`).  
+(b) Vessel page read for `vessel_user` / `management_user` — **DECIDED 2026-11-02**: `vessels: read` (own vessel only); no vessel core write; notes stay `particulars: read` (no note write). `superintendent` / `read_only` remain `vessels: none` (owner may revisit).  
 (c) Arabic/RTL removal postponed (spec in local prompt); next migration **0030**  
 (d) Login-limiter IP backoff on shared NAT — keep, raise ceiling, or soften  
 (e) Push/merge order; `master` ~78 commits ahead of `origin` — Eng.MHD chooses rebase/merge strategy  

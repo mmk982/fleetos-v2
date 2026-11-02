@@ -14,8 +14,10 @@
  *
  * Every public method takes {@link AccessContext} and calls
  * {@link assertAuthenticatedAccess} then {@link assertModuleAccess}
- * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3 / Phase 6). No vessel-scope gate —
- * vessel CRUD is office-role only via the vessels module matrix.
+ * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3 / Phase 6). Reads for
+ * vessel-scoped roles are filtered via {@link requireScopedVesselId} /
+ * {@link assertVesselScope}; writes remain `vessels: write` (admin only).
+ * The `vessels` table itself is not under Postgres RLS — app-layer only.
  */
 import "server-only";
 
@@ -29,6 +31,8 @@ import { vessels, type VesselRow } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
   assertModuleAccess,
+  assertVesselScope,
+  requireScopedVesselId,
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
@@ -61,6 +65,14 @@ export class VesselConflictError extends Error {
 export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "vessels", "read");
+  const scopedVesselId = requireScopedVesselId(ctx);
+  if (scopedVesselId) {
+    return getDb()
+      .select()
+      .from(vessels)
+      .where(eq(vessels.id, scopedVesselId))
+      .orderBy(asc(vessels.name));
+  }
   return getDb().select().from(vessels).orderBy(asc(vessels.name));
 }
 
@@ -89,7 +101,13 @@ export async function listSelectableVessels(
 export async function getVesselCount(ctx: AccessContext): Promise<number> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "vessels", "read");
-  const rows = await getDb().select({ n: count() }).from(vessels);
+  const scopedVesselId = requireScopedVesselId(ctx);
+  const rows = scopedVesselId
+    ? await getDb()
+        .select({ n: count() })
+        .from(vessels)
+        .where(eq(vessels.id, scopedVesselId))
+    : await getDb().select({ n: count() }).from(vessels);
   return rows[0]?.n ?? 0;
 }
 
@@ -106,6 +124,7 @@ export async function getVesselById(
 ): Promise<VesselRow | undefined> {
   assertAuthenticatedAccess(ctx, id);
   assertModuleAccess(ctx, "vessels", "read");
+  assertVesselScope(ctx, id);
   const rows = await getDb().select().from(vessels).where(eq(vessels.id, id)).limit(1);
   return rows[0];
 }

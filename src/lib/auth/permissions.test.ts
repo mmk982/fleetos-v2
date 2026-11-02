@@ -45,7 +45,7 @@ describe("MODULE_PERMISSIONS matrix", () => {
         export: "write",
       },
       management_user: {
-        vessels: "none",
+        vessels: "read",
         certificates: "read",
         deficiencies: "write",
         psc: "write",
@@ -64,7 +64,7 @@ describe("MODULE_PERMISSIONS matrix", () => {
         export: "write",
       },
       vessel_user: {
-        vessels: "none",
+        vessels: "read",
         certificates: "read",
         deficiencies: "read",
         psc: "read",
@@ -112,6 +112,20 @@ describe("MODULE_PERMISSIONS matrix", () => {
 
   it("getModuleAccess returns none for null role", () => {
     expect(getModuleAccess(null, "certificates")).toBe("none");
+  });
+
+  it("vessels: write only for admin; read for vessel_user and management_user", () => {
+    const roles = Object.keys(MODULE_PERMISSIONS) as UserRole[];
+    for (const role of roles) {
+      const access = MODULE_PERMISSIONS[role].vessels;
+      if (role === "admin") {
+        expect(access).toBe("write");
+      } else if (role === "vessel_user" || role === "management_user") {
+        expect(access).toBe("read");
+      } else {
+        expect(access).toBe("none");
+      }
+    }
   });
 
   it("VESSEL_SCOPED_MODULES excludes fleet-wide modules", () => {

@@ -194,7 +194,7 @@ Notes:
 | System list seed values | Seeds exist for some lists; exact counts vs mockup unverified |
 | vessel_notes proposed | **DONE** table + Notes tab |
 
-**`PLAN_REVIEW.md` / `DESIGN_HANDOFF.md`:** locale persistence, tablet band, Settings Reports gap still open. `@drawer` **SUPERSEDED**; WCAG formal audit recorded in `docs/ACCESSIBILITY.md` (StatusPill contrast owner decision remains).
+**`PLAN_REVIEW.md` / `DESIGN_HANDOFF.md`:** locale persistence, tablet band, Settings Reports gap still open. `@drawer` **SUPERSEDED**; WCAG formal audit recorded in `docs/ACCESSIBILITY.md` (StatusPill text contrast **resolved 2026-11-02** via `--*-text` tokens).
 
 ---
 
@@ -211,7 +211,7 @@ Notes:
 | 6 | Email digest **prod cron** + provider account/DPA | PARTIAL | Add cron to prod runbook; Eng.MHD creates Resend/Postmark |
 | 7 | **Locale / RTL** (`dir`/`lang`, toggle, persistence) | NOT DONE | Wire `preferredLocale` or cookie → `layout.tsx`; add toggle |
 | 8 | Vessels **`@drawer` intercepting routes** | **SUPERSEDED** | Owner may overrule; see `docs/ACCESSIBILITY.md` Part D |
-| 9 | Formal **WCAG / 4-combo QA** record | **DONE** (residuals) | `docs/ACCESSIBILITY.md`; decide StatusPill brand contrast |
+| 9 | Formal **WCAG / 4-combo QA** record | **DONE** (residuals) | `docs/ACCESSIBILITY.md`; StatusPill text tokens AA 2026-11-02 |
 | 10 | Phase 8 **OWASP skill review + human sign-off** | NOT DONE / CANNOT VERIFY | Schedule security-review skill pass before go-live |
 
 ---
@@ -356,4 +356,16 @@ From `cursor/prod-ready` @ `edfd851`. **No commit/push.**
 - Image size after: **448 MB**. CI: `trivy-action@v0.36.0`, `ignore-unfixed: true`. `.trivyignore` empty.
 - Pins: Node/migrate `22.23.4-bookworm-slim`, Caddy `2.11.7-alpine`, Postgres **stays `17.4`** (17.x minor bump = ops decision; informational scan still noisy).
 - Smoke re-verified: migrate 0, app non-root `uid=10001`, `npm` gone, `/login` 200 + headers, vessel+cert+PDF attach/download, restart persistence.
+
+---
+
+## Vessel read + StatusPill contrast (`cursor/vessel-read-pill-contrast`) — 2026-11-02
+
+From `cursor/image-hardening`. **No commit/push.**
+
+- `MODULE_PERMISSIONS`: `vessel_user` / `management_user` → `vessels: "read"`; superintendent/read_only stay `"none"` (owner question).
+- App-layer scope on `listVessels` / `getVesselById` / `getVesselCount`; UI gates Add/Edit/Delete/notes; `/new`+`/edit` AccessDenied for non-writers.
+- `vessels` table **not under RLS** (documented); notes/particulars remain RLS’d.
+- StatusPill: `--success-text`/`--warning-text`/`--error-text` (≥4.5:1 light); dark unchanged brand text. Vitest contrast guard added.
+- Browser smoke: vuA / vuNone / admin vessel pages — see `docs/RLS_BROWSER_TEST.md` §14.
 

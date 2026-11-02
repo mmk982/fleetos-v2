@@ -338,10 +338,10 @@ describe("STATUS_LABELS and STATUS_STYLES", () => {
   });
 
   it("maps to tokenized Pill colors (success / warning / error / slate)", () => {
-    expect(STATUS_STYLES.valid).toMatch(/--success/i);
-    expect(STATUS_STYLES.expiring).toMatch(/--warning/i);
-    expect(STATUS_STYLES.critical).toMatch(/--warning/i);
-    expect(STATUS_STYLES.expired).toMatch(/--error/i);
+    expect(STATUS_STYLES.valid).toMatch(/--success-text/i);
+    expect(STATUS_STYLES.expiring).toMatch(/--warning-text/i);
+    expect(STATUS_STYLES.critical).toMatch(/--warning-text/i);
+    expect(STATUS_STYLES.expired).toMatch(/--error-text/i);
     expect(STATUS_STYLES.unknown).toMatch(/tone-slate|border-strong/i);
     expect(STATUS_STYLES.revoked).toMatch(/tone-slate|border-strong/i);
   });
