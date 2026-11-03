@@ -142,6 +142,8 @@ export function getDb(): AppDb {
   return dbInstance;
 }
 
+let nestedTxCounter = 0;
+
 /**
  * Runs `fn` under a SAVEPOINT when already inside {@link withDb}, so a
  * failed statement can be rolled back without poisoning the outer
@@ -164,8 +166,31 @@ export async function withSavepoint<T>(
     return result;
   } catch (error) {
     await store.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+    await store.client.query(`RELEASE SAVEPOINT ${sp}`);
     throw error;
   }
+}
+
+/**
+ * Atomic multi-statement block that is safe inside {@link withDb}.
+ *
+ * Drizzle's `db.transaction()` on a PoolClient-bound client issues
+ * `COMMIT`, which ends the outer RLS transaction and clears
+ * transaction-local `set_config` values. Prefer this helper wherever a
+ * nested atomic block runs under `withDb`.
+ *
+ * Outside `withDb`, opens a real pool transaction (same as Drizzle).
+ */
+export async function withNestedTransaction<T>(
+  fn: (db: AppDb) => Promise<T>,
+): Promise<T> {
+  const store = dbStore.getStore();
+  if (!store) {
+    const db = getDb();
+    return db.transaction(async (tx) => fn(tx as unknown as AppDb));
+  }
+  nestedTxCounter += 1;
+  return withSavepoint(`nested_${nestedTxCounter}`, () => fn(store.db));
 }
 
 async function runWithClient<T>(

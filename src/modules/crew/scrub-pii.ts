@@ -17,7 +17,7 @@
 import "server-only";
 
 import { eq, inArray } from "drizzle-orm";
-import { getDb, withDb } from "@/db/client";
+import { getDb, withDb, withNestedTransaction } from "@/db/client";
 import {
   crewCertificateAttachments,
   crewCertificates,
@@ -91,7 +91,7 @@ export async function scrubCrewMemberPii(
         : [];
     const filePaths = atts.map((a) => a.filePath);
 
-    await db.transaction(async (tx) => {
+    await withNestedTransaction(async (tx) => {
       if (atts.length > 0) {
         await tx
           .delete(crewCertificateAttachments)

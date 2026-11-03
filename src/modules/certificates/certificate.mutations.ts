@@ -1,7 +1,7 @@
 import "server-only";
 
 import { asc, eq, inArray } from "drizzle-orm";
-import { getDb, withDb } from "@/db/client";
+import { getDb, withDb, withNestedTransaction } from "@/db/client";
 import {
   certificateAttachments,
   certificates,
@@ -53,7 +53,7 @@ export async function createCertificate(
     let result: CertificateRow;
   
     try {
-      result = await db.transaction(async (tx) => {
+      result = await withNestedTransaction(async (tx) => {
         if (input.parentCertificateId) {
           await assertValidParentLink(
             tx,
@@ -148,7 +148,7 @@ export async function updateCertificate(
     let result: CertificateRow;
     let typeName: string | undefined;
     try {
-      result = await db.transaction(async (tx) => {
+      result = await withNestedTransaction(async (tx) => {
         // Lock self + new parent in ascending id order up front so opposite
         // concurrent links (A→B and B→A) cannot deadlock on FOR UPDATE.
         if (typeof input.parentCertificateId === "string") {

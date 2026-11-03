@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, count, desc, eq, type SQL } from "drizzle-orm";
-import { getDb, withDb } from "@/db/client";
+import { getDb, withDb, withNestedTransaction } from "@/db/client";
 import {
   ismTemplates,
   monthlyExecutedFormAttachments,
@@ -464,7 +464,7 @@ export async function submitMonthlyForm(
   
     let row: MonthlyExecutedFormRow;
     try {
-      row = await db.transaction(async (tx) => {
+      row = await withNestedTransaction(async (tx) => {
         await tx.insert(monthlyExecutedFormAttachments).values({
           id: stored.id,
           executedFormId: id,

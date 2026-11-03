@@ -24,6 +24,15 @@ vi.mock("@/db/client", () => ({
   withDb: async (_ctx: unknown, fn: (db: unknown) => unknown) => fn(getDb()),
   withSystemDb: async (_reason: unknown, fn: (db: unknown) => unknown) =>
     fn(getDb()),
+  withNestedTransaction: async (fn: (db: unknown) => unknown) => {
+    const db = getDb() as {
+      transaction?: (f: (tx: unknown) => unknown) => Promise<unknown>;
+    };
+    if (typeof db?.transaction === "function") {
+      return db.transaction(fn);
+    }
+    return fn(db);
+  },
 }));
 
 const assertAuthenticatedAccess = vi.fn();

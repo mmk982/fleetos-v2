@@ -15,6 +15,23 @@ const eslintConfig = defineConfig([
     // ECC / Cursor tooling (CommonJS scripts) — not app source.
     ".cursor/**",
   ]),
+  // A-11: `db.transaction()` on a withDb PoolClient COMMITs the outer RLS
+  // transaction. App code must use `withNestedTransaction` instead.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/db/client.ts", "src/**/*.test.ts", "src/**/*.integration.test.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='transaction']",
+          message:
+            "Do not call .transaction() under withDb — it COMMITs the outer RLS txn. Use withNestedTransaction from @/db/client.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

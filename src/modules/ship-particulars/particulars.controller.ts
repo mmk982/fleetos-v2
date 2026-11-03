@@ -2,7 +2,7 @@
  * Ship Particulars data-access (`PROJECT_PLAN.md` §13).
  *
  * Exactly one `isCurrent = true` row per vessel — enforced in
- * `db.transaction()` the same way as `manual_revisions.isCurrentVersion`.
+ * `withNestedTransaction()` the same way as `manual_revisions.isCurrentVersion`.
  */
 import "server-only";
 
@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, desc, eq, type SQL } from "drizzle-orm";
-import { getDb, withDb } from "@/db/client";
+import { getDb, withDb, withNestedTransaction } from "@/db/client";
 import {
   vesselParticulars,
   vesselParticularsAttachments,
@@ -398,7 +398,7 @@ export async function createParticulars(
     let row: VesselParticularsRow;
     try {
       if (makeCurrent) {
-        row = await db.transaction(async (tx) => {
+        row = await withNestedTransaction(async (tx) => {
           await tx
             .update(vesselParticulars)
             .set({ isCurrent: false, updatedAt: new Date() })
@@ -470,7 +470,7 @@ export async function updateParticulars(
     let row: VesselParticularsRow;
     try {
       if (makeCurrent) {
-        row = await db.transaction(async (tx) => {
+        row = await withNestedTransaction(async (tx) => {
           await tx
             .update(vesselParticulars)
             .set({ isCurrent: false, updatedAt: new Date() })

@@ -165,6 +165,73 @@ describe("withDb / withSystemDb", () => {
     ]);
     await closeDb();
   });
+
+  it("withNestedTransaction inside withDb uses SAVEPOINT not COMMIT", async () => {
+    const { withDb, withNestedTransaction, closeDb } = await import("./client");
+    const order: string[] = [];
+    query.mockImplementation(async (text) => {
+      if (typeof text === "string") {
+        if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+          order.push(text);
+        } else if (text.startsWith("SAVEPOINT")) {
+          order.push("SAVEPOINT");
+        } else if (text.startsWith("RELEASE SAVEPOINT")) {
+          order.push("RELEASE");
+        } else if (text.startsWith("ROLLBACK TO SAVEPOINT")) {
+          order.push("ROLLBACK_TO");
+        }
+      }
+      return { rows: [] };
+    });
+
+    await withDb(
+      { userId: "u1", role: "admin", vesselId: null },
+      async () => {
+        await withNestedTransaction(async () => "ok");
+        return "done";
+      },
+    );
+
+    expect(order).toEqual(["BEGIN", "SAVEPOINT", "RELEASE", "COMMIT"]);
+    expect(order.filter((x) => x === "COMMIT")).toHaveLength(1);
+    await closeDb();
+  });
+
+  it("withNestedTransaction rolls back to savepoint on error", async () => {
+    const { withDb, withNestedTransaction, closeDb } = await import("./client");
+    const order: string[] = [];
+    query.mockImplementation(async (text) => {
+      if (typeof text === "string") {
+        if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+          order.push(text);
+        } else if (text.startsWith("SAVEPOINT")) {
+          order.push("SAVEPOINT");
+        } else if (text.startsWith("RELEASE SAVEPOINT")) {
+          order.push("RELEASE");
+        } else if (text.startsWith("ROLLBACK TO SAVEPOINT")) {
+          order.push("ROLLBACK_TO");
+        }
+      }
+      return { rows: [] };
+    });
+
+    await expect(
+      withDb({ userId: "u1", role: "admin", vesselId: null }, async () => {
+        await withNestedTransaction(async () => {
+          throw new Error("inner-fail");
+        });
+      }),
+    ).rejects.toThrow("inner-fail");
+
+    expect(order).toEqual([
+      "BEGIN",
+      "SAVEPOINT",
+      "ROLLBACK_TO",
+      "RELEASE",
+      "ROLLBACK",
+    ]);
+    await closeDb();
+  });
 });
 
 describe("assertProductionRuntimeRole", () => {

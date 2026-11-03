@@ -2,7 +2,7 @@
  * Manuals data-access layer (`PROJECT_PLAN.md` §8).
  *
  * Vessel-linked manuals with revision history. New revisions and
- * set-current flips run in `db.transaction()` so exactly one
+ * set-current flips run in `withNestedTransaction()` so exactly one
  * `isCurrentVersion = true` row exists per manual after commit.
  * Not an expiry-engine consumer.
  */
@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, count, desc, eq, type SQL } from "drizzle-orm";
-import { getDb, withDb } from "@/db/client";
+import { getDb, withDb, withNestedTransaction } from "@/db/client";
 import {
   manuals,
   manualRevisions,
@@ -274,11 +274,10 @@ export async function createManualWithFirstRevision(
     assertValidAttachment(file);
   
     const stored = await storeAttachmentFile(file);
-    const db = getDb();
   
     let manual: ManualRow;
     try {
-      manual = await db.transaction(async (tx) => {
+      manual = await withNestedTransaction(async (tx) => {
         const inserted = await tx
           .insert(manuals)
           .values({
@@ -359,7 +358,7 @@ export async function addManualRevision(
   
     let row: ManualRevisionRow;
     try {
-      row = await db.transaction(async (tx) => {
+      row = await withNestedTransaction(async (tx) => {
         await tx
           .update(manualRevisions)
           .set({ isCurrentVersion: false })
@@ -491,7 +490,7 @@ export async function setCurrentRevision(
   
     let row: ManualRevisionRow;
     try {
-      row = await db.transaction(async (tx) => {
+      row = await withNestedTransaction(async (tx) => {
         const target = await tx
           .select()
           .from(manualRevisions)
