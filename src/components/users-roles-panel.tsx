@@ -320,9 +320,14 @@ function UserDialog({
               name="password"
               type="password"
               required
-              minLength={8}
+              minLength={12}
               className={inputClass}
             />
+            {state && !state.ok && state.fieldErrors?.password ? (
+              <p className="mt-1 text-sm text-[var(--error)]" role="alert">
+                {state.fieldErrors.password.join(" ")}
+              </p>
+            ) : null}
           </div>
         ) : null}
         <div>
@@ -415,9 +420,14 @@ function PasswordDialog({
             name="password"
             type="password"
             required
-            minLength={8}
+            minLength={12}
             className={inputClass}
           />
+          {state && !state.ok && state.fieldErrors?.password ? (
+            <p className="mt-1 text-sm text-[var(--error)]" role="alert">
+              {state.fieldErrors.password.join(" ")}
+            </p>
+          ) : null}
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" type="button"

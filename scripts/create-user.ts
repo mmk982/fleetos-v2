@@ -40,9 +40,9 @@ async function main() {
     process.exit(1);
   }
 
-  // Length + HIBP k-anonymity check (SECURITY_PLAN.md §2.2). There is no
-  // in-app password-set UI yet beyond this script and reset-password.ts.
+  // Length + HIBP k-anonymity check (SECURITY_PLAN.md §2.2).
   await assertPasswordAllowed(plainPassword);
+  const normalizedEmail = email.trim().toLowerCase();
 
   const connectionString = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
   const pool = new Pool({ connectionString });
@@ -52,7 +52,7 @@ async function main() {
     const passwordHash = await hash(plainPassword, ARGON2_OPTIONS);
     const inserted = await db
       .insert(schema.users)
-      .values({ name, email, passwordHash })
+      .values({ name, email: normalizedEmail, passwordHash })
       .returning({ id: schema.users.id, email: schema.users.email });
 
     console.log("User created:", inserted[0]);

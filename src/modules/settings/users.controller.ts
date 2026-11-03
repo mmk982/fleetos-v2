@@ -9,7 +9,7 @@ import {
   isPgUniqueViolation,
 } from "@/lib/db/pg-errors";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, count, eq, ne } from "drizzle-orm";
 import { getDb, withDb } from "@/db/client";
 import {
   users,
@@ -23,7 +23,12 @@ import {
   type AccessContext,
 } from "@/lib/auth/access";
 import { writeActivityLog } from "@/lib/activity-log/write";
+import { assertPasswordAllowed } from "@/lib/auth/pwned-password";
 import { hashPassword } from "@/lib/auth/password";
+import {
+  destroySession,
+  destroySessionsForUser,
+} from "@/lib/auth/session";
 import { logError } from "@/lib/logging";
 import { roleRequiresVessel, type UserListItem } from "./users.model";
 
@@ -43,6 +48,68 @@ export class UserConflictError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "UserConflictError";
+  }
+}
+
+/** Password failed length / HIBP policy — map to `fieldErrors.password` in actions. */
+export class PasswordRejectedError extends Error {
+  readonly code = "PASSWORD_REJECTED" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "PasswordRejectedError";
+  }
+}
+
+const LAST_ADMIN_MESSAGE =
+  "Cannot demote or deactivate the last active admin.";
+
+/**
+ * Runs {@link assertPasswordAllowed} and rethrows policy failures as
+ * {@link PasswordRejectedError} so Server Actions can return field errors
+ * instead of a 500.
+ */
+async function enforcePasswordPolicy(plain: string): Promise<void> {
+  try {
+    await assertPasswordAllowed(plain);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new PasswordRejectedError(error.message);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Blocks removing the final active admin (role demotion or deactivation).
+ * Covers self-demote as well as demoting/deactivating another sole admin.
+ */
+async function assertNotLastActiveAdmin(
+  target: Pick<UserRow, "id" | "role" | "isActive">,
+  next: { role?: UserRole; isActive?: boolean },
+): Promise<void> {
+  const currentlyActiveAdmin =
+    target.role === "admin" && target.isActive;
+  if (!currentlyActiveAdmin) return;
+
+  const demoting =
+    next.role !== undefined && next.role !== "admin";
+  const deactivating =
+    next.isActive !== undefined && next.isActive === false;
+  if (!demoting && !deactivating) return;
+
+  const rows = await getDb()
+    .select({ n: count() })
+    .from(users)
+    .where(
+      and(
+        eq(users.role, "admin"),
+        eq(users.isActive, true),
+        ne(users.id, target.id),
+      ),
+    );
+  const others = Number(rows[0]?.n ?? 0);
+  if (others === 0) {
+    throw new UserConflictError(LAST_ADMIN_MESSAGE);
   }
 }
 
@@ -95,9 +162,7 @@ export async function createUser(
   const email = input.email.trim().toLowerCase();
   if (!name) throw new UserConflictError("Name is required.");
   if (!email) throw new UserConflictError("Email is required.");
-  if (input.password.length < 8) {
-    throw new UserConflictError("Password must be at least 8 characters.");
-  }
+  await enforcePasswordPolicy(input.password);
   if (roleRequiresVessel(input.role) && !input.vesselId) {
     throw new UserConflictError(
       "Vessel is required for Management User and Vessel User.",
@@ -125,6 +190,7 @@ export async function createUser(
     if (!insertedRow) throw new Error("User insert did not return a row");
     row = insertedRow;
   } catch (error) {
+    if (error instanceof PasswordRejectedError) throw error;
     if (isPgUniqueViolation(error)) {
       throw new UserConflictError("A user with that email already exists.");
     }
@@ -166,6 +232,8 @@ export async function updateUser(
     .limit(1);
   if (!existing[0]) throw new UserNotFoundError(id);
 
+  await assertNotLastActiveAdmin(existing[0], { role: input.role });
+
   const nextRole = input.role ?? (existing[0].role as UserRole);
   let vesselId =
     input.vesselId !== undefined ? input.vesselId : existing[0].vesselId;
@@ -205,6 +273,7 @@ export async function updateUser(
     row = updatedRow;
   } catch (error) {
     if (error instanceof UserNotFoundError) throw error;
+    if (error instanceof UserConflictError) throw error;
     if (isPgUniqueViolation(error)) {
       throw new UserConflictError("A user with that email already exists.");
     }
@@ -231,9 +300,7 @@ export async function changeUserPassword(
 ): Promise<void> {
   assertAuthenticatedAccess(ctx);
   assertModuleAccess(ctx, "settings_users", "write");
-  if (password.length < 8) {
-    throw new UserConflictError("Password must be at least 8 characters.");
-  }
+  await enforcePasswordPolicy(password);
   const db = getDb();
   const existing = await db
     .select({ id: users.id, name: users.name })
@@ -247,6 +314,12 @@ export async function changeUserPassword(
     .update(users)
     .set({ passwordHash, updatedAt: new Date() })
     .where(eq(users.id, id));
+
+  // No prior “keep current session” pattern on password change — revoke all.
+  await destroySessionsForUser(id);
+  if (id === ctx.userId) {
+    await destroySession();
+  }
 
   await writeActivityLog({
     userId: ctx.userId,
@@ -267,6 +340,16 @@ export async function setUserActive(
   if (id === ctx.userId && !isActive) {
     throw new UserConflictError("You cannot deactivate your own account.");
   }
+
+  const existing = await getDb()
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  if (!existing[0]) throw new UserNotFoundError(id);
+
+  await assertNotLastActiveAdmin(existing[0], { isActive });
+
   const updated = await getDb()
     .update(users)
     .set({ isActive, updatedAt: new Date() })

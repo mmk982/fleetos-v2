@@ -336,3 +336,14 @@ export async function destroySession(sessionId?: string): Promise<void> {
 
   await clearSessionCookie();
 }
+
+/**
+ * Invalidates every session for `userId` (password change / lockout).
+ * Does not touch cookies — callers changing the *current* user's password
+ * should also call {@link destroySession} so the httpOnly cookie is cleared.
+ *
+ * @param userId - Account whose sessions must all stop working.
+ */
+export async function destroySessionsForUser(userId: string): Promise<void> {
+  await getDb().delete(sessions).where(eq(sessions.userId, userId));
+}

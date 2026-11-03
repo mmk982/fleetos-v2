@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   changeUserPassword,
   createUser,
+  PasswordRejectedError,
   setUserActive,
   updateUser,
   UserConflictError,
@@ -30,19 +31,43 @@ function readFormString(formData: FormData, key: string): string | undefined {
   return String(v);
 }
 
+function fieldErrorsFromZod(
+  issues: { path: PropertyKey[]; message: string }[],
+): Record<string, string[]> {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of issues) {
+    const pathKey = issue.path[0];
+    if (typeof pathKey === "string") {
+      fieldErrors[pathKey] ??= [];
+      fieldErrors[pathKey].push(issue.message);
+    }
+  }
+  return fieldErrors;
+}
+
 const createSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  email: z.string().trim().email().max(320),
-  password: z.string().min(8).max(200),
+  email: z.string().trim().toLowerCase().email().max(320),
+  password: z
+    .string()
+    .min(12, "Password must be at least 12 characters.")
+    .max(200),
   role: z.enum(userRoleEnum),
   vesselId: z.string().uuid().optional().nullable(),
 });
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
-  email: z.string().trim().email().max(320).optional(),
+  email: z.string().trim().toLowerCase().email().max(320).optional(),
   role: z.enum(userRoleEnum).optional(),
   vesselId: z.union([z.string().uuid(), z.literal(""), z.null()]).optional(),
+});
+
+const passwordSchema = z.object({
+  password: z
+    .string()
+    .min(12, "Password must be at least 12 characters.")
+    .max(200),
 });
 
 export async function createUserAction(
@@ -60,13 +85,24 @@ export async function createUserAction(
     vesselId: vesselRaw === "" || vesselRaw === undefined ? null : vesselRaw,
   });
   if (!parsed.success) {
-    return { ok: false, message: "Please fix the highlighted fields." };
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
   }
   try {
     await createUser(access, parsed.data);
     revalidatePath(usersPath);
     return { ok: true, message: "User created." };
   } catch (error) {
+    if (error instanceof PasswordRejectedError) {
+      return {
+        ok: false,
+        message: error.message,
+        fieldErrors: { password: [error.message] },
+      };
+    }
     if (error instanceof ForbiddenError || error instanceof UserConflictError) {
       return { ok: false, message: error.message };
     }
@@ -90,7 +126,11 @@ export async function updateUserAction(
     vesselId: vesselRaw,
   });
   if (!parsed.success) {
-    return { ok: false, message: "Please fix the highlighted fields." };
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
   }
   const vesselId =
     parsed.data.vesselId === "" || parsed.data.vesselId === undefined
@@ -119,13 +159,29 @@ export async function changeUserPasswordAction(
   await assertSameOriginMutation();
   const access = toAccessContext(await requireSession({ touch: true }));
   const id = readFormString(formData, "id");
-  const password = readFormString(formData, "password") ?? "";
+  const parsed = passwordSchema.safeParse({
+    password: readFormString(formData, "password") ?? "",
+  });
   if (!id) return { ok: false, message: "Missing user id." };
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Please fix the highlighted fields.",
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
   try {
-    await changeUserPassword(access, id, password);
+    await changeUserPassword(access, id, parsed.data.password);
     revalidatePath(usersPath);
     return { ok: true, message: "Password updated." };
   } catch (error) {
+    if (error instanceof PasswordRejectedError) {
+      return {
+        ok: false,
+        message: error.message,
+        fieldErrors: { password: [error.message] },
+      };
+    }
     if (
       error instanceof ForbiddenError ||
       error instanceof UserConflictError ||

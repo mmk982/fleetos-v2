@@ -41,6 +41,7 @@ async function main() {
   }
 
   await assertPasswordAllowed(plainPassword);
+  const normalizedEmail = email.trim().toLowerCase();
 
   const connectionString = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
   const pool = new Pool({ connectionString });
@@ -51,11 +52,11 @@ async function main() {
     const updated = await db
       .update(schema.users)
       .set({ passwordHash, updatedAt: new Date() })
-      .where(eq(schema.users.email, email))
+      .where(eq(schema.users.email, normalizedEmail))
       .returning({ id: schema.users.id, email: schema.users.email });
 
     if (updated.length === 0) {
-      console.error(`No user found with email: ${email}`);
+      console.error(`No user found with email: ${normalizedEmail}`);
       process.exit(1);
     }
 
