@@ -1,13 +1,17 @@
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
 import { validateSession } from "@/lib/auth/session";
 import {
   deleteVessel,
   getVesselById,
   updateVessel,
   VesselConflictError,
-  VesselNotFoundError,
 } from "@/modules/vessels/vessel.controller";
 import { vesselUpdateSchema } from "@/modules/vessels/validation";
 
@@ -27,11 +31,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const row = await getVesselById(toAccessContext(session), id);
-  if (!row) {
-    return NextResponse.json({ error: "Vessel not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Vessel not found");
   }
-  return NextResponse.json({ data: row });
+  try {
+    const row = await getVesselById(toAccessContext(session), id);
+    if (!row) {
+      return NextResponse.json({ error: "Vessel not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: row });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -44,6 +57,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Vessel not found");
+  }
 
   let body: unknown;
   try {
@@ -64,12 +80,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const data = await updateVessel(access, id, parsed.data);
     return NextResponse.json({ data });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    if (error instanceof VesselNotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
     if (error instanceof VesselConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
@@ -86,16 +98,15 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Vessel not found");
+  }
   try {
     await deleteVessel(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    if (error instanceof VesselNotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
     if (error instanceof VesselConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

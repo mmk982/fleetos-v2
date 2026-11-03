@@ -10,6 +10,7 @@ import {
   updateDrawing,
 } from "@/modules/drawings/drawing.controller";
 import { drawingUpdateSchema } from "@/modules/drawings/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,11 +20,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const row = await getDrawingById(toAccessContext(session), id);
-  if (!row) {
-    return NextResponse.json({ error: "Drawing not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Drawing not found");
   }
-  return NextResponse.json({ data: row });
+  try {
+    const row = await getDrawingById(toAccessContext(session), id);
+    if (!row) {
+      return NextResponse.json({ error: "Drawing not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: row });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -36,6 +46,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Drawing not found");
+  }
 
   let body: unknown;
   try {
@@ -78,6 +91,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Drawing not found");
+  }
   try {
     await deleteDrawing(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });

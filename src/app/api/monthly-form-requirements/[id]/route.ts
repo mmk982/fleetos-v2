@@ -10,6 +10,7 @@ import {
   updateMonthlyFormRequirement,
 } from "@/modules/monthly-forms/monthly-form-requirement.controller";
 import { monthlyFormRequirementUpdateSchema } from "@/modules/monthly-forms/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,14 +20,23 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const row = await getMonthlyFormRequirementById(toAccessContext(session), id);
-  if (!row) {
-    return NextResponse.json(
-      { error: "Requirement not found" },
-      { status: 404 },
-    );
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Requirement not found");
   }
-  return NextResponse.json({ data: row });
+  try {
+    const row = await getMonthlyFormRequirementById(toAccessContext(session), id);
+    if (!row) {
+      return NextResponse.json(
+        { error: "Requirement not found" },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json({ data: row });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -39,6 +49,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Requirement not found");
+  }
 
   let body: unknown;
   try {
@@ -81,6 +94,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Requirement not found");
+  }
   try {
     await deleteMonthlyFormRequirement(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });

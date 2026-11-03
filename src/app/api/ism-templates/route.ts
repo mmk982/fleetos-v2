@@ -10,6 +10,7 @@ import {
 } from "@/modules/ism-templates/ismTemplate.controller";
 import { ISM_TEMPLATE_STATUSES } from "@/modules/ism-templates/ismTemplate.model";
 import { ismTemplateCreateSchema } from "@/modules/ism-templates/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -26,11 +27,17 @@ export async function GET(request: Request) {
       ? (statusParam as IsmTemplateStatus)
       : undefined;
 
-  const data = await listIsmTemplates(toAccessContext(session), {
-    categoryId,
-    status,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listIsmTemplates(toAccessContext(session), {
+      categoryId,
+      status,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

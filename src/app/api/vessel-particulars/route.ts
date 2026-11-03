@@ -9,29 +9,36 @@ import {
   ParticularsConflictError,
 } from "@/modules/ship-particulars/particulars.controller";
 import { particularsCreateSchema } from "@/modules/ship-particulars/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const access = toAccessContext(session);
-  const url = new URL(request.url);
-  const vesselId = url.searchParams.get("vesselId") ?? undefined;
-  const isCurrentParam = url.searchParams.get("isCurrent");
-
-  if (!vesselId && isCurrentParam === null) {
-    const data = await listVesselParticularsSummary(access);
+  try {
+    const access = toAccessContext(session);
+    const url = new URL(request.url);
+    const vesselId = url.searchParams.get("vesselId") ?? undefined;
+    const isCurrentParam = url.searchParams.get("isCurrent");
+  
+    if (!vesselId && isCurrentParam === null) {
+      const data = await listVesselParticularsSummary(access);
+      return NextResponse.json({ data });
+    }
+  
+    const isCurrent =
+      isCurrentParam === null
+        ? undefined
+        : isCurrentParam === "true" || isCurrentParam === "1";
+  
+    const data = await listParticulars(access, { vesselId, isCurrent });
     return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
   }
-
-  const isCurrent =
-    isCurrentParam === null
-      ? undefined
-      : isCurrentParam === "true" || isCurrentParam === "1";
-
-  const data = await listParticulars(access, { vesselId, isCurrent });
-  return NextResponse.json({ data });
 }
 
 export async function POST(request: Request) {

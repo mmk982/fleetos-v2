@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
+import {
   AttachmentValidationError,
   CertificateNotFoundError,
   getCertificateById,
@@ -22,11 +27,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const detail = await getCertificateById(toAccessContext(session), id);
-  if (!detail) {
-    return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Certificate not found");
   }
-  return NextResponse.json({ data: detail.attachments });
+  try {
+    const detail = await getCertificateById(toAccessContext(session), id);
+    if (!detail) {
+      return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: detail.attachments });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /**
@@ -43,6 +57,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Certificate not found");
+  }
 
   let formData: FormData;
   try {

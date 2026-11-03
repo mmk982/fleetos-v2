@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
+import {
   AttachmentValidationError,
   DeficiencyNotFoundError,
   getDeficiencyById,
@@ -21,11 +26,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const detail = await getDeficiencyById(toAccessContext(session), id);
-  if (!detail) {
-    return NextResponse.json({ error: "Deficiency not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Deficiency not found");
   }
-  return NextResponse.json({ data: detail.attachments });
+  try {
+    const detail = await getDeficiencyById(toAccessContext(session), id);
+    if (!detail) {
+      return NextResponse.json({ error: "Deficiency not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: detail.attachments });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /** POST multipart upload (`file` field). Max 10 MB; PDF/JPEG/PNG. */
@@ -39,6 +53,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Deficiency not found");
+  }
 
   let formData: FormData;
   try {

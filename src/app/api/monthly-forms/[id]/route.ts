@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
+import {
   deleteMonthlyForm,
   getMonthlyFormById,
   MonthlyFormConflictError,
@@ -17,11 +22,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const row = await getMonthlyFormById(toAccessContext(session), id);
-  if (!row) {
-    return NextResponse.json({ error: "Form not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Form not found");
   }
-  return NextResponse.json({ data: row });
+  try {
+    const row = await getMonthlyFormById(toAccessContext(session), id);
+    if (!row) {
+      return NextResponse.json({ error: "Form not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: row });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -33,6 +47,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Form not found");
+  }
   try {
     await deleteMonthlyForm(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });

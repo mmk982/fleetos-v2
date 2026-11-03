@@ -5,6 +5,7 @@
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import {
+  AttachmentFileMissingError,
   contentTypeForAttachment,
   openStoredAttachmentStream,
 } from "@/lib/attachments/stream";
@@ -28,7 +29,13 @@ export async function GET() {
         "Cache-Control": "public, max-age=300",
       },
     });
-  } catch {
+  } catch (error) {
+    if (
+      error instanceof AttachmentFileMissingError ||
+      (error instanceof Error && error.message === "Attachment path rejected")
+    ) {
+      return NextResponse.json({ error: "Logo not found" }, { status: 404 });
+    }
     return NextResponse.json({ error: "Logo not found" }, { status: 404 });
   }
 }

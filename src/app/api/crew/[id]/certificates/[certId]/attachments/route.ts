@@ -1,6 +1,11 @@
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
 import { validateSession } from "@/lib/auth/session";
 import {
   AttachmentValidationError,
@@ -19,19 +24,31 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const access = toAccessContext(session);
-  const { id: crewMemberId, certId } = await context.params;
+  try {
+    const access = toAccessContext(session);
+    const { id: crewMemberId, certId } = await context.params;
+    if (!isUuidParam(crewMemberId)) {
+      return invalidUuidResponse("Crew member not found");
+    }
+    if (!isUuidParam(certId)) {
+      return invalidUuidResponse("Crew certificate not found");
+    }
 
-  const cert = await getCrewCertificateById(access, certId);
-  if (!cert || cert.crewMemberId !== crewMemberId) {
-    return NextResponse.json(
-      { error: "Crew certificate not found" },
-      { status: 404 },
-    );
+    const cert = await getCrewCertificateById(access, certId);
+    if (!cert || cert.crewMemberId !== crewMemberId) {
+      return NextResponse.json(
+        { error: "Crew certificate not found" },
+        { status: 404 },
+      );
+    }
+
+    const data = await listCrewCertificateAttachments(access, certId);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
   }
-
-  const data = await listCrewCertificateAttachments(access, certId);
-  return NextResponse.json({ data });
 }
 
 /** POST multipart upload (`file` field). Max 10 MB; PDF/JPEG/PNG. */
@@ -45,6 +62,12 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: crewMemberId, certId } = await context.params;
+  if (!isUuidParam(crewMemberId)) {
+    return invalidUuidResponse("Crew member not found");
+  }
+  if (!isUuidParam(certId)) {
+    return invalidUuidResponse("Crew certificate not found");
+  }
 
   const existing = await getCrewCertificateById(access, certId);
   if (!existing || existing.crewMemberId !== crewMemberId) {

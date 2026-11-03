@@ -8,6 +8,7 @@ import {
   MonthlyFormRequirementConflictError,
 } from "@/modules/monthly-forms/monthly-form-requirement.controller";
 import { monthlyFormRequirementCreateSchema } from "@/modules/monthly-forms/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -16,10 +17,16 @@ export async function GET(request: Request) {
   }
   const url = new URL(request.url);
   const vesselId = url.searchParams.get("vesselId") ?? undefined;
-  const data = await listMonthlyFormRequirements(toAccessContext(session), {
-    vesselId,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listMonthlyFormRequirements(toAccessContext(session), {
+      vesselId,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

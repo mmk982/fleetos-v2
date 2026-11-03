@@ -10,6 +10,7 @@ import {
 } from "@/modules/monthly-forms/monthlyForm.controller";
 import { MONTHLY_FORM_STATUSES } from "@/modules/monthly-forms/monthlyForm.model";
 import { monthlyFormCreateSchema } from "@/modules/monthly-forms/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -30,13 +31,19 @@ export async function GET(request: Request) {
       ? (statusParam as MonthlyFormStatus)
       : undefined;
 
-  const data = await listMonthlyForms(toAccessContext(session), {
-    vesselId,
-    month: Number.isFinite(month) ? month : undefined,
-    year: Number.isFinite(year) ? year : undefined,
-    status,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listMonthlyForms(toAccessContext(session), {
+      vesselId,
+      month: Number.isFinite(month) ? month : undefined,
+      year: Number.isFinite(year) ? year : undefined,
+      status,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

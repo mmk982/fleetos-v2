@@ -1,3 +1,4 @@
+import { isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
@@ -22,6 +23,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Form not found");
+  }
 
   let formData: FormData;
   try {

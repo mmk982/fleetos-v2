@@ -1,3 +1,4 @@
+import { isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
@@ -22,6 +23,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: manualId, revisionId } = await context.params;
+  if (!isUuidParam(manualId)) {
+    return invalidUuidResponse("Manual not found");
+  }
+  if (!isUuidParam(revisionId)) {
+    return invalidUuidResponse("Revision not found");
+  }
 
   let body: unknown;
   try {

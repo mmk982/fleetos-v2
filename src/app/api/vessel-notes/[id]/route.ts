@@ -1,3 +1,4 @@
+import { isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
@@ -18,6 +19,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Note not found");
+  }
   try {
     await deleteVesselNote(toAccessContext(session), id);
     return new NextResponse(null, { status: 204 });

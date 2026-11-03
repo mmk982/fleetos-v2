@@ -9,6 +9,7 @@ import {
 } from "@/modules/crew/crew-certificate.controller";
 import { CrewMemberNotFoundError } from "@/modules/crew/crew.controller";
 import { crewCertificateCreateSchema } from "@/modules/crew/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,8 +19,17 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const data = await listCrewCertificates(toAccessContext(session), id);
-  return NextResponse.json({ data });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Crew member not found");
+  }
+  try {
+    const data = await listCrewCertificates(toAccessContext(session), id);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -32,6 +42,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: crewMemberId } = await context.params;
+  if (!isUuidParam(crewMemberId)) {
+    return invalidUuidResponse("Crew member not found");
+  }
 
   let body: unknown;
   try {

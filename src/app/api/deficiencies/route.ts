@@ -9,6 +9,7 @@ import {
 } from "@/modules/deficiencies/deficiency.controller";
 import { deficiencyCreateSchema } from "@/modules/deficiencies/validation";
 import type { DeficiencyStatus } from "@/db/schema";
+import { mapGetError } from "@/lib/api/route-errors";
 
 async function requireApiSession() {
   return validateSession();
@@ -29,13 +30,19 @@ export async function GET(request: Request) {
     ? (statusParam as DeficiencyStatus)
     : undefined;
 
-  const data = await listDeficiencies(toAccessContext(session), {
-    vesselId,
-    status,
-    sourceId,
-    category,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listDeficiencies(toAccessContext(session), {
+      vesselId,
+      status,
+      sourceId,
+      category,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

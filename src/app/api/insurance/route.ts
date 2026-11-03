@@ -10,6 +10,7 @@ import {
 } from "@/modules/insurance/insurance.controller";
 import { INSURANCE_TYPES } from "@/modules/insurance/insurance.model";
 import { insuranceCreateSchema } from "@/modules/insurance/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -26,11 +27,17 @@ export async function GET(request: Request) {
       ? (policyTypeParam as InsuranceType)
       : undefined;
 
-  const data = await listInsurancePolicies(toAccessContext(session), {
-    vesselId,
-    policyType,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listInsurancePolicies(toAccessContext(session), {
+      vesselId,
+      policyType,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

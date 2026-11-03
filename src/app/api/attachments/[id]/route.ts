@@ -12,13 +12,21 @@
  */
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
-import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { toAccessContext } from "@/lib/auth/access";
+import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
 import { contentDispositionInline } from "@/lib/attachments/content-disposition";
 import {
   AttachmentNotFoundError,
   resolveAttachmentStream,
 } from "@/lib/attachments/resolve";
-import { contentTypeForAttachment } from "@/lib/attachments/stream";
+import {
+  AttachmentFileMissingError,
+  contentTypeForAttachment,
+} from "@/lib/attachments/stream";
 import { validateSession } from "@/lib/auth/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -30,6 +38,10 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Attachment not found");
+  }
+
   try {
     const { fileName, filePath, stream } = await resolveAttachmentStream(
       toAccessContext(session),
@@ -48,8 +60,10 @@ export async function GET(_request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    if (error instanceof AttachmentFileMissingError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
     if (error instanceof AttachmentNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });

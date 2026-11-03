@@ -12,6 +12,11 @@
 import "server-only";
 
 import * as Sentry from "@sentry/node";
+import { DrizzleQueryError } from "drizzle-orm/errors";
+import {
+  getPgConstraintName,
+  getPgErrorCode,
+} from "@/lib/db/pg-errors";
 
 let sentryInitialized = false;
 
@@ -36,6 +41,67 @@ function ensureSentry(): boolean {
   return true;
 }
 
+function isDrizzleQueryError(error: unknown): error is DrizzleQueryError {
+  if (error instanceof DrizzleQueryError) return true;
+  // Duck-type for cases where the class identity differs across bundles.
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "query" in error &&
+    "params" in error &&
+    typeof (error as { query: unknown }).query === "string"
+  );
+}
+
+/**
+ * Builds console / Sentry-safe fields for a thrown value.
+ *
+ * DrizzleQueryError embeds SQL text and bound params in `message` (and on
+ * `.query` / `.params`). Those must never reach logs or GlitchTip — only
+ * SQLSTATE, constraint name, the operation code, and a sanitized message.
+ */
+export function sanitizeLogError(
+  operation: string,
+  thrown: unknown,
+): {
+  message?: string;
+  name?: string;
+  sqlstate?: string;
+  constraint?: string;
+  operation: string;
+  sentryError?: Error;
+} {
+  if (!(thrown instanceof Error) && !isDrizzleQueryError(thrown)) {
+    return { operation };
+  }
+
+  if (isDrizzleQueryError(thrown)) {
+    const sqlstate = getPgErrorCode(thrown);
+    const constraint = getPgConstraintName(thrown);
+    const message = sqlstate
+      ? `Database query failed (${sqlstate})`
+      : "Database query failed";
+    const sentryError = new Error(message);
+    sentryError.name = "DrizzleQueryError";
+    return {
+      operation,
+      message,
+      name: "DrizzleQueryError",
+      ...(sqlstate ? { sqlstate } : {}),
+      ...(constraint ? { constraint } : {}),
+      sentryError,
+    };
+  }
+
+  const err = thrown as Error;
+  return {
+    operation,
+    message: err.message,
+    name: err.name,
+    sentryError: err,
+  };
+}
+
 /**
  * Records an unexpected controller/DB-boundary failure.
  *
@@ -46,9 +112,9 @@ function ensureSentry(): boolean {
  */
 export function logError(code: string, context: Record<string, unknown> = {}): void {
   const thrown =
-    context.error instanceof Error
+    context.error instanceof Error || isDrizzleQueryError(context.error)
       ? context.error
-      : context.err instanceof Error
+      : context.err instanceof Error || isDrizzleQueryError(context.err)
         ? context.err
         : undefined;
 
@@ -56,16 +122,18 @@ export function logError(code: string, context: Record<string, unknown> = {}): v
   delete rest.error;
   delete rest.err;
 
+  const sanitized = sanitizeLogError(code, thrown);
   const line: Record<string, unknown> = {
     level: "error",
     code,
     ...rest,
+    operation: sanitized.operation,
     ts: new Date().toISOString(),
   };
-  if (thrown) {
-    line.message = thrown.message;
-    line.name = thrown.name;
-  }
+  if (sanitized.message !== undefined) line.message = sanitized.message;
+  if (sanitized.name !== undefined) line.name = sanitized.name;
+  if (sanitized.sqlstate !== undefined) line.sqlstate = sanitized.sqlstate;
+  if (sanitized.constraint !== undefined) line.constraint = sanitized.constraint;
 
   console.error(JSON.stringify(line));
 
@@ -75,9 +143,18 @@ export function logError(code: string, context: Record<string, unknown> = {}): v
     }
     Sentry.withScope((scope) => {
       scope.setTag("fleetos.code", code);
-      scope.setExtras(rest);
-      if (thrown) {
-        Sentry.captureException(thrown);
+      scope.setTag("fleetos.operation", code);
+      if (sanitized.sqlstate) scope.setTag("fleetos.sqlstate", sanitized.sqlstate);
+      if (sanitized.constraint) {
+        scope.setExtra("constraint", sanitized.constraint);
+      }
+      const extras: Record<string, unknown> = { ...rest };
+      // Never forward raw Drizzle query/params via extras.
+      delete extras.query;
+      delete extras.params;
+      scope.setExtras(extras);
+      if (sanitized.sentryError) {
+        Sentry.captureException(sanitized.sentryError);
       } else {
         Sentry.captureMessage(code, "error");
       }

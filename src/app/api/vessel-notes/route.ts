@@ -8,6 +8,7 @@ import {
   VesselNoteConflictError,
 } from "@/modules/ship-particulars/vessel-notes.controller";
 import { vesselNoteCreateSchema } from "@/modules/ship-particulars/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -21,8 +22,14 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
-  const data = await listVesselNotes(toAccessContext(session), vesselId);
-  return NextResponse.json({ data });
+  try {
+    const data = await listVesselNotes(toAccessContext(session), vesselId);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

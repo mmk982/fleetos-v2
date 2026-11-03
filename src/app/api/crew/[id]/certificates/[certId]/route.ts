@@ -11,6 +11,7 @@ import {
   updateCrewCertificate,
 } from "@/modules/crew/crew-certificate.controller";
 import { crewCertificateUpdateSchema } from "@/modules/crew/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = {
   params: Promise<{ id: string; certId: string }>;
@@ -21,17 +22,29 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const access = toAccessContext(session);
-  const { id: crewMemberId, certId } = await context.params;
-  const cert = await getCrewCertificateById(access, certId, { logView: true });
-  if (!cert || cert.crewMemberId !== crewMemberId) {
-    return NextResponse.json(
-      { error: "Crew certificate not found" },
-      { status: 404 },
-    );
+  try {
+    const access = toAccessContext(session);
+    const { id: crewMemberId, certId } = await context.params;
+    if (!isUuidParam(crewMemberId)) {
+      return invalidUuidResponse("Crew member not found");
+    }
+    if (!isUuidParam(certId)) {
+      return invalidUuidResponse("Crew certificate not found");
+    }
+    const cert = await getCrewCertificateById(access, certId, { logView: true });
+    if (!cert || cert.crewMemberId !== crewMemberId) {
+      return NextResponse.json(
+        { error: "Crew certificate not found" },
+        { status: 404 },
+      );
+    }
+    const attachments = await listCrewCertificateAttachments(access, certId);
+    return NextResponse.json({ data: { ...cert, attachments } });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
   }
-  const attachments = await listCrewCertificateAttachments(access, certId);
-  return NextResponse.json({ data: { ...cert, attachments } });
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -44,6 +57,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: crewMemberId, certId } = await context.params;
+  if (!isUuidParam(crewMemberId)) {
+    return invalidUuidResponse("Crew member not found");
+  }
+  if (!isUuidParam(certId)) {
+    return invalidUuidResponse("Crew certificate not found");
+  }
 
   const existing = await getCrewCertificateById(access, certId);
   if (!existing || existing.crewMemberId !== crewMemberId) {
@@ -95,6 +114,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: crewMemberId, certId } = await context.params;
+  if (!isUuidParam(crewMemberId)) {
+    return invalidUuidResponse("Crew member not found");
+  }
+  if (!isUuidParam(certId)) {
+    return invalidUuidResponse("Crew certificate not found");
+  }
 
   const existing = await getCrewCertificateById(access, certId);
   if (!existing || existing.crewMemberId !== crewMemberId) {

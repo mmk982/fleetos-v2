@@ -9,6 +9,7 @@ import {
   ManualNotFoundError,
 } from "@/modules/manuals/manual.controller";
 import { manualRevisionCreateSchema } from "@/modules/manuals/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,11 +19,20 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const detail = await getManualById(toAccessContext(session), id);
-  if (!detail) {
-    return NextResponse.json({ error: "Manual not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Manual not found");
   }
-  return NextResponse.json({ data: detail.revisions });
+  try {
+    const detail = await getManualById(toAccessContext(session), id);
+    if (!detail) {
+      return NextResponse.json({ error: "Manual not found" }, { status: 404 });
+    }
+    return NextResponse.json({ data: detail.revisions });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /** POST multipart: revision fields + `file`. */
@@ -36,6 +46,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id: manualId } = await context.params;
+  if (!isUuidParam(manualId)) {
+    return invalidUuidResponse("Manual not found");
+  }
 
   let formData: FormData;
   try {

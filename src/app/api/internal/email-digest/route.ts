@@ -7,6 +7,7 @@
  */
 import { NextResponse } from "next/server";
 import { isValidCronAuth } from "@/lib/auth/cron-auth";
+import { primeBusinessTimezone } from "@/lib/settings/business-time";
 import { runEmailDigest } from "@/modules/email-digest/email-digest.controller";
 
 export async function POST(request: Request) {
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Cron has no session, so prime the company TZ before digest date math (A-24).
+  await primeBusinessTimezone();
   const result = await runEmailDigest();
   return NextResponse.json(result);
 }

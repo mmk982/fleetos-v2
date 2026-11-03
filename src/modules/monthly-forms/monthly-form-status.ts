@@ -12,18 +12,20 @@
 export type MonthlyFormDisplayStatus = "submitted" | "pending" | "overdue";
 
 /**
- * Last calendar day of `month` in `year` at local midnight.
+ * Last calendar day of `month` in `year` at **UTC** midnight.
  *
  * Uses the standard JS trick: day `0` of the *next* month index equals the
  * last day of the target month. Callers pass a **1–12** calendar month
- * (not a 0-based JS month index).
+ * (not a 0-based JS month index). Built with {@link Date.UTC} so the result
+ * does not shift under a non-UTC process timezone (A-17); callers typically
+ * compare against `businessNow()` which is also UTC-midnight based.
  *
  * @param year - Full year (e.g. 2026)
  * @param month - Calendar month 1–12
- * @returns Date at local midnight on the last day of that month
+ * @returns Date at UTC midnight on the last day of that month
  */
 export function lastDayOfMonth(year: number, month: number): Date {
-  return new Date(year, month, 0);
+  return new Date(Date.UTC(year, month, 0));
 }
 
 /**

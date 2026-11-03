@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
+import {
   AttachmentValidationError,
   getParticularsById,
   listParticularsAttachments,
@@ -18,16 +23,25 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const access = toAccessContext(session);
-  const detail = await getParticularsById(access, id);
-  if (!detail) {
-    return NextResponse.json(
-      { error: "Particulars not found" },
-      { status: 404 },
-    );
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Particulars not found");
   }
-  const data = await listParticularsAttachments(access, id);
-  return NextResponse.json({ data });
+  try {
+    const access = toAccessContext(session);
+    const detail = await getParticularsById(access, id);
+    if (!detail) {
+      return NextResponse.json(
+        { error: "Particulars not found" },
+        { status: 404 },
+      );
+    }
+    const data = await listParticularsAttachments(access, id);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -40,6 +54,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Particulars not found");
+  }
 
   let formData: FormData;
   try {

@@ -10,6 +10,7 @@ import {
 } from "@/modules/crew/crew.controller";
 import { CREW_STATUSES } from "@/modules/crew/crew.model";
 import { crewMemberCreateSchema } from "@/modules/crew/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -27,12 +28,18 @@ export async function GET(request: Request) {
       ? (statusParam as CrewStatus)
       : undefined;
 
-  const data = await listCrewMembers(toAccessContext(session), {
-    vesselId,
-    status,
-    categoryId,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listCrewMembers(toAccessContext(session), {
+      vesselId,
+      status,
+      categoryId,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

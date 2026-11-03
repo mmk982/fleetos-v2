@@ -10,6 +10,7 @@ import {
   submitMonthlyForm,
 } from "@/modules/monthly-forms/monthlyForm.controller";
 import { monthlyFormSubmitSchema } from "@/modules/monthly-forms/validation";
+import { mapGetError, isUuidParam, invalidUuidResponse } from "@/lib/api/route-errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,13 +20,22 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const access = toAccessContext(session);
-  const detail = await getMonthlyFormById(access, id);
-  if (!detail) {
-    return NextResponse.json({ error: "Form not found" }, { status: 404 });
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Form not found");
   }
-  const data = await listMonthlyFormAttachments(access, id);
-  return NextResponse.json({ data });
+  try {
+    const access = toAccessContext(session);
+    const detail = await getMonthlyFormById(access, id);
+    if (!detail) {
+      return NextResponse.json({ error: "Form not found" }, { status: 404 });
+    }
+    const data = await listMonthlyFormAttachments(access, id);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /**
@@ -42,6 +52,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("Form not found");
+  }
 
   let formData: FormData;
   try {

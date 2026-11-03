@@ -9,6 +9,7 @@ import {
   ManualConflictError,
 } from "@/modules/manuals/manual.controller";
 import { manualCreateSchema } from "@/modules/manuals/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -17,12 +18,18 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const data = await listManuals(toAccessContext(session), {
-    vesselId: url.searchParams.get("vesselId") ?? undefined,
-    manualType: url.searchParams.get("manualType") ?? undefined,
-    department: url.searchParams.get("department") ?? undefined,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listManuals(toAccessContext(session), {
+      vesselId: url.searchParams.get("vesselId") ?? undefined,
+      manualType: url.searchParams.get("manualType") ?? undefined,
+      department: url.searchParams.get("department") ?? undefined,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /** POST multipart: manual fields + `file` for the first revision. */

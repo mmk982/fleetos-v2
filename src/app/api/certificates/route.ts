@@ -10,6 +10,7 @@ import {
   listCertificates,
 } from "@/modules/certificates/certificate.controller";
 import { certificateCreateSchema } from "@/modules/certificates/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 async function requireApiSession() {
   return validateSession();
@@ -31,13 +32,19 @@ export async function GET(request: Request) {
     ? (statusParam as ComplianceStatus)
     : undefined;
 
-  const data = await listCertificates(toAccessContext(session), {
-    vesselId,
-    authority,
-    issuingAuthorityId,
-    status,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listCertificates(toAccessContext(session), {
+      vesselId,
+      authority,
+      issuingAuthorityId,
+      status,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

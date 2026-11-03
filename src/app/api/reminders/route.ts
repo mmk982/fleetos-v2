@@ -18,6 +18,7 @@ import {
   REMINDER_TYPES,
 } from "@/modules/reminders/reminder.model";
 import { reminderCreateSchema } from "@/modules/reminders/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -46,13 +47,19 @@ export async function GET(request: Request) {
       ? (statusParam as ReminderStatus)
       : undefined;
 
-  const data = await listReminders(toAccessContext(session), {
-    vesselId,
-    type,
-    priority,
-    status,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listReminders(toAccessContext(session), {
+      vesselId,
+      type,
+      priority,
+      status,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

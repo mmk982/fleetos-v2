@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
 import { validateSession } from "@/lib/auth/session";
 import {
+  invalidUuidResponse,
+  isUuidParam,
+  mapGetError,
+} from "@/lib/api/route-errors";
+import {
   AttachmentValidationError,
   getIsmTemplateById,
   IsmTemplateNotFoundError,
@@ -18,16 +23,25 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  const access = toAccessContext(session);
-  const detail = await getIsmTemplateById(access, id);
-  if (!detail) {
-    return NextResponse.json(
-      { error: "ISM template not found" },
-      { status: 404 },
-    );
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("ISM template not found");
   }
-  const data = await listIsmTemplateAttachments(access, id);
-  return NextResponse.json({ data });
+  try {
+    const access = toAccessContext(session);
+    const detail = await getIsmTemplateById(access, id);
+    if (!detail) {
+      return NextResponse.json(
+        { error: "ISM template not found" },
+        { status: 404 },
+      );
+    }
+    const data = await listIsmTemplateAttachments(access, id);
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 /** POST multipart upload (`file` field). Max 10 MB; PDF/JPEG/PNG. */
@@ -41,6 +55,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const access = toAccessContext(session);
   const { id } = await context.params;
+  if (!isUuidParam(id)) {
+    return invalidUuidResponse("ISM template not found");
+  }
 
   let formData: FormData;
   try {

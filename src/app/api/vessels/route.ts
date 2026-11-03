@@ -1,6 +1,7 @@
 import { rejectCrossOrigin } from "@/lib/auth/request-guard";
 import { NextResponse } from "next/server";
 import { ForbiddenError, toAccessContext } from "@/lib/auth/access";
+import { mapGetError } from "@/lib/api/route-errors";
 import { validateSession } from "@/lib/auth/session";
 import {
   createVessel,
@@ -22,8 +23,14 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await listVessels(toAccessContext(session));
-  return NextResponse.json({ data });
+  try {
+    const data = await listVessels(toAccessContext(session));
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {

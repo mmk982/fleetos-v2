@@ -8,6 +8,7 @@ import {
   listDrawings,
 } from "@/modules/drawings/drawing.controller";
 import { drawingCreateSchema } from "@/modules/drawings/validation";
+import { mapGetError } from "@/lib/api/route-errors";
 
 export async function GET(request: Request) {
   const session = await validateSession();
@@ -19,11 +20,17 @@ export async function GET(request: Request) {
   const vesselId = url.searchParams.get("vesselId") ?? undefined;
   const categoryId = url.searchParams.get("categoryId") ?? undefined;
 
-  const data = await listDrawings(toAccessContext(session), {
-    vesselId,
-    categoryId,
-  });
-  return NextResponse.json({ data });
+  try {
+    const data = await listDrawings(toAccessContext(session), {
+      vesselId,
+      categoryId,
+    });
+    return NextResponse.json({ data });
+  } catch (error) {
+    const mapped = mapGetError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {
