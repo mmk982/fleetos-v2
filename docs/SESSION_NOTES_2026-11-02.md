@@ -15,6 +15,8 @@
 - Single-tenant per deployment: no cross-org isolation needed.
 - Login limiter: keep 5/account, 40/IP per 15 min; watch `LOGIN_RATE_LIMIT_*` during trial; adjust only if legit users get locked (open question: shared office IP?).
 - Postgres 17.4 -> 17.x bump: defer to the server, after backup.
+- Arabic/RTL removal: CANCELLED (2026-11-03). Keep the Arabic/RTL code and `preferred_locale` in case Arabic is wanted later; no migration for it. Next migration number is 0031.
+- RLS for `vessels` done on `cursor/rls-vessels` (migration 0030, 26 RLS tables).
 
 ## Local housekeeping
 - Delete untracked `C:\fleetos-v2\backend` (leftover `vendor/`, slow to remove from sandbox): `Remove-Item -Recurse -Force C:\fleetos-v2\backend`. Keep `eslint.config.mjs` unmodified.
@@ -22,6 +24,6 @@
 
 ## Next options
 1. Optional RLS for `vessels` (new migration ~0030).
-2. Arabic/RTL removal (spec in local `cursor-prompt-remove-arabic.md`; drops `preferred_locale`).
+2. (cancelled) Arabic/RTL removal.
 3. Before real data: review `docs/privacy/*` drafts (legal framework undecided) + human-only server items (VPS, DNS/TLS, B2/rclone, age key custody, GitHub env secrets, email DPA, forged-XFF test with `TRUSTED_PROXY_HOPS=1`, first restore drill).
 4. Merge strategy: one PR from the chain tip to `master`; local `master` is 78 commits ahead of `origin/master` — decide how to handle first.
