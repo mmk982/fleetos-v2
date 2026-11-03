@@ -1,4 +1,4 @@
-# PostgreSQL Row Level Security (phases 1–2)
+# PostgreSQL Row Level Security (phases 1–3)
 
 Second defense layer under app-layer `assertModuleAccess` /
 `assertVesselScope`. Fail-closed: missing session vars → no rows / no writes
@@ -19,7 +19,7 @@ migrations.**
 
 1. As Postgres superuser/owner: create `fleetos_app LOGIN PASSWORD '…' NOSUPERUSER NOBYPASSRLS`.
 2. Set `DATABASE_MIGRATE_URL` (owner) and `DATABASE_URL` (`fleetos_app`) in the app env.
-3. Run `npm run db:migrate` (applies schema + RLS migrations `0025` / `0026`, re-grants DML to `fleetos_app`, seeds).
+3. Run `npm run db:migrate` (applies schema + RLS migrations `0025` / `0026` / `0030`, re-grants DML to `fleetos_app`, seeds).
 4. Restart the app so it uses `DATABASE_URL` as `fleetos_app`.
 
 If `DATABASE_MIGRATE_URL` is unset, migrate falls back to `DATABASE_URL` and
@@ -67,16 +67,25 @@ be **sequential** (no `Promise.all` on the shared `pg` client).
 | `audits` / `psc_inspections` | vessel; writes `app_can_write_audits()` / `app_can_write_psc()` (admin/super/management) |
 | `notifications` | SELECT/UPDATE: `user_id = app_user_id()` **or** `app_is_system()`; INSERT own or system; no DELETE policy |
 
+### Phase 3 (`vessels`)
+
+| Table | Expression |
+| --- | --- |
+| `vessels` | SELECT `app_sees_vessel(id)`; writes `app_can_write_vessels()` ∧ same (admin only; system may SELECT, not write) |
+
 `app_sees_vessel`: system + office (`admin`/`superintendent`/`read_only`) → all rows;
 scoped (`management_user`/`vessel_user`) → matching `app.vessel_id`; NULL vessel or
 missing setting → false for scoped.
+
+**RLS table count:** 26 (`ENABLE ROW LEVEL SECURITY` in `drizzle/0025` + `0026` +
+`0030` — verified by grepping migrations, not by memory).
 
 ### Stays app-layer only
 
 - Finer monthly-form gates (`full` vs `submit` vs listing requirements on the
   list page) beyond coarse RLS write helpers.
-- Module “none” vs “read” UI (e.g. `vessels` module for vessel_user) — RLS does
-  not cover `vessels` itself.
+- Module “none” vs “read” UI gating (RBAC matrix) — RLS does not replace
+  `assertModuleAccess`.
 - IDOR shape that is not vessel/user-row shaped.
 - Attachment path validation / MIME checks.
 
@@ -101,6 +110,8 @@ missing setting → false for scoped.
 | `src/modules/psc/psc.controller.ts` | `withDb` |
 | `src/modules/notifications/notifications.controller.ts` | `withDb` on list/mark-read; **`withSystemDb("notification-sync")`** for sync writers |
 | `src/modules/alerts/alerts.controller.ts` (`getAlerts`) | `withDb` (certs/crew/insurance/deficiencies) |
+| `src/modules/vessels/vessel.controller.ts` | `withDb` (mig 0030) |
+| `src/modules/settings/users.controller.ts` (`listUsers`) | `withDb` — left-joins `vessels` for display name |
 | `src/lib/access-log/write.ts` | `withDb` |
 | `src/lib/attachments/resolve.ts` | no direct DB — calls wrapped controllers |
 | Export routes / dashboard pages / nav-badges | call wrapped controllers only |
@@ -115,11 +126,10 @@ missing setting → false for scoped.
 
 | Area | Why safe |
 | --- | --- |
-| `src/lib/auth/session.ts`, `src/modules/auth/actions.ts` | `users` / `sessions` — auth before identity; **out of RLS scope** |
-| `src/lib/settings/*`, company profile / users controllers | `settings` / `company_profile` / `users` — **out of scope** (phase 3 candidates) |
+| `src/lib/auth/session.ts`, `src/modules/auth/actions.ts` | `users` / `sessions` — auth before identity; **out of RLS scope**; login does **not** read `vessels` |
+| `src/lib/settings/*`, company profile; users create/update/delete | `settings` / `company_profile` / `users` — **out of scope** (no vessels join except `listUsers` above) |
 | `src/lib/activity-log/write.ts`, activity-log controller | `activity_logs` — **out of scope** |
 | `src/modules/email-digest/email-digest.controller.ts` | reads `users` / `email_deliveries` (out of scope); alerts via `getAlerts`→`withDb` |
-| `src/modules/vessels/vessel.controller.ts` | `vessels` itself — **not RLS’d**; proposal: scoped roles should only SELECT their vessel (phase 3) |
 | `src/modules/ism-templates/ismTemplate.controller.ts` | fleet-wide templates — **out of scope** |
 | Seeds / `scripts/migrate.ts` | Owner connection (`DATABASE_MIGRATE_URL`) **bypasses RLS** |
 
@@ -128,12 +138,12 @@ missing setting → false for scoped.
 | Table / area | Why not covered |
 | --- | --- |
 | `users`, `sessions` | Auth must run before `app.user_id` exists; RLS would lock login. |
-| `settings`, `company_profile` | Fleet-office config; not vessel-scoped; phase-3 candidate if multi-tenant. |
-| `vessels` | Listing currently app-gated; **proposal**: enable RLS so scoped roles only see their row — do not implement in phase 2. |
+| `settings`, `company_profile` | Fleet-office config; not vessel-scoped; phase-3+ candidate if multi-tenant. |
 | System lists / lookup tables (sources, categories, severities, …) | Reference data shared fleet-wide; no vessel FK. |
 | `ism_templates` (+ categories/attachments) | Fleet-wide blanks; no vessel; phase-3 only if templates become tenant-scoped. |
 | `email_deliveries` | Cron/digest bookkeeping; no user vessel scope. |
 | `activity_logs` | Audit trail; phase-3 candidate (own rows vs office). |
+| `login_attempts` | Pre-auth rate limiting; no user context. |
 
 ## Tests
 
@@ -142,17 +152,19 @@ npm test                 # unit (excludes integration)
 npm run test:integration # real Postgres; creates/drops fleetos_rls_test
 ```
 
-- Phase 1: `tests/integration/rls-phase1.test.ts` (14)
-- Phase 2: `tests/integration/rls-phase2.test.ts` (12)
+- Phase 1: `tests/integration/rls-phase1.test.ts`
+- Phase 2: `tests/integration/rls-phase2.test.ts`
+- Vessels: `tests/integration/rls-vessels.test.ts`
 
 ## Migrations
 
 - `drizzle/0025_rls_phase1.sql` — helpers + phase-1 tables
 - `drizzle/0026_rls_phase2.sql` — phase-2 tables + write helpers aligned to `MODULE_PERMISSIONS`
+- `drizzle/0030_rls_vessels.sql` — `vessels` + `app_can_write_vessels()`
 
 ## Known limits
 
 - Connecting the app as the **table owner** bypasses RLS (by design without `FORCE`). Always use `fleetos_app` for `DATABASE_URL` in staging/prod.
 - Pooled connections: session vars are transaction-local; `withDb` always `BEGIN`/`COMMIT`/`ROLLBACK` and `release`s the client.
-- `withSystemDb` can SELECT/INSERT notifications and SELECT vessel-scoped rows — keep the reason union tiny.
+- `withSystemDb` can SELECT vessel-scoped rows and notifications — keep the reason union tiny.
 - App-layer bugs can still 500 on ForbiddenError (e.g. monthly-forms list calling requirements with submit-only role).

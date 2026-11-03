@@ -62,10 +62,11 @@ const ALL_WRITE = {
  *
  * `vessels` (2026-11-02 owner decisions):
  * - `vessel_user` / `management_user`: **read** of assigned vessel only
- *   (app-layer scope; `vessels` table is not RLS’d).
+ *   (app-layer scope + Postgres RLS via `app_sees_vessel(id)`, mig 0030).
  * - `superintendent` / `read_only`: **read** fleet-wide (all vessels; office
  *   roles — `requireScopedVesselId` applies no filter).
- * - Writes stay **admin-only**. Particulars/notes permissions unchanged.
+ * - Writes stay **admin-only** (`app_can_write_vessels`). Particulars/notes
+ *   permissions unchanged.
  */
 export const MODULE_PERMISSIONS: Record<
   UserRole,

@@ -17,7 +17,8 @@
  * (`MASTER_IMPLEMENTATION_PLAN.md` Phase 3 / Phase 6). Reads for
  * vessel-scoped roles are filtered via {@link requireScopedVesselId} /
  * {@link assertVesselScope}; writes remain `vessels: write` (admin only).
- * The `vessels` table itself is not under Postgres RLS — app-layer only.
+ * Postgres RLS on `vessels` (migration 0030) is an additional defence layer —
+ * all queries run inside {@link withDb}.
  */
 import "server-only";
 
@@ -26,7 +27,7 @@ import {
   isPgForeignKeyViolation,
   isPgUniqueViolation,
 } from "@/lib/db/pg-errors";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import { vessels, type VesselRow } from "@/db/schema";
 import {
   assertAuthenticatedAccess,
@@ -63,17 +64,19 @@ export class VesselConflictError extends Error {
  * @param ctx - Authenticated caller (third defense layer).
  */
 export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "vessels", "read");
-  const scopedVesselId = requireScopedVesselId(ctx);
-  if (scopedVesselId) {
-    return getDb()
-      .select()
-      .from(vessels)
-      .where(eq(vessels.id, scopedVesselId))
-      .orderBy(asc(vessels.name));
-  }
-  return getDb().select().from(vessels).orderBy(asc(vessels.name));
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "vessels", "read");
+    const scopedVesselId = requireScopedVesselId(ctx);
+    if (scopedVesselId) {
+      return getDb()
+        .select()
+        .from(vessels)
+        .where(eq(vessels.id, scopedVesselId))
+        .orderBy(asc(vessels.name));
+    }
+    return getDb().select().from(vessels).orderBy(asc(vessels.name));
+  });
 }
 
 /**
@@ -85,30 +88,34 @@ export async function listVessels(ctx: AccessContext): Promise<VesselRow[]> {
 export async function listSelectableVessels(
   ctx: AccessContext,
 ): Promise<VesselRow[]> {
-  assertAuthenticatedAccess(ctx);
-  if (ctx.role === "management_user" || ctx.role === "vessel_user") {
-    if (!ctx.vesselId) return [];
-    return getDb()
-      .select()
-      .from(vessels)
-      .where(eq(vessels.id, ctx.vesselId))
-      .orderBy(asc(vessels.name));
-  }
-  return getDb().select().from(vessels).orderBy(asc(vessels.name));
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    if (ctx.role === "management_user" || ctx.role === "vessel_user") {
+      if (!ctx.vesselId) return [];
+      return getDb()
+        .select()
+        .from(vessels)
+        .where(eq(vessels.id, ctx.vesselId))
+        .orderBy(asc(vessels.name));
+    }
+    return getDb().select().from(vessels).orderBy(asc(vessels.name));
+  });
 }
 
 /** Fleet size — unfiltered vessel count for Dashboard summary cards. */
 export async function getVesselCount(ctx: AccessContext): Promise<number> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "vessels", "read");
-  const scopedVesselId = requireScopedVesselId(ctx);
-  const rows = scopedVesselId
-    ? await getDb()
-        .select({ n: count() })
-        .from(vessels)
-        .where(eq(vessels.id, scopedVesselId))
-    : await getDb().select({ n: count() }).from(vessels);
-  return rows[0]?.n ?? 0;
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "vessels", "read");
+    const scopedVesselId = requireScopedVesselId(ctx);
+    const rows = scopedVesselId
+      ? await getDb()
+          .select({ n: count() })
+          .from(vessels)
+          .where(eq(vessels.id, scopedVesselId))
+      : await getDb().select({ n: count() }).from(vessels);
+    return rows[0]?.n ?? 0;
+  });
 }
 
 /**
@@ -122,11 +129,17 @@ export async function getVesselById(
   ctx: AccessContext,
   id: string,
 ): Promise<VesselRow | undefined> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "vessels", "read");
-  assertVesselScope(ctx, id);
-  const rows = await getDb().select().from(vessels).where(eq(vessels.id, id)).limit(1);
-  return rows[0];
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "vessels", "read");
+    assertVesselScope(ctx, id);
+    const rows = await getDb()
+      .select()
+      .from(vessels)
+      .where(eq(vessels.id, id))
+      .limit(1);
+    return rows[0];
+  });
 }
 
 /**
@@ -136,7 +149,10 @@ export async function getVesselById(
  *
  * @throws {VesselNotFoundError}
  */
-export async function requireVesselById(ctx: AccessContext, id: string): Promise<VesselRow> {
+export async function requireVesselById(
+  ctx: AccessContext,
+  id: string,
+): Promise<VesselRow> {
   const row = await getVesselById(ctx, id);
   if (!row) {
     throw new VesselNotFoundError(id);
@@ -155,46 +171,53 @@ export async function createVessel(
   ctx: AccessContext,
   input: VesselCreateInput,
 ): Promise<VesselRow> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "vessels", "write");
-  const db = getDb();
-  let row: VesselRow;
-  try {
-    const inserted = await db
-      .insert(vessels)
-      .values({
-        name: input.name,
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "vessels", "write");
+    const db = getDb();
+    let row: VesselRow;
+    try {
+      const inserted = await db
+        .insert(vessels)
+        .values({
+          name: input.name,
+          imoNumber: input.imoNumber ?? null,
+          mmsi: input.mmsi ?? null,
+          callSign: input.callSign ?? null,
+          flagState: input.flagState ?? null,
+          vesselType: input.vesselType ?? null,
+          grossTonnage: input.grossTonnage ?? null,
+          yearBuilt: input.yearBuilt ?? null,
+          status: input.status,
+          notes: input.notes ?? null,
+        })
+        .returning();
+      const insertedRow = inserted[0];
+      if (!insertedRow) {
+        throw new Error("Insert did not return a row");
+      }
+      row = insertedRow;
+    } catch (error) {
+      if (isPgUniqueViolation(error)) {
+        throw new VesselConflictError(
+          "That IMO number is already assigned to another vessel.",
+        );
+      }
+      logError("VESSEL_CREATE_FAILED", {
+        error,
         imoNumber: input.imoNumber ?? null,
-        mmsi: input.mmsi ?? null,
-        callSign: input.callSign ?? null,
-        flagState: input.flagState ?? null,
-        vesselType: input.vesselType ?? null,
-        grossTonnage: input.grossTonnage ?? null,
-        yearBuilt: input.yearBuilt ?? null,
-        status: input.status,
-        notes: input.notes ?? null,
-      })
-      .returning();
-    const insertedRow = inserted[0];
-    if (!insertedRow) {
-      throw new Error("Insert did not return a row");
+      });
+      throw error;
     }
-    row = insertedRow;
-  } catch (error) {
-    if (isPgUniqueViolation(error)) {
-      throw new VesselConflictError("That IMO number is already assigned to another vessel.");
-    }
-    logError("VESSEL_CREATE_FAILED", { error, imoNumber: input.imoNumber ?? null });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "created",
-    moduleName: "vessel",
-    recordId: row.id,
-    description: `Added vessel: ${row.name}`,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "created",
+      moduleName: "vessel",
+      recordId: row.id,
+      description: `Added vessel: ${row.name}`,
+    });
+    return row;
   });
-  return row;
 }
 
 /**
@@ -212,79 +235,83 @@ export async function updateVessel(
   id: string,
   input: VesselUpdateInput,
 ): Promise<VesselRow> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "vessels", "write");
-  const db = getDb();
-  const existing = await getVesselById(ctx, id);
-  if (!existing) {
-    throw new VesselNotFoundError(id);
-  }
-
-  const patch: Partial<typeof vessels.$inferInsert> = {
-    updatedAt: new Date(),
-  };
-
-  if (input.name !== undefined) {
-    patch.name = input.name;
-  }
-  if (input.imoNumber !== undefined) {
-    patch.imoNumber = input.imoNumber;
-  }
-  if (input.mmsi !== undefined) {
-    patch.mmsi = input.mmsi;
-  }
-  if (input.callSign !== undefined) {
-    patch.callSign = input.callSign;
-  }
-  if (input.flagState !== undefined) {
-    patch.flagState = input.flagState;
-  }
-  if (input.vesselType !== undefined) {
-    patch.vesselType = input.vesselType;
-  }
-  if (input.grossTonnage !== undefined) {
-    patch.grossTonnage = input.grossTonnage;
-  }
-  if (input.yearBuilt !== undefined) {
-    patch.yearBuilt = input.yearBuilt;
-  }
-  if (input.status !== undefined) {
-    patch.status = input.status;
-  }
-  if (input.notes !== undefined) {
-    patch.notes = input.notes;
-  }
-
-  let row: VesselRow;
-  try {
-    const updated = await db
-      .update(vessels)
-      .set(patch)
-      .where(eq(vessels.id, id))
-      .returning();
-    const updatedRow = updated[0];
-    if (!updatedRow) {
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "vessels", "write");
+    const db = getDb();
+    const existing = await getVesselById(ctx, id);
+    if (!existing) {
       throw new VesselNotFoundError(id);
     }
-    row = updatedRow;
-  } catch (error) {
-    if (error instanceof VesselNotFoundError) {
+
+    const patch: Partial<typeof vessels.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (input.name !== undefined) {
+      patch.name = input.name;
+    }
+    if (input.imoNumber !== undefined) {
+      patch.imoNumber = input.imoNumber;
+    }
+    if (input.mmsi !== undefined) {
+      patch.mmsi = input.mmsi;
+    }
+    if (input.callSign !== undefined) {
+      patch.callSign = input.callSign;
+    }
+    if (input.flagState !== undefined) {
+      patch.flagState = input.flagState;
+    }
+    if (input.vesselType !== undefined) {
+      patch.vesselType = input.vesselType;
+    }
+    if (input.grossTonnage !== undefined) {
+      patch.grossTonnage = input.grossTonnage;
+    }
+    if (input.yearBuilt !== undefined) {
+      patch.yearBuilt = input.yearBuilt;
+    }
+    if (input.status !== undefined) {
+      patch.status = input.status;
+    }
+    if (input.notes !== undefined) {
+      patch.notes = input.notes;
+    }
+
+    let row: VesselRow;
+    try {
+      const updated = await db
+        .update(vessels)
+        .set(patch)
+        .where(eq(vessels.id, id))
+        .returning();
+      const updatedRow = updated[0];
+      if (!updatedRow) {
+        throw new VesselNotFoundError(id);
+      }
+      row = updatedRow;
+    } catch (error) {
+      if (error instanceof VesselNotFoundError) {
+        throw error;
+      }
+      if (isPgUniqueViolation(error)) {
+        throw new VesselConflictError(
+          "That IMO number is already assigned to another vessel.",
+        );
+      }
+      logError("VESSEL_UPDATE_FAILED", { error, vesselId: id });
       throw error;
     }
-    if (isPgUniqueViolation(error)) {
-      throw new VesselConflictError("That IMO number is already assigned to another vessel.");
-    }
-    logError("VESSEL_UPDATE_FAILED", { error, vesselId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "updated",
-    moduleName: "vessel",
-    recordId: row.id,
-    description: `Updated vessel: ${row.name}`,
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "updated",
+      moduleName: "vessel",
+      recordId: row.id,
+      description: `Updated vessel: ${row.name}`,
+    });
+    return row;
   });
-  return row;
 }
 
 /**
@@ -297,34 +324,42 @@ export async function updateVessel(
  * @throws {VesselNotFoundError} if `id` doesn't exist.
  * @throws {VesselConflictError} if dependents still reference the vessel.
  */
-export async function deleteVessel(ctx: AccessContext, id: string): Promise<void> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "vessels", "write");
-  const db = getDb();
-  const existing = await getVesselById(ctx, id);
-  const name = existing?.name;
-  try {
-    const deleted = await db.delete(vessels).where(eq(vessels.id, id)).returning({ id: vessels.id });
-    if (deleted.length === 0) {
-      throw new VesselNotFoundError(id);
-    }
-  } catch (error) {
-    if (error instanceof VesselNotFoundError) {
+export async function deleteVessel(
+  ctx: AccessContext,
+  id: string,
+): Promise<void> {
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "vessels", "write");
+    const db = getDb();
+    const existing = await getVesselById(ctx, id);
+    const name = existing?.name;
+    try {
+      const deleted = await db
+        .delete(vessels)
+        .where(eq(vessels.id, id))
+        .returning({ id: vessels.id });
+      if (deleted.length === 0) {
+        throw new VesselNotFoundError(id);
+      }
+    } catch (error) {
+      if (error instanceof VesselNotFoundError) {
+        throw error;
+      }
+      if (isPgForeignKeyViolation(error)) {
+        throw new VesselConflictError(
+          "Cannot delete: this vessel is still referenced by other records.",
+        );
+      }
+      logError("VESSEL_DELETE_FAILED", { error, vesselId: id });
       throw error;
     }
-    if (isPgForeignKeyViolation(error)) {
-      throw new VesselConflictError(
-        "Cannot delete: this vessel is still referenced by other records.",
-      );
-    }
-    logError("VESSEL_DELETE_FAILED", { error, vesselId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "deleted",
-    moduleName: "vessel",
-    recordId: id,
-    description: name ? `Deleted vessel: ${name}` : "Deleted vessel",
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "deleted",
+      moduleName: "vessel",
+      recordId: id,
+      description: name ? `Deleted vessel: ${name}` : "Deleted vessel",
+    });
   });
 }

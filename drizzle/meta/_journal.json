@@ -209,6 +209,13 @@
       "when": 1793354768553,
       "tag": "0029_drop_date_format",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0030_rls_vessels",
+      "breakpoints": true
     }
   ],
   "version": "7",

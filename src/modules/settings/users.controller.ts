@@ -10,7 +10,7 @@ import {
 } from "@/lib/db/pg-errors";
 
 import { asc, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   users,
   vessels,
@@ -46,28 +46,35 @@ export class UserConflictError extends Error {
   }
 }
 
+/**
+ * Lists users with optional vessel name via left join.
+ * Wrapped in {@link withDb} so the `vessels` join respects RLS (admin is
+ * office → sees all vessels; settings_users is admin-only at the app layer).
+ */
 export async function listUsers(ctx: AccessContext): Promise<UserListItem[]> {
-  assertAuthenticatedAccess(ctx);
-  assertModuleAccess(ctx, "settings_users", "read");
-  const rows = await getDb()
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      isActive: users.isActive,
-      vesselId: users.vesselId,
-      vesselName: vessels.name,
-      lastLoginAt: users.lastLoginAt,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .leftJoin(vessels, eq(users.vesselId, vessels.id))
-    .orderBy(asc(users.name));
-  return rows.map((r) => ({
-    ...r,
-    role: r.role as UserRole,
-  }));
+  return withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx);
+    assertModuleAccess(ctx, "settings_users", "read");
+    const rows = await getDb()
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        isActive: users.isActive,
+        vesselId: users.vesselId,
+        vesselName: vessels.name,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .leftJoin(vessels, eq(users.vesselId, vessels.id))
+      .orderBy(asc(users.name));
+    return rows.map((r) => ({
+      ...r,
+      role: r.role as UserRole,
+    }));
+  });
 }
 
 export type CreateUserInput = {

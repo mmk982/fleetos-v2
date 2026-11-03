@@ -96,6 +96,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (error instanceof VesselNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
+    if (error instanceof VesselConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     throw error;
   }
 }

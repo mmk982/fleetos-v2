@@ -618,7 +618,7 @@ Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel
 
 ## 14. Vessel read for scoped roles — 2026-11-02 (`cursor/vessel-read-pill-contrast`)
 
-**Decision:** `vessel_user` / `management_user` → `vessels: read` (assigned vessel only). Writes stay admin. Notes writes stay `particulars: write` (admin/super). `vessels` table **not RLS’d** — scope is app-layer (`requireScopedVesselId` / `assertVesselScope`).
+**Decision:** `vessel_user` / `management_user` → `vessels: read` (assigned vessel only). Writes stay admin. Notes writes stay `particulars: write` (admin/super). At the time of this section the `vessels` table was **not RLS’d** (app-layer scope only) — **superseded by §15** (migration 0030).
 
 | Actor | Check | Result |
 |---|---|---|
@@ -649,4 +649,27 @@ Roles with `vessels: "none"` today: `superintendent`, `management_user`, `vessel
 | Console | super/ro/vuA vessel pages | No app errors (HMR / React DevTools only) |
 
 **Cross-org isolation:** N/A — schema is single-tenant (no org id on vessels). App-layer vessel scope unchanged for scoped roles.
+
+---
+
+## 15. Vessels table RLS (migration 0030) — 2026-11-03 (`cursor/rls-vessels`)
+
+**Change:** `ALTER TABLE vessels ENABLE ROW LEVEL SECURITY` (no FORCE). SELECT via existing `app_sees_vessel(id)`; writes via new `app_can_write_vessels()` (admin only). Controllers: `vessel.controller` + `settings/users.listUsers` wrapped in `withDb`. App-layer scope/guards unchanged. RLS table count verified **26** (`pg_class.relrowsecurity` on fresh migrate + grep of `0025`/`0026`/`0030`).
+
+**Runtime:** `DATABASE_URL=fleetos_app` on `:5433`; Playwright Chromium against `http://localhost:3000`.
+
+| Actor | Check | Result |
+|---|---|---|
+| `vuA` | `/dashboard/vessels` list | **PASS** — Vessel A only; no B; no Add/Edit; status 200 |
+| `vuA` | Vessel detail + module pages (dashboard, certs, alerts, monthly forms, deficiencies, PSC, audits, drawings, manuals, insurance, particulars, reminders, crew) | **PASS** — no 500s |
+| `vuNone` | `/dashboard/vessels` | **PASS** — NoVesselAssignedNotice; 200 |
+| `super1` / `ro1` | vessels list | **PASS** — A+B visible; no Add |
+| `super1` / `ro1` | module pages above | **PASS** — no 500s |
+| `admin1` | create / update / delete empty vessel | **PASS** via authenticated `/api/vessels` (201/200/204) + list UI shows then removes row. Server-action form POST from headless Playwright hit Origin/`Sec-Fetch-Site` guard → login redirect (**tooling**, not RLS). |
+| `admin1` | delete Vessel A (has certificates) | **PASS** — SQL `23503` under admin RLS context; HTTP **409** `Cannot delete: this vessel is still referenced…` (DELETE route now maps `VesselConflictError` like PATCH) |
+| Console | vuA / super1 / ro1 / admin1 vessel + module loads | No app errors observed; occasional `ship-particulars` **404** resource fetch (pre-existing / empty-state; not 500) |
+
+**Fresh DB proof:** created `fleetos_rls_vessels_fresh`, ran full migrate 0000→0030, confirmed `vessels.relrowsecurity=t`, 4 policies, **26** RLS tables; dropped DB. Integration suite (`fleetos_rls_test`) also migrates from scratch — **71** tests passed (includes new `rls-vessels.test.ts`).
+
+**CANNOT VERIFY:** axe a11y matrix (out of scope); binary export contents; headless Playwright Server Action form POST (same-origin guard) — API path used instead for write smoke.
 

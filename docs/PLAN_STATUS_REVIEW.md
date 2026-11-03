@@ -168,7 +168,7 @@ Notes:
 
 | Line | Item | Status | Evidence | Note |
 |---:|---|---|---|---|
-| 205 | Broken Access Control | **PARTIAL** | Session + `assertModuleAccess`/`assertVesselScope` widespread | No Postgres RLS; IDOR relies on app layer |
+| 205 | Broken Access Control | **PARTIAL** | Session + `assertModuleAccess`/`assertVesselScope` + RLS phases 1–3 (26 tables incl. `vessels`) | IDOR shapes outside vessel/user row still app-layer |
 | 206 | Security Misconfiguration | **PARTIAL** | Headers in `next.config.ts` | Prod defaults/credentials/debug: **CANNOT VERIFY** without prod |
 | 207 | Supply chain (`npm audit`/Trivy) | **PARTIAL** | 2026-10-30 `cursor/image-hardening`: npm high audits exit 0; Trivy ignore-unfixed gate exit 0; residual 56H+1C **unfixed OS** (zlib CRITICAL CVE-2023-45853); CI wired | See SECURITY_PLAN §13 |
 | 208 | Cryptographic Failures | **PARTIAL** | Argon2id in `password.ts` | TLS/backups: **CANNOT VERIFY** (needs prod/VPS) |
@@ -365,7 +365,7 @@ From `cursor/image-hardening`. **No commit/push.**
 
 - `MODULE_PERMISSIONS`: `vessel_user` / `management_user` → `vessels: "read"` (own); later same day `superintendent` / `read_only` → fleet-wide read (`cursor/vessel-read-fleet-roles`).
 - App-layer scope on `listVessels` / `getVesselById` / `getVesselCount`; UI gates Add/Edit/Delete/notes; `/new`+`/edit` AccessDenied for non-writers.
-- `vessels` table **not under RLS** (documented); notes/particulars remain RLS’d.
+- `vessels` table under RLS as of migration 0030 (`app_sees_vessel` / `app_can_write_vessels`); notes/particulars remain RLS’d.
 - StatusPill: `--success-text`/`--warning-text`/`--error-text` (≥4.5:1 light); dark unchanged brand text. Vitest contrast guard added.
 - Browser smoke: vuA / vuNone / admin / super1 / ro1 — see `docs/RLS_BROWSER_TEST.md` §14 / §14.1.
 
