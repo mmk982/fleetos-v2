@@ -13,11 +13,9 @@ import type { NotificationListItem } from "@/modules/notifications/notifications
 const DROPDOWN_LIMIT = 8;
 
 export function NotificationsBell({
-  userId,
   unreadCount,
   items,
 }: {
-  userId: string;
   unreadCount: number;
   items: NotificationListItem[];
 }) {
@@ -53,7 +51,7 @@ export function NotificationsBell({
 
   function markAll() {
     startTransition(async () => {
-      await markAllReadAction(userId);
+      await markAllReadAction();
       router.refresh();
     });
   }

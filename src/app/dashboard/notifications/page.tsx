@@ -44,7 +44,7 @@ export default async function NotificationsPage() {
       </div>
 
       <div className="mt-6">
-        <NotificationsHistory userId={access.userId} items={items} />
+        <NotificationsHistory items={items} />
       </div>
     </main>
   );

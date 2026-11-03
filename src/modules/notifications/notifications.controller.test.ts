@@ -23,8 +23,12 @@ vi.mock("@/db/client", () => ({
   withSystemDb: async (_label: string, fn: () => Promise<unknown>) => fn(),
 }));
 
-import { MissingVesselAssignmentError } from "@/lib/auth/access";
-import { syncNotifications } from "./notifications.controller";
+import { ForbiddenError, MissingVesselAssignmentError } from "@/lib/auth/access";
+import {
+  markAllNotificationsRead,
+  syncNotifications,
+} from "./notifications.controller";
+import { getDb } from "@/db/client";
 
 describe("syncNotifications", () => {
   beforeEach(() => {
@@ -63,5 +67,37 @@ describe("syncNotifications", () => {
       "NOTIFICATION_SYNC_FAILED",
       expect.objectContaining({ error: expect.any(Error) }),
     );
+  });
+});
+
+describe("markAllNotificationsRead", () => {
+  beforeEach(() => {
+    vi.mocked(getDb).mockReset();
+  });
+
+  it("updates only the session user's unread rows", async () => {
+    const where = vi.fn(async () => undefined);
+    const set = vi.fn(() => ({ where }));
+    const update = vi.fn(() => ({ set }));
+    vi.mocked(getDb).mockReturnValue({ update } as never);
+
+    await markAllNotificationsRead({
+      userId: "user-1",
+      role: "admin",
+      vesselId: null,
+    });
+
+    expect(update).toHaveBeenCalled();
+    expect(where).toHaveBeenCalled();
+  });
+
+  it("rejects unauthenticated context before updating", async () => {
+    await expect(
+      markAllNotificationsRead({
+        userId: "",
+        role: "admin",
+        vesselId: null,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

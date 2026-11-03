@@ -337,18 +337,20 @@ export async function markNotificationRead(
 
 export async function markAllNotificationsRead(
   ctx: AccessContext,
-  userId: string,
 ): Promise<void> {
   return withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx);
-    assertOwnUser(ctx, userId);
+    // Defence in depth: only the session user; never a client-supplied id.
+    assertOwnUser(ctx, ctx.userId!);
     await getDb()
       .update(notifications)
       .set({ isRead: true })
       .where(
-        and(eq(notifications.userId, userId), eq(notifications.isRead, false)),
+        and(
+          eq(notifications.userId, ctx.userId!),
+          eq(notifications.isRead, false),
+        ),
       );
-
   });
 }
 

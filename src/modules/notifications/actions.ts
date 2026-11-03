@@ -29,11 +29,11 @@ export async function markNotificationReadAction(id: string): Promise<void> {
   revalidatePath(notificationsPath);
 }
 
-export async function markAllReadAction(userId: string): Promise<void> {
+export async function markAllReadAction(): Promise<void> {
   await assertSameOriginMutation();
   const session = await requireSession({ touch: true });
   const access = toAccessContext(session);
-  await markAllNotificationsRead(access, userId);
+  await markAllNotificationsRead(access);
   revalidatePath("/dashboard", "layout");
   revalidatePath(notificationsPath);
 }

@@ -10,10 +10,8 @@ import {
 import type { NotificationListItem } from "@/modules/notifications/notifications.model";
 
 export function NotificationsHistory({
-  userId,
   items,
 }: {
-  userId: string;
   items: NotificationListItem[];
 }) {
   const router = useRouter();
@@ -28,7 +26,7 @@ export function NotificationsHistory({
 
   function markAll() {
     startTransition(async () => {
-      await markAllReadAction(userId);
+      await markAllReadAction();
       router.refresh();
     });
   }
