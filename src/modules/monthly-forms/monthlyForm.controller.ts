@@ -520,8 +520,7 @@ export async function deleteMonthlyForm(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
-  
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     const access = getMonthlyFormAccess(ctx.role as UserRole | null);
     if (access !== "full") {
@@ -543,14 +542,12 @@ export async function deleteMonthlyForm(
     const formMeta = existing[0];
     if (!formMeta) throw new MonthlyFormNotFoundError(id);
     assertVesselScope(ctx, formMeta.vesselId);
+    const atts = await db
+      .select({ filePath: monthlyExecutedFormAttachments.filePath })
+      .from(monthlyExecutedFormAttachments)
+      .where(eq(monthlyExecutedFormAttachments.executedFormId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(monthlyExecutedFormAttachments)
-        .where(eq(monthlyExecutedFormAttachments.executedFormId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(monthlyExecutedForms)
         .where(eq(monthlyExecutedForms.id, id))
@@ -558,6 +555,11 @@ export async function deleteMonthlyForm(
       if (deleted.length === 0) throw new MonthlyFormNotFoundError(id);
     } catch (error) {
       if (error instanceof MonthlyFormNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new MonthlyFormConflictError(
+          "Cannot delete: this monthly form is still referenced by other records.",
+        );
+      }
       logError("MONTHLY_FORM_DELETE_FAILED", { error, executedFormId: id });
       throw error;
     }
@@ -568,8 +570,19 @@ export async function deleteMonthlyForm(
       recordId: id,
       description: `Deleted monthly form: ${formMeta.formName} (${formMeta.month}/${formMeta.year})`,
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("MONTHLY_FORM_FILE_DELETE_FAILED", {
+        error,
+        executedFormId: id,
+      });
+    }
+  }
 }
 
 export async function listMonthlyFormAttachments(

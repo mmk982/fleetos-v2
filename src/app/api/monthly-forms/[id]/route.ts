@@ -5,6 +5,7 @@ import { validateSession } from "@/lib/auth/session";
 import {
   deleteMonthlyForm,
   getMonthlyFormById,
+  MonthlyFormConflictError,
   MonthlyFormNotFoundError,
 } from "@/modules/monthly-forms/monthlyForm.controller";
 
@@ -41,6 +42,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
     if (error instanceof MonthlyFormNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof MonthlyFormConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
     }
     throw error;
   }

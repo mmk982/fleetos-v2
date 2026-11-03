@@ -521,8 +521,7 @@ export async function deleteParticulars(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
-  
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "particulars", "write");
     const db = getDb();
@@ -538,14 +537,12 @@ export async function deleteParticulars(
     const meta = existing[0];
     if (!meta) throw new ParticularsNotFoundError(id);
     assertVesselScope(ctx, meta.vesselId);
+    const atts = await db
+      .select({ filePath: vesselParticularsAttachments.filePath })
+      .from(vesselParticularsAttachments)
+      .where(eq(vesselParticularsAttachments.particularsId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(vesselParticularsAttachments)
-        .where(eq(vesselParticularsAttachments.particularsId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(vesselParticulars)
         .where(eq(vesselParticulars.id, id))
@@ -553,11 +550,16 @@ export async function deleteParticulars(
       if (deleted.length === 0) throw new ParticularsNotFoundError(id);
     } catch (error) {
       if (error instanceof ParticularsNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new ParticularsConflictError(
+          "Cannot delete: these ship particulars are still referenced by other records.",
+        );
+      }
       logError("PARTICULARS_DELETE_FAILED", { error, particularsId: id });
       throw error;
     }
     const descParts = ["Deleted ship particulars"];
-    if (meta?.effectiveDate) descParts.push(`effective ${meta.effectiveDate}`);
+    if (meta.effectiveDate) descParts.push(`effective ${meta.effectiveDate}`);
     await writeActivityLog({
       userId: ctx.userId,
       actionType: "deleted",
@@ -565,8 +567,16 @@ export async function deleteParticulars(
       recordId: id,
       description: descParts.join(" — "),
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("PARTICULARS_FILE_DELETE_FAILED", { error, particularsId: id });
+    }
+  }
 }
 
 export async function listParticularsAttachments(

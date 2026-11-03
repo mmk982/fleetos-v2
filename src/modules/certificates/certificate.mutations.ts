@@ -298,7 +298,7 @@ export async function deleteCertificate(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "certificates", "write");
     const db = getDb();
@@ -322,14 +322,12 @@ export async function deleteCertificate(
     const label =
       existing?.typeName || existing?.certificateNumber || "certificate";
     const subItemCount = await countChildCertificates(id, db);
+    const atts = await db
+      .select({ filePath: certificateAttachments.filePath })
+      .from(certificateAttachments)
+      .where(eq(certificateAttachments.certificateId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(certificateAttachments)
-        .where(eq(certificateAttachments.certificateId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(certificates)
         .where(eq(certificates.id, id))
@@ -340,6 +338,11 @@ export async function deleteCertificate(
     } catch (error) {
       if (error instanceof CertificateNotFoundError) {
         throw error;
+      }
+      if (isPgForeignKeyViolation(error)) {
+        throw new CertificateConflictError(
+          "Cannot delete: this certificate is still referenced by other records.",
+        );
       }
       logError("CERTIFICATE_DELETE_FAILED", { error, certificateId: id });
       throw error;
@@ -355,6 +358,14 @@ export async function deleteCertificate(
       recordId: id,
       description: `Deleted certificate: ${label}${detachedNote}`,
     });
-  
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("CERTIFICATE_FILE_DELETE_FAILED", { error, certificateId: id });
+    }
+  }
 }

@@ -551,8 +551,7 @@ export async function deleteManual(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
-  
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "manuals", "write");
     const db = getDb();
@@ -564,14 +563,12 @@ export async function deleteManual(
     if (!existing[0]) throw new ManualNotFoundError(id);
     assertVesselScope(ctx, existing[0].vesselId);
     const title = existing[0].title;
+    const revisions = await db
+      .select({ filePath: manualRevisions.filePath })
+      .from(manualRevisions)
+      .where(eq(manualRevisions.manualId, id));
+    const paths = revisions.map((r) => r.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(manualRevisions)
-        .where(eq(manualRevisions.manualId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(manuals)
         .where(eq(manuals.id, id))
@@ -579,6 +576,11 @@ export async function deleteManual(
       if (deleted.length === 0) throw new ManualNotFoundError(id);
     } catch (error) {
       if (error instanceof ManualNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new ManualConflictError(
+          "Cannot delete: this manual is still referenced by other records.",
+        );
+      }
       logError("MANUAL_DELETE_FAILED", { error, manualId: id });
       throw error;
     }
@@ -589,8 +591,16 @@ export async function deleteManual(
       recordId: id,
       description: title ? `Deleted manual: ${title}` : "Deleted manual",
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("MANUAL_FILE_DELETE_FAILED", { error, manualId: id });
+    }
+  }
 }
 
 /**

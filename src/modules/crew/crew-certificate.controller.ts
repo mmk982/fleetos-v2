@@ -385,7 +385,7 @@ export async function deleteCrewCertificate(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     await assertCrewCertificateAccess(ctx, id, "write");
     const db = getDb();
@@ -395,14 +395,12 @@ export async function deleteCrewCertificate(
       .where(eq(crewCertificates.id, id))
       .limit(1);
     const name = existing[0]?.name;
+    const atts = await db
+      .select({ filePath: crewCertificateAttachments.filePath })
+      .from(crewCertificateAttachments)
+      .where(eq(crewCertificateAttachments.crewCertificateId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(crewCertificateAttachments)
-        .where(eq(crewCertificateAttachments.crewCertificateId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(crewCertificates)
         .where(eq(crewCertificates.id, id))
@@ -410,6 +408,11 @@ export async function deleteCrewCertificate(
       if (deleted.length === 0) throw new CrewCertificateNotFoundError(id);
     } catch (error) {
       if (error instanceof CrewCertificateNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new CrewCertificateConflictError(
+          "Cannot delete: this crew certificate is still referenced by other records.",
+        );
+      }
       logError("CREW_CERTIFICATE_DELETE_FAILED", {
         error,
         crewCertificateId: id,
@@ -425,8 +428,19 @@ export async function deleteCrewCertificate(
         ? `Deleted crew certificate: ${name}`
         : "Deleted crew certificate",
     });
-  
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("CREW_CERTIFICATE_FILE_DELETE_FAILED", {
+        error,
+        crewCertificateId: id,
+      });
+    }
+  }
 }
 
 export async function listCrewCertificateAttachments(

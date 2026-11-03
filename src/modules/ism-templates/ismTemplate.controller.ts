@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, eq, type SQL } from "drizzle-orm";
-import { getDb } from "@/db/client";
+import { getDb, withDb } from "@/db/client";
 import {
   ismTemplateAttachments,
   ismTemplateCategories,
@@ -382,47 +382,64 @@ export async function updateIsmTemplate(
   return row;
 }
 
-/** Hard-delete; removes on-disk attachment files first. */
+/**
+ * Hard-delete. DB row first (RESTRICT FKs → conflict); on-disk files only
+ * after the `withDb` commit succeeds.
+ */
 export async function deleteIsmTemplate(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  assertAuthenticatedAccess(ctx, id);
-  assertModuleAccess(ctx, "ism_templates", "write");
-  const db = getDb();
-  const existing = await db
-    .select({ formName: ismTemplates.formName })
-    .from(ismTemplates)
-    .where(eq(ismTemplates.id, id))
-    .limit(1);
-  const formName = existing[0]?.formName;
-  try {
+  const filePaths = await withDb(ctx, async () => {
+    assertAuthenticatedAccess(ctx, id);
+    assertModuleAccess(ctx, "ism_templates", "write");
+    const db = getDb();
+    const existing = await db
+      .select({ formName: ismTemplates.formName })
+      .from(ismTemplates)
+      .where(eq(ismTemplates.id, id))
+      .limit(1);
+    const formName = existing[0]?.formName;
     const atts = await db
-      .select()
+      .select({ filePath: ismTemplateAttachments.filePath })
       .from(ismTemplateAttachments)
       .where(eq(ismTemplateAttachments.ismTemplateId, id));
-    for (const att of atts) {
-      await removeStoredAttachmentFile(att.filePath);
+    const paths = atts.map((a) => a.filePath);
+    try {
+      const deleted = await db
+        .delete(ismTemplates)
+        .where(eq(ismTemplates.id, id))
+        .returning({ id: ismTemplates.id });
+      if (deleted.length === 0) throw new IsmTemplateNotFoundError(id);
+    } catch (error) {
+      if (error instanceof IsmTemplateNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new IsmTemplateConflictError(
+          "Cannot delete: this ISM template is still referenced by monthly form requirements or other records.",
+        );
+      }
+      logError("ISM_TEMPLATE_DELETE_FAILED", { error, ismTemplateId: id });
+      throw error;
     }
-    const deleted = await db
-      .delete(ismTemplates)
-      .where(eq(ismTemplates.id, id))
-      .returning({ id: ismTemplates.id });
-    if (deleted.length === 0) throw new IsmTemplateNotFoundError(id);
-  } catch (error) {
-    if (error instanceof IsmTemplateNotFoundError) throw error;
-    logError("ISM_TEMPLATE_DELETE_FAILED", { error, ismTemplateId: id });
-    throw error;
-  }
-  await writeActivityLog({
-    userId: ctx.userId,
-    actionType: "deleted",
-    moduleName: "ism_template",
-    recordId: id,
-    description: formName
-      ? `Deleted ISM template: ${formName}`
-      : "Deleted ISM template",
+    await writeActivityLog({
+      userId: ctx.userId,
+      actionType: "deleted",
+      moduleName: "ism_template",
+      recordId: id,
+      description: formName
+        ? `Deleted ISM template: ${formName}`
+        : "Deleted ISM template",
+    });
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("ISM_TEMPLATE_FILE_DELETE_FAILED", { error, ismTemplateId: id });
+    }
+  }
 }
 
 export async function listIsmTemplateAttachments(

@@ -91,6 +91,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (error instanceof InsuranceNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
+    if (error instanceof InsuranceConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     throw error;
   }
 }

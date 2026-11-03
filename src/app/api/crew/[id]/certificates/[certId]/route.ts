@@ -114,6 +114,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (error instanceof CrewCertificateNotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
+    if (error instanceof CrewCertificateConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     throw error;
   }
 }

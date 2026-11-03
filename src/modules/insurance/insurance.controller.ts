@@ -334,8 +334,7 @@ export async function deleteInsurancePolicy(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
-  
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "insurance", "write");
     const db = getDb();
@@ -350,14 +349,12 @@ export async function deleteInsurancePolicy(
     if (!existingRows[0]) throw new InsuranceNotFoundError(id);
     assertVesselScope(ctx, existingRows[0].vesselId);
     const policyType = existingRows[0].policyType;
+    const atts = await db
+      .select({ filePath: insuranceAttachments.filePath })
+      .from(insuranceAttachments)
+      .where(eq(insuranceAttachments.insurancePolicyId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(insuranceAttachments)
-        .where(eq(insuranceAttachments.insurancePolicyId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(insurancePolicies)
         .where(eq(insurancePolicies.id, id))
@@ -365,6 +362,11 @@ export async function deleteInsurancePolicy(
       if (deleted.length === 0) throw new InsuranceNotFoundError(id);
     } catch (error) {
       if (error instanceof InsuranceNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new InsuranceConflictError(
+          "Cannot delete: this insurance policy is still referenced by other records.",
+        );
+      }
       logError("INSURANCE_DELETE_FAILED", { error, insurancePolicyId: id });
       throw error;
     }
@@ -376,8 +378,19 @@ export async function deleteInsurancePolicy(
       recordId: id,
       description: `Deleted insurance: ${label}`,
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("INSURANCE_FILE_DELETE_FAILED", {
+        error,
+        insurancePolicyId: id,
+      });
+    }
+  }
 }
 
 export async function listInsuranceAttachments(

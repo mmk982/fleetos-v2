@@ -22,6 +22,7 @@ vi.mock("@/lib/logging", () => ({
 const getDb = vi.fn();
 vi.mock("@/db/client", () => ({
   getDb: () => getDb(),
+  withDb: async (_ctx: unknown, fn: (db: unknown) => unknown) => fn(getDb()),
 }));
 
 import {
@@ -166,37 +167,80 @@ describe("ismTemplate.controller", () => {
     await expect(getIsmTemplateById(CTX, TEMPLATE_ID)).resolves.toBeUndefined();
   });
 
-  it("deleteIsmTemplate removes attachment files then the row", async () => {
+  it("deleteIsmTemplate deletes the row then unlinks attachment files", async () => {
     const { removeStoredAttachmentFile } = await import(
       "@/lib/attachments/stream"
     );
+    const order: string[] = [];
+    vi.mocked(removeStoredAttachmentFile).mockImplementation(async () => {
+      order.push("unlink");
+    });
 
+    let selectCalls = 0;
     getDb.mockReturnValue({
       select: () => ({
         from: () => ({
-          where: () =>
-            thenable([
-              {
-                id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-                ismTemplateId: TEMPLATE_ID,
-                fileName: "blank.pdf",
-                filePath: "data/attachments/blank.pdf",
-                uploadedBy: null,
-                uploadedAt: new Date(),
-              },
-            ]),
+          where: () => {
+            selectCalls += 1;
+            if (selectCalls === 1) {
+              return thenable([{ formName: "Fire drill" }]);
+            }
+            return thenable([{ filePath: "data/attachments/blank.pdf" }]);
+          },
         }),
       }),
       delete: () => ({
         where: () => ({
-          returning: async () => [{ id: TEMPLATE_ID }],
+          returning: async () => {
+            order.push("delete");
+            return [{ id: TEMPLATE_ID }];
+          },
         }),
       }),
     });
 
     await deleteIsmTemplate(CTX, TEMPLATE_ID);
+    expect(order).toEqual(["delete", "unlink"]);
     expect(removeStoredAttachmentFile).toHaveBeenCalledWith(
       "data/attachments/blank.pdf",
     );
+  });
+
+  it("deleteIsmTemplate maps FK RESTRICT to Conflict and keeps files", async () => {
+    const { removeStoredAttachmentFile } = await import(
+      "@/lib/attachments/stream"
+    );
+    const { IsmTemplateConflictError } = await import(
+      "./ismTemplate.controller"
+    );
+
+    let selectCalls = 0;
+    getDb.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: () => {
+            selectCalls += 1;
+            if (selectCalls === 1) {
+              return thenable([{ formName: "Fire drill" }]);
+            }
+            return thenable([{ filePath: "data/attachments/blank.pdf" }]);
+          },
+        }),
+      }),
+      delete: () => ({
+        where: () => ({
+          returning: async () => {
+            const err = new Error("fk") as Error & { code: string };
+            err.code = "23503";
+            throw err;
+          },
+        }),
+      }),
+    });
+
+    await expect(deleteIsmTemplate(CTX, TEMPLATE_ID)).rejects.toBeInstanceOf(
+      IsmTemplateConflictError,
+    );
+    expect(removeStoredAttachmentFile).not.toHaveBeenCalled();
   });
 });

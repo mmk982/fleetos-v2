@@ -766,7 +766,7 @@ export async function deleteDeficiency(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "deficiencies", "write");
     const db = getDb();
@@ -780,14 +780,12 @@ export async function deleteDeficiency(
       assertVesselScope(ctx, existing.vesselId);
     }
     const title = existing?.title;
+    const atts = await db
+      .select({ filePath: deficiencyAttachments.filePath })
+      .from(deficiencyAttachments)
+      .where(eq(deficiencyAttachments.deficiencyId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(deficiencyAttachments)
-        .where(eq(deficiencyAttachments.deficiencyId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(deficiencies)
         .where(eq(deficiencies.id, id))
@@ -795,6 +793,11 @@ export async function deleteDeficiency(
       if (deleted.length === 0) throw new DeficiencyNotFoundError(id);
     } catch (error) {
       if (error instanceof DeficiencyNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new DeficiencyConflictError(
+          "Cannot delete: this deficiency is still referenced by other records.",
+        );
+      }
       logError("DEFICIENCY_DELETE_FAILED", { error, deficiencyId: id });
       throw error;
     }
@@ -807,8 +810,16 @@ export async function deleteDeficiency(
         ? `Deleted deficiency: ${title}`
         : "Deleted deficiency",
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("DEFICIENCY_FILE_DELETE_FAILED", { error, deficiencyId: id });
+    }
+  }
 }
 
 function extensionForMime(mime: string): string {

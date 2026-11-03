@@ -439,8 +439,7 @@ export async function deleteDrawing(
   ctx: AccessContext,
   id: string,
 ): Promise<void> {
-  return withDb(ctx, async () => {
-  
+  const filePaths = await withDb(ctx, async () => {
     assertAuthenticatedAccess(ctx, id);
     assertModuleAccess(ctx, "drawings", "write");
     const db = getDb();
@@ -455,14 +454,12 @@ export async function deleteDrawing(
     if (!existing[0]) throw new DrawingNotFoundError(id);
     assertVesselScope(ctx, existing[0].vesselId);
     const drawingName = existing[0].drawingName;
+    const atts = await db
+      .select({ filePath: drawingAttachments.filePath })
+      .from(drawingAttachments)
+      .where(eq(drawingAttachments.drawingId, id));
+    const paths = atts.map((a) => a.filePath);
     try {
-      const atts = await db
-        .select()
-        .from(drawingAttachments)
-        .where(eq(drawingAttachments.drawingId, id));
-      for (const att of atts) {
-        await removeStoredAttachmentFile(att.filePath);
-      }
       const deleted = await db
         .delete(drawings)
         .where(eq(drawings.id, id))
@@ -470,6 +467,11 @@ export async function deleteDrawing(
       if (deleted.length === 0) throw new DrawingNotFoundError(id);
     } catch (error) {
       if (error instanceof DrawingNotFoundError) throw error;
+      if (isPgForeignKeyViolation(error)) {
+        throw new DrawingConflictError(
+          "Cannot delete: this drawing is still referenced by other records.",
+        );
+      }
       logError("DRAWING_DELETE_FAILED", { error, drawingId: id });
       throw error;
     }
@@ -482,8 +484,16 @@ export async function deleteDrawing(
         ? `Deleted drawing: ${drawingName}`
         : "Deleted drawing",
     });
-
+    return paths;
   });
+
+  for (const filePath of filePaths) {
+    try {
+      await removeStoredAttachmentFile(filePath);
+    } catch (error) {
+      logError("DRAWING_FILE_DELETE_FAILED", { error, drawingId: id });
+    }
+  }
 }
 
 export async function listDrawingAttachments(
