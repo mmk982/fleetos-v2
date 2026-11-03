@@ -47,3 +47,6 @@ next-env.d.ts
 
 # local backup / compose drill artifacts (may contain throwaway keys)
 .tmp-backup-drill/
+
+# Vitest cache
+.vitest/
